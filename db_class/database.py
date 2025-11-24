@@ -16,5 +16,8 @@ SessionLocal = async_sessionmaker(
 
 
 async def init_db() -> None:
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+    except Exception as ex:
+        print(f"Ошибка при инициализации БД {ex}")
