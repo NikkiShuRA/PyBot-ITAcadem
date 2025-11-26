@@ -2,6 +2,7 @@ from aiogram import Router, F
 from aiogram.filters import CommandStart, Command
 from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
+from aiogram_dialog import DialogManager
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,16 +12,29 @@ from services.users import (
     attach_telegram_to_user,
     get_user_by_telegram_id 
 )
-from tg_bot.handlers.user.states import ProfileCreate
+from tg_bot.handlers.user.states import ProfileSG
 from tg_bot.keyboards.auth import request_contact_kb
 
 private_router = Router()
 group_router = Router()
 global_router = Router()
 
-# /start - в личном/групповом чате
+# /start - в личном чате
 @private_router.message(CommandStart())
-async def cmd_start(message: Message, db: AsyncSession):
+async def cmd_start_private(message: Message, db: AsyncSession):
+    user = await get_user_by_telegram_id(db, message.from_user.id)
+    if user:
+        await message.answer("Ты уже авторизован, /help — список команд.")
+        return
+
+    await message.answer(
+        "Для авторизации отправь свой номер телефона кнопкой ниже.",
+        reply_markup=request_contact_kb,
+    )
+
+# /start - в групповом чате
+@group_router.message(CommandStart())
+async def cmd_start_group(message: Message, db: AsyncSession):
     user = await get_user_by_telegram_id(db, message.from_user.id)
     if user:
         await message.answer("Ты уже авторизован, /help — список команд.")
@@ -32,7 +46,7 @@ async def cmd_start(message: Message, db: AsyncSession):
     )
 
 @private_router.message(F.contact)
-async def handle_contact(message: Message, state: FSMContext, db: AsyncSession):
+async def handle_contact(message: Message, dialog_manager: DialogManager, db: AsyncSession):
     contact = message.contact
     if contact.user_id != message.from_user.id:
         await message.answer("Нужен именно твой номер, а не чужой.")
@@ -42,18 +56,16 @@ async def handle_contact(message: Message, state: FSMContext, db: AsyncSession):
     tg_id = message.from_user.id
 
     user = await get_user_by_phone(db, phone)
-
     if user:
         await attach_telegram_to_user(db, user, tg_id)
-        await message.answer(
-            f"Найден существующий профиль. Твой ID: {user.id}"
-        )
+        await message.answer(f"Найден существующий профиль. Твой ID: {user.id}")
         return
 
-    # пользователя нет — запускаем мастер создания профиля
-    await state.update_data(phone=phone, tg_id=tg_id)
-    await message.answer("Профиль не найден.\nКак тебя зовут? (имя)")
-    await state.set_state(ProfileCreate.first_name)
+    # пользователя нет — запускаем диалог создания профиля
+    await dialog_manager.start(
+        ProfileSG.first_name,
+        data={"phone": phone, "tg_id": tg_id},
+    )
 
 # /info - в личном/групповом чате
 @global_router.message(Command("info"))
@@ -88,10 +100,7 @@ async def cmd_help_private(message: Message):
     await message.answer(
         "/start — запустить бота\n"
         "/help — список команд\n"
-        "/me — мой профиль\n"
-        "/projects — список проектов\n"
-        "/tasks — задачи\n"
-        "/admin — панель админимтратора"
+        "/info — информация о боте\n"
     )
 
 # /help - в групповом чате
@@ -100,8 +109,5 @@ async def cmd_help_group(message: Message):
     await message.answer(
         "/start — запустить бота\n"
         "/help — список команд\n"
-        "/profile — карточка моего профиля\n"
-        "/projects — список проектов\n"
-        "/tasks — задачи\n"
-        "/points — работа с баллами\n"
+        "/info — информация о боте\n"
     )
