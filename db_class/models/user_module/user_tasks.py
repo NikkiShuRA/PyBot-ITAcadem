@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from sqlalchemy import BigInteger, Boolean, ForeignKey
+from sqlalchemy import BigInteger, Boolean
 from sqlalchemy.orm import Mapped, mapped_column
 
 from ...base_class import Base
+
 
 class UserTask(Base):
     __tablename__ = "user_tasks"

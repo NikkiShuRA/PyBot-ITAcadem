@@ -1,7 +1,10 @@
 from __future__ import annotations
-from sqlalchemy import BigInteger, Text, Date, ForeignKey
+
+from sqlalchemy import BigInteger, Date, ForeignKey, Text
 from sqlalchemy.orm import Mapped, mapped_column
+
 from ...base_class import Base
+
 
 class TaskSolution(Base):
     __tablename__ = "task_solutions"

@@ -1,7 +1,10 @@
 from __future__ import annotations
-from sqlalchemy import BigInteger, Text, Boolean, Date
+
+from sqlalchemy import BigInteger, Boolean, Date, Text
 from sqlalchemy.orm import Mapped, mapped_column
+
 from ...base_class import Base
+
 
 class Task(Base):
     __tablename__ = "tasks"

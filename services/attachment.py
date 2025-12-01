@@ -1,7 +1,8 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from db_class.models import Attachment, AttachmentsType
+from db_class.models import Attachment
+
 
 async def list_attachment(db: AsyncSession) -> str:
     result = await db.execute(select(Attachment))

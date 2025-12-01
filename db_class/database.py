@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from config import DATABASE_URL
 from db_class.base_class import Base
-import db_class.models as models  # важно: подтягивает все модели
 
 engine = create_async_engine(DATABASE_URL, echo=False)
 

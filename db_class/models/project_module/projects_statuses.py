@@ -1,7 +1,10 @@
 from __future__ import annotations
+
 from sqlalchemy import BigInteger, Text
 from sqlalchemy.orm import Mapped, mapped_column
+
 from ...base_class import Base
+
 
 class ProjectStatus(Base):
     __tablename__ = "projects_statuses"

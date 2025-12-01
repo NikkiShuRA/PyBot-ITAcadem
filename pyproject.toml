@@ -78,5 +78,5 @@ select = [
 ]
 fixable = ["ALL"]
 unfixable = []
-ignore = ["PLR6301", "TRY003", "D212", "D211", "RUF002", "D203", "PLC0414", "ANN401", "RUF029", "RUF001"]
+ignore = ["PLR6301", "TRY003", "D212", "D211", "RUF002", "D203", "PLC0414", "ANN401", "RUF029", "RUF001", "RUF003"]
 exclude = ['test_*', '__init__.py']

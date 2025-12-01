@@ -1,17 +1,10 @@
-from aiogram import Router, F
-from aiogram.filters import CommandStart, Command
+from aiogram import F, Router
+from aiogram.filters import Command, CommandStart
 from aiogram.types import Message
-from aiogram.fsm.context import FSMContext
 from aiogram_dialog import DialogManager
-
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from services.users import (
-    normalize_phone,
-    get_user_by_phone,
-    attach_telegram_to_user,
-    get_user_by_telegram_id 
-)
+from services.users import attach_telegram_to_user, get_user_by_phone, get_user_by_telegram_id, normalize_phone
 from tg_bot.handlers.user.states import ProfileSG
 from tg_bot.keyboards.auth import request_contact_kb
 
@@ -19,9 +12,10 @@ private_router = Router()
 group_router = Router()
 global_router = Router()
 
+
 # /start - в личном чате
 @private_router.message(CommandStart())
-async def cmd_start_private(message: Message, db: AsyncSession):
+async def cmd_start_private(message: Message, db: AsyncSession) -> None:
     user = await get_user_by_telegram_id(db, message.from_user.id)
     if user:
         await message.answer("Ты уже авторизован, /help — список команд.")
@@ -31,10 +25,11 @@ async def cmd_start_private(message: Message, db: AsyncSession):
         "Для авторизации отправь свой номер телефона кнопкой ниже.",
         reply_markup=request_contact_kb,
     )
+
 
 # /start - в групповом чате
 @group_router.message(CommandStart())
-async def cmd_start_group(message: Message, db: AsyncSession):
+async def cmd_start_group(message: Message, db: AsyncSession) -> None:
     user = await get_user_by_telegram_id(db, message.from_user.id)
     if user:
         await message.answer("Ты уже авторизован, /help — список команд.")
@@ -45,8 +40,9 @@ async def cmd_start_group(message: Message, db: AsyncSession):
         reply_markup=request_contact_kb,
     )
 
+
 @private_router.message(F.contact)
-async def handle_contact(message: Message, dialog_manager: DialogManager, db: AsyncSession):
+async def handle_contact(message: Message, dialog_manager: DialogManager, db: AsyncSession) -> None:
     contact = message.contact
     if contact.user_id != message.from_user.id:
         await message.answer("Нужен именно твой номер, а не чужой.")
@@ -67,47 +63,37 @@ async def handle_contact(message: Message, dialog_manager: DialogManager, db: As
         data={"phone": phone, "tg_id": tg_id},
     )
 
+
 # /info - в личном/групповом чате
 @global_router.message(Command("info"))
-async def cmd_info(message: Message):
+async def cmd_info(message: Message) -> None:
     await message.answer(
         "Привет! 👋\n"
         "Я бот платформы информационного комьюнити ITAcadem на базе StartUP (СИЭУиП).\n\n"
-
         "ITAcadem — это современная образовательная платформа для студентов СИЭУиП и всех, "
         "кто хочет учиться программированию и развиваться в IT-сфере. 💻✨\n"
         "Платформа объединяет практическое обучение, проектную деятельность и профессиональный рост "
         "в единой интерактивной среде.\n\n"
-
         "Моя задача — сделать твоё развитие удобным, наглядным и доступным в удалённом формате. 🚀\n"
         "Через меня ты можешь проще взаимодействовать с платформой и IT‑сообществом.\n\n"
-
         "Что я могу предложить уже сейчас:\n"
         " • Просмотр твоего профиля и прогресса в обучении 📊\n"
         " • Отслеживание выполненных задач и текущих активностей ✅\n"
         " • Напоминания о важных дедлайнах и событиях ⏰\n"
         " • Уведомления о мероприятиях и активностях IT‑комьюнити 📅\n\n"
-
         "По мере развития платформы мои возможности будут расширяться, "
         "а взаимодействие с ITAcadem станет ещё удобнее и полезнее для тебя. 😉\n\n"
-        
         "GitHub проекта — https://github.com/NikkiShuRA/PyBot-ITAcadem.git"
     )
 
+
 # /help - в личном чате
 @private_router.message(Command("help"))
-async def cmd_help_private(message: Message):
-    await message.answer(
-        "/start — запустить бота\n"
-        "/help — список команд\n"
-        "/info — информация о боте\n"
-    )
+async def cmd_help_private(message: Message) -> None:
+    await message.answer("/start — запустить бота\n/help — список команд\n/info — информация о боте\n")
+
 
 # /help - в групповом чате
 @group_router.message(Command("help"))
-async def cmd_help_group(message: Message):
-    await message.answer(
-        "/start — запустить бота\n"
-        "/help — список команд\n"
-        "/info — информация о боте\n"
-    )
+async def cmd_help_group(message: Message) -> None:
+    await message.answer("/start — запустить бота\n/help — список команд\n/info — информация о боте\n")

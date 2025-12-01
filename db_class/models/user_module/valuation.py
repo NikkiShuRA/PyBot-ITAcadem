@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional
-
-from sqlalchemy import BigInteger, Integer, Text, ForeignKey
+from sqlalchemy import BigInteger, ForeignKey, Integer, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ...base_class import Base
@@ -22,7 +20,7 @@ class Valuation(Base):
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
     )
-    reason: Mapped[Optional[str]] = mapped_column(Text)
+    reason: Mapped[str | None] = mapped_column(Text)
     points: Mapped[int] = mapped_column(Integer, nullable=False)
 
     recipient: Mapped[object] = relationship(

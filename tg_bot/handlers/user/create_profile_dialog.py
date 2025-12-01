@@ -1,14 +1,14 @@
-from typing import Optional
-
 from aiogram.types import Message
-from aiogram_dialog import Dialog, Window, DialogManager
-from aiogram_dialog.widgets.text import Const, Format
+from aiogram_dialog import Dialog, DialogManager, Window
 from aiogram_dialog.widgets.input import MessageInput
-from aiogram_dialog.widgets.kbd import Cancel, Back
+from aiogram_dialog.widgets.kbd import Back, Cancel
+from aiogram_dialog.widgets.text import Const, Format
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from services.users import create_user_profile
+
 from .states import CreateProfileSG
+
 
 async def on_profile_start(
     start_data: dict,
@@ -67,7 +67,7 @@ async def on_patronymic_input(
         await manager.done()
         return
     first_name: str = dialog_data.get("first_name")
-    last_name: Optional[str] = dialog_data.get("last_name")
+    last_name: str | None = dialog_data.get("last_name")
 
     db: AsyncSession = manager.middleware_data["db"]
 

@@ -1,4 +1,4 @@
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
 
 request_contact_kb = ReplyKeyboardMarkup(
     keyboard=[[KeyboardButton(text="Отправить номер 📱", request_contact=True)]],

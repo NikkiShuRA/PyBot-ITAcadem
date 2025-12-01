@@ -1,8 +1,17 @@
 # services/users.py
+import enum
+import re
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from db_class.models import User
-import re
+
+
+class PhoneConstants(enum):
+    NumberLengthWithCountryCode = 11
+    NumberLengthWithoutCountryCode = 10
+
 
 def normalize_phone(phone_raw: str) -> str:
     """
@@ -14,28 +23,29 @@ def normalize_phone(phone_raw: str) -> str:
     digits = re.sub(r"\D", "", phone_raw)
 
     # вариант 1: уже с «8» или «7» и 11 цифр
-    if len(digits) == 11 and digits[0] in ("7", "8"):
+    if len(digits) == PhoneConstants.NumberLengthWithCountryCode and digits[0] in {"7", "8"}:
         digits = "7" + digits[1:]  # заменяем первую цифру на 7
     # вариант 2: 10 цифр (без кода страны)
-    elif len(digits) == 10:
+    elif len(digits) == PhoneConstants.NumberLengthWithoutCountryCode:
         digits = "7" + digits
     else:
         raise ValueError(f"Некорректный номер телефона: {phone_raw!r}")
 
     return f"+{digits}"
 
+
 async def get_user_by_telegram_id(
     db: AsyncSession,
     tg_id: int,
 ) -> User | None:
-    result = await db.execute(
-        select(User).where(User.telegram_id == tg_id)
-    )
+    result = await db.execute(select(User).where(User.telegram_id == tg_id))
     return result.scalar_one_or_none()
+
 
 async def get_user_by_phone(db: AsyncSession, phone: str) -> User | None:
     res = await db.execute(select(User).where(User.phone_number == phone))
     return res.scalar_one_or_none()
+
 
 async def attach_telegram_to_user(db: AsyncSession, user: User, tg_id: int) -> User:
     if user.telegram_id != tg_id:
@@ -44,7 +54,8 @@ async def attach_telegram_to_user(db: AsyncSession, user: User, tg_id: int) -> U
         await db.refresh(user)
     return user
 
-async def create_user_profile(
+
+async def create_user_profile(  # noqa: PLR0913
     db: AsyncSession,
     *,
     phone: str,

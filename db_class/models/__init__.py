@@ -45,7 +45,6 @@ from db_class.models.task_module import (
 
 __all__ = [
     "Base",
-
     # shared
     "Achievement",
     "AttachmentsType",
@@ -53,7 +52,6 @@ __all__ = [
     "CommentAnswer",
     "CommentAttachment",
     "Comment",
-
     # user_module
     "User",
     "UserActivityStatus",
@@ -65,7 +63,6 @@ __all__ = [
     "UserAchievement",
     "UserTask",
     "Valuation",
-
     # project_module
     "Project",
     "ProjectStatus",
@@ -74,7 +71,6 @@ __all__ = [
     "ProjectAttachment",
     "ProjectAchievement",
     "ProjectComment",
-
     # task_module
     "Task",
     "TaskAttachment",

@@ -1,7 +1,10 @@
 from __future__ import annotations
-from sqlalchemy import BigInteger, Text, ForeignKey
+
+from sqlalchemy import BigInteger, ForeignKey, Text
 from sqlalchemy.orm import Mapped, mapped_column
+
 from ..base_class import Base
+
 
 class Attachment(Base):
     __tablename__ = "attachments"

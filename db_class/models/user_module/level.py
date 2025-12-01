@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import List, Optional
-
 from sqlalchemy import BigInteger, Integer, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -13,10 +11,10 @@ class Level(Base):
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(Text, nullable=False)
-    description: Mapped[Optional[str]] = mapped_column(Text)
+    description: Mapped[str | None] = mapped_column(Text)
     required_points: Mapped[int] = mapped_column(Integer, nullable=False)
 
-    users: Mapped[List[object]] = relationship(
+    users: Mapped[list[object]] = relationship(
         "User",
         back_populates="level",
     )

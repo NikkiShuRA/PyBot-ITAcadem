@@ -1,4 +1,4 @@
-from aiogram import Router, F
+from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
 
@@ -8,6 +8,5 @@ global_router = Router()
 
 
 @global_router.message(Command("ping"))
-async def cmd_ping(message: Message):
+async def cmd_ping(message: Message) -> None:
     await message.answer("pong")
-
