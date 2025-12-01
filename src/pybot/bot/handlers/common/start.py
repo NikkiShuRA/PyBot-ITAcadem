@@ -31,15 +31,7 @@ async def cmd_start_private(message: Message, db: AsyncSession) -> None:
 # /start - в групповом чате
 @group_router.message(CommandStart())
 async def cmd_start_group(message: Message, db: AsyncSession) -> None:
-    user = await get_user_by_telegram_id(db, message.from_user.id)
-    if user:
-        await message.answer("Ты уже авторизован, /help — список команд.")
-        return
-
-    await message.answer(
-        "Для авторизации отправь свой номер телефона кнопкой ниже.",
-        reply_markup=request_contact_kb,
-    )
+    await message.answer("Всем привет!")
 
 
 @private_router.message(F.contact)

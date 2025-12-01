@@ -4,7 +4,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..db.models import User
 
 
-
 async def get_user_by_telegram_id(
     db: AsyncSession,
     tg_id: int,
