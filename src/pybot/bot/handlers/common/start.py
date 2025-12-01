@@ -6,7 +6,7 @@ from services.users import attach_telegram_to_user, get_user_by_phone, get_user_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ....utils.phone_utils import normalize_phone
-from ...dialogs.user.states import CreateProfileSG as ProfileSG
+from ...dialogs.user.states import CreateProfileSG
 from ...keyboards.auth import request_contact_kb
 
 private_router = Router()
@@ -60,7 +60,7 @@ async def handle_contact(message: Message, dialog_manager: DialogManager, db: As
 
     # пользователя нет — запускаем диалог создания профиля
     await dialog_manager.start(
-        ProfileSG.first_name,
+        CreateProfileSG.first_name,
         data={"phone": phone, "tg_id": tg_id},
     )
 
