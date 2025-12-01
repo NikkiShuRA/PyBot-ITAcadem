@@ -1,7 +1,6 @@
 from aiogram import Router, F
 from aiogram.filters import CommandStart, Command
 from aiogram.types import Message
-from aiogram.fsm.context import FSMContext
 from aiogram_dialog import DialogManager
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,7 +11,7 @@ from services.users import (
     attach_telegram_to_user,
     get_user_by_telegram_id 
 )
-from tg_bot.handlers.user.states import ProfileSG
+from tg_bot.handlers.user.states import CreateProfileSG
 from tg_bot.keyboards.auth import request_contact_kb
 
 private_router = Router()
@@ -35,15 +34,7 @@ async def cmd_start_private(message: Message, db: AsyncSession):
 # /start - в групповом чате
 @group_router.message(CommandStart())
 async def cmd_start_group(message: Message, db: AsyncSession):
-    user = await get_user_by_telegram_id(db, message.from_user.id)
-    if user:
-        await message.answer("Ты уже авторизован, /help — список команд.")
-        return
-
-    await message.answer(
-        "Для авторизации отправь свой номер телефона кнопкой ниже.",
-        reply_markup=request_contact_kb,
-    )
+    await message.answer("Всем привет!")
 
 @private_router.message(F.contact)
 async def handle_contact(message: Message, dialog_manager: DialogManager, db: AsyncSession):
@@ -52,7 +43,7 @@ async def handle_contact(message: Message, dialog_manager: DialogManager, db: As
         await message.answer("Нужен именно твой номер, а не чужой.")
         return
 
-    phone = normalize_phone(contact.phone_number)
+    phone = await normalize_phone(contact.phone_number)
     tg_id = message.from_user.id
 
     user = await get_user_by_phone(db, phone)
@@ -63,7 +54,7 @@ async def handle_contact(message: Message, dialog_manager: DialogManager, db: As
 
     # пользователя нет — запускаем диалог создания профиля
     await dialog_manager.start(
-        ProfileSG.first_name,
+        CreateProfileSG.first_name,
         data={"phone": phone, "tg_id": tg_id},
     )
 

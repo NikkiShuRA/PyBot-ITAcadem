@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from db_class.models import User
 import re
 
-def normalize_phone(phone_raw: str) -> str:
+async def normalize_phone(phone_raw: str) -> str:
     """
     Приводит номер к виду +7XXXXXXXXXX.
     Если номер некорректный — кидает ValueError.
@@ -24,6 +24,7 @@ def normalize_phone(phone_raw: str) -> str:
 
     return f"+{digits}"
 
+
 async def get_user_by_telegram_id(
     db: AsyncSession,
     tg_id: int,
@@ -33,9 +34,11 @@ async def get_user_by_telegram_id(
     )
     return result.scalar_one_or_none()
 
+
 async def get_user_by_phone(db: AsyncSession, phone: str) -> User | None:
     res = await db.execute(select(User).where(User.phone_number == phone))
     return res.scalar_one_or_none()
+
 
 async def attach_telegram_to_user(db: AsyncSession, user: User, tg_id: int) -> User:
     if user.telegram_id != tg_id:
@@ -43,6 +46,7 @@ async def attach_telegram_to_user(db: AsyncSession, user: User, tg_id: int) -> U
         await db.commit()
         await db.refresh(user)
     return user
+
 
 async def create_user_profile(
     db: AsyncSession,
