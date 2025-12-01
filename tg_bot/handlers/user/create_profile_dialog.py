@@ -8,7 +8,7 @@ from aiogram_dialog.widgets.kbd import Cancel, Back
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from services.users import create_user_profile
-from .states import ProfileSG
+from .states import CreateProfileSG
 
 async def on_profile_start(
     start_data: dict,
@@ -89,24 +89,24 @@ profile_create_dialog = Dialog(
         Const("👤 Как тебя зовут? (имя)"),
         MessageInput(on_first_name_input, filter=lambda m: m.text),
         Cancel(Const("❌ Отмена")),
-        state=ProfileSG.first_name,
+        state=CreateProfileSG.first_name,
     ),
     Window(
         Const("👨‍👩 Фамилия? (можно пропустить, отправив -)"),
         MessageInput(on_last_name_input, filter=lambda m: m.text),
         Back(Const("⬅️ Назад")),
-        state=ProfileSG.last_name,
+        state=CreateProfileSG.last_name,
     ),
     Window(
         Const("🆔 Отчество? (можно пропустить, отправив -)"),
         MessageInput(on_patronymic_input, filter=lambda m: m.text),
         Back(Const("⬅️ Назад")),
-        state=ProfileSG.patronymic,
+        state=CreateProfileSG.patronymic,
     ),
     Window(
         Format("✅ Профиль создан. Твой ID: {dialog_data[user_id]}"),
         Cancel(Const("🏠 На главную")),
-        state=ProfileSG.finish,
+        state=CreateProfileSG.finish,
     ),
     on_start=on_profile_start,
 )

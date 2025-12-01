@@ -16,6 +16,11 @@ global_router = Router()
 global_router.message.filter(F.chat.type.in_({"private", "group", "supergroup"}))
 
 
+# Общий роутер модуля
+common_router = Router()
+common_router.include_routers(private_router, group_router, global_router)
+
+
 # Подключаем хендлеры
 private_router.include_router(start.private_router)
 private_router.include_router(misc.private_router)
