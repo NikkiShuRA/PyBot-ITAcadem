@@ -7,7 +7,7 @@ class PhoneConstants(Enum):
     NumberLengthWithoutCountryCode = 10
 
 
-def normalize_phone(phone_raw: str) -> str:
+async def normalize_phone(phone_raw: str) -> str:
     """
     Приводит номер к виду +7XXXXXXXXXX.
     Если номер некорректный — кидает ValueError.

@@ -49,7 +49,7 @@ async def handle_contact(message: Message, dialog_manager: DialogManager, db: As
         await message.answer("Нужен именно твой номер, а не чужой.")
         return
 
-    phone = normalize_phone(contact.phone_number)
+    phone = await normalize_phone(contact.phone_number)
     tg_id = message.from_user.id
 
     user = await get_user_by_phone(db, phone)
