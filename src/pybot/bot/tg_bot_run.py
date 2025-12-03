@@ -6,6 +6,7 @@ from aiogram import BaseMiddleware, Bot, Dispatcher
 from aiogram.types import Update
 from aiogram_dialog import setup_dialogs
 
+from ..bot.handlers.common import common_router
 from ..core import logger
 from ..core.config import settings
 from ..db.database import SessionLocal, init_db
