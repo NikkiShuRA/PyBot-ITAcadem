@@ -1,6 +1,6 @@
 [project]
 name = "pybot-itacadem"
-version = "0.1.2"
+version = "0.1.3"
 description = "PyBot — an asynchronous Telegram bot written in Python"
 readme = "README.md"
 requires-python = ">=3.12"
