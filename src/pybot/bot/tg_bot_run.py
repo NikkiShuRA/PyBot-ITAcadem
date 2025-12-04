@@ -7,6 +7,7 @@ from aiogram.types import Update
 from aiogram_dialog import setup_dialogs
 
 from ..bot.handlers.common import common_router
+from ..core import logger
 from ..core.config import settings
 from ..db.database import SessionLocal, init_db
 
@@ -39,5 +40,5 @@ async def tg_bot_main() -> None:
     # сбросить накопившиеся апдейты
     await bot.delete_webhook(drop_pending_updates=True)
 
-    print("Запуск бота")
+    logger.info("Запуск бота")
     await dp.start_polling(bot)

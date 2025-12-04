@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
+from ..core import logger
 from ..core.config import settings
 from .base_class import Base
 
@@ -19,4 +20,4 @@ async def init_db() -> None:
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
     except Exception as ex:
-        print(f"Ошибка при инициализации БД {ex}")
+        logger.error(f"Ошибка при инициализации БД {ex}")
