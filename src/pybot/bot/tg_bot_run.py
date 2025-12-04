@@ -46,7 +46,7 @@ class DbSessionMiddleware(BaseMiddleware):
 async def tg_bot_main() -> None:
     await init_db()
 
-    bot = Bot(settings.bot_token)
+    bot = Bot(settings.bot_token_test)
     dp = Dispatcher()
     dp.message.middleware(DbSessionMiddleware())
 
