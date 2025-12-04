@@ -2,6 +2,7 @@ from aiogram import F
 from aiogram.filters import Command, CommandStart
 from aiogram.types import Message
 from aiogram_dialog import DialogManager
+from ....services.users import attach_telegram_to_user, get_user_by_phone, get_user_by_telegram_id
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ....services.users import attach_telegram_to_user, get_user_by_phone, get_user_by_telegram_id
