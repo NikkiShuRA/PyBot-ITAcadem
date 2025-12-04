@@ -1,21 +1,25 @@
-# # tg_bot/handlers/common/__init__.py
+from aiogram import Router, F
 
+from .start import (
+    start_private_router,
+    start_group_router,
+    start_global_router,
+)
 
-# # Роутер для личных чатов
+from .misc import misc_global_router
 
-from .. import private_router, group_router, global_router
+from ...filters import create_chat_type_routers
 
-# Общий роутер модуля
-# common_router = Router()
-# common_router.include_routers(private_router, group_router, global_router)
+common_private_router, common_group_router, common_global_router = create_chat_type_routers("common")
 
+common_private_router.include_router(start_private_router)
+common_group_router.include_router(start_group_router)
+common_global_router.include_router(start_global_router)
+common_global_router.include_router(misc_global_router)
 
-# # Подключаем хендлеры
-# private_router.include_router(start.private_router)
-# private_router.include_router(misc.private_router)
-
-# group_router.include_router(start.group_router)
-# group_router.include_router(misc.group_router)
-
-# global_router.include_router(start.global_router)
-# global_router.include_router(misc.global_router)
+common_router = Router(name="common")
+common_router.include_routers(
+    common_private_router,
+    common_group_router,
+    common_global_router,
+)

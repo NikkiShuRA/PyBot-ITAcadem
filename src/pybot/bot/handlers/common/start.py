@@ -6,12 +6,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ....services.users import attach_telegram_to_user, get_user_by_phone, get_user_by_telegram_id
 from ...dialogs.user.states import CreateProfileSG
+from ...filters import create_chat_type_routers
 from ...keyboards.auth import request_contact_kb
-from . import global_router, group_router, private_router
+
+start_private_router, start_group_router, start_global_router = create_chat_type_routers("start")
 
 
 # /start - в личном чате
-@private_router.message(CommandStart())
+@start_private_router.message(CommandStart())
 async def cmd_start_private(message: Message, db: AsyncSession) -> None:
     user = await get_user_by_telegram_id(db, message.from_user.id)
     if user:
@@ -25,12 +27,12 @@ async def cmd_start_private(message: Message, db: AsyncSession) -> None:
 
 
 # /start - в групповом чате
-@group_router.message(CommandStart())
+@start_global_router.message(CommandStart())
 async def cmd_start_group(message: Message, db: AsyncSession) -> None:
     await message.answer("Всем привет!")
 
 
-@private_router.message(F.contact)
+@start_private_router.message(F.contact)
 async def handle_contact(message: Message, dialog_manager: DialogManager, db: AsyncSession) -> None:
     contact = message.contact
     if contact.user_id != message.from_user.id:
@@ -55,7 +57,7 @@ async def handle_contact(message: Message, dialog_manager: DialogManager, db: As
 
 
 # /info - в личном/групповом чате
-@global_router.message(Command("info"))
+@start_global_router.message(Command("info"))
 async def cmd_info(message: Message) -> None:
     await message.answer(
         "Привет! 👋\n"
@@ -78,12 +80,7 @@ async def cmd_info(message: Message) -> None:
 
 
 # /help - в личном чате
-@private_router.message(Command("help"))
-async def cmd_help_private(message: Message) -> None:
-    await message.answer("/start — запустить бота\n/help — список команд\n/info — информация о боте\n")
-
-
-# /help - в групповом чате
-@group_router.message(Command("help"))
-async def cmd_help_group(message: Message) -> None:
+@start_group_router.message(Command("help"))
+@start_private_router.message(Command("help"))
+async def cmd_help(message: Message) -> None:
     await message.answer("/start — запустить бота\n/help — список команд\n/info — информация о боте\n")
