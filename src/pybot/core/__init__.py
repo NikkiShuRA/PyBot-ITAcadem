@@ -1,7 +1,11 @@
 from .config import settings
 from .logger import setup_logger
-from loguru import Logger
+from typing import TYPE_CHECKING
 
-logger: Logger = setup_logger()
+if TYPE_CHECKING:
+    # Этот импорт будет виден Mypy, но проигнорируется Python
+    from loguru import Logger
+
+logger: "Logger" = setup_logger()
 
 __all__ = ["settings", "logger"]

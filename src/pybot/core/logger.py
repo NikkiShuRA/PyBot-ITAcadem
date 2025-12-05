@@ -2,11 +2,14 @@
 from __future__ import annotations
 
 import sys
+from typing import TYPE_CHECKING
 
-from loguru import Logger
 from loguru import logger as loguru_logger
 
 from .config import settings
+
+if TYPE_CHECKING:
+    from loguru import Logger
 
 
 def setup_logger() -> Logger:
