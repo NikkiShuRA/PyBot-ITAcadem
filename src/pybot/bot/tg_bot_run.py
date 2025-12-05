@@ -8,7 +8,7 @@ from aiogram_dialog import setup_dialogs
 
 from ..core import logger
 from ..core.config import settings
-from ..db.database import SessionLocal, init_db
+from ..db.database import SessionLocal
 from .dialogs import user_router
 from .handlers import common_router
 
@@ -26,8 +26,6 @@ class DbSessionMiddleware(BaseMiddleware):
 
 
 async def tg_bot_main() -> None:
-    await init_db()
-
     bot = Bot(settings.bot_token_test)
     dp = Dispatcher()
     dp.message.middleware(DbSessionMiddleware())
