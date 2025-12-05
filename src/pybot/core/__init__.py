@@ -1,6 +1,6 @@
 from .config import settings
 from .logger import setup_logger
-from logging import Logger
+from loguru import Logger
 
 logger: Logger = setup_logger()
 

@@ -3,8 +3,9 @@ from typing import Any
 
 # простейший middleware для сессии БД
 from aiogram import BaseMiddleware, Bot, Dispatcher
-from aiogram.types import Update
+from aiogram.types import TelegramObject, Update
 from aiogram_dialog import setup_dialogs
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from ..core import logger
 from ..core.config import settings
@@ -14,13 +15,20 @@ from .handlers import common_router
 
 
 class DbSessionMiddleware(BaseMiddleware):
+    def __init__(self, session_maker: async_sessionmaker[AsyncSession]) -> None:
+        super().__init__()
+        self.session_maker = session_maker
+
     async def __call__(
         self,
-        handler: Callable[[Update, dict[str, Any]], Awaitable[Any]],
-        event: Update,
+        handler: Callable[[TelegramObject, dict[str, Any]], Awaitable[Any]],
+        event: TelegramObject,
         data: dict[str, Any],
     ) -> Any:
-        async with SessionLocal() as session:
+        if not isinstance(event, Update):
+            return await handler(event, data)
+
+        async with self.session_maker() as session:
             data["db"] = session
             return await handler(event, data)
 
@@ -28,7 +36,7 @@ class DbSessionMiddleware(BaseMiddleware):
 async def tg_bot_main() -> None:
     bot = Bot(settings.bot_token_test)
     dp = Dispatcher()
-    dp.message.middleware(DbSessionMiddleware())
+    dp.message.middleware(DbSessionMiddleware(SessionLocal))
 
     # Подключаем остальные роутеры common
     dp.include_router(common_router)

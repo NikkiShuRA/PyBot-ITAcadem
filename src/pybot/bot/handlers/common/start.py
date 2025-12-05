@@ -1,6 +1,6 @@
 from aiogram import F
 from aiogram.filters import Command, CommandStart
-from aiogram.types import Message
+from aiogram.types import Contact, Message
 from aiogram_dialog import DialogManager
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,15 +15,21 @@ start_private_router, start_group_router, start_global_router = create_chat_type
 # /start - в личном чате
 @start_private_router.message(CommandStart())
 async def cmd_start_private(message: Message, db: AsyncSession) -> None:
-    user = await get_user_by_telegram_id(db, message.from_user.id)
+    if message.from_user:
+        user = await get_user_by_telegram_id(db, message.from_user.id)
+    else:
+        await message.answer(
+            "Произошла ошибка при обработке пользователя.",
+        )
+        return
     if user:
         await message.answer("Ты уже авторизован, /help — список команд.")
         return
-
-    await message.answer(
-        "Для авторизации отправь свой номер телефона кнопкой ниже.",
-        reply_markup=request_contact_kb,
-    )
+    else:
+        await message.answer(
+            "Для авторизации отправь свой номер телефона кнопкой ниже.",
+            reply_markup=request_contact_kb,
+        )
 
 
 # /start - в групповом чате
@@ -34,14 +40,22 @@ async def cmd_start_group(message: Message, db: AsyncSession) -> None:
 
 @start_private_router.message(F.contact)
 async def handle_contact(message: Message, dialog_manager: DialogManager, db: AsyncSession) -> None:
-    contact = message.contact
-    if contact.user_id != message.from_user.id:
-        await message.answer("Нужен именно твой номер, а не чужой.")
+    contact: Contact | None = message.contact
+    if message.from_user:
+        if contact and contact.user_id != message.from_user.id:
+            await message.answer("Нужен именно твой номер, а не чужой.")
+            return
+    else:
+        await message.answer(
+            "Произошла ошибка при обработке пользователя.",
+        )
+        return
+    if contact is None:
+        await message.answer("Произошла ошибка при получении контакта. Попробуй ещё раз.")
         return
 
-    # phone = await normalize_phone(contact.phone_number)
-    phone = contact.phone_number
-    tg_id = message.from_user.id
+    phone: str = contact.phone_number
+    tg_id: int = message.from_user.id
 
     user = await get_user_by_phone(db, phone)
     if user:

@@ -1,12 +1,15 @@
 # src/pybot/core/logger.py
+from __future__ import annotations
+
 import sys
 
+from loguru import Logger
 from loguru import logger as loguru_logger
 
 from .config import settings
 
 
-def setup_logger() -> loguru_logger:
+def setup_logger() -> Logger:
     """Настройка и инициализация логгера."""
     loguru_logger.remove()
 

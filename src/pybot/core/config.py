@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -22,11 +24,8 @@ class BotSettings(BaseSettings):
     log_level: str = Field("INFO", alias="LOG_LEVEL", description="Уровень логирования")
     debug: bool = Field(False, alias="DEBUG", description="Режим отладки")
 
-    log_level: str = Field("INFO", alias="LOG_LEVEL", description="Уровень логирования")
-    debug: bool = Field(False, alias="DEBUG", description="Режим отладки")
-
     @model_validator(mode="after")
-    def assemble_db_url(self) -> BaseSettings:
+    def assemble_db_url(self) -> BotSettings:
         """Автоматически формирует URL для подключения к БД"""
         if self.database_url is None:
             self.database_url = (
@@ -35,4 +34,4 @@ class BotSettings(BaseSettings):
         return self
 
 
-settings: BotSettings = BotSettings()
+settings: BotSettings = BotSettings()  # type: ignore[call-arg]

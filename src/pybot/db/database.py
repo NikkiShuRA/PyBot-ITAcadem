@@ -4,6 +4,9 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from ..core.config import settings
 
+if not settings.database_url:
+    raise ValueError("Database URL is not configured.")
+
 engine = create_async_engine(settings.database_url, echo=False)
 
 SessionLocal = async_sessionmaker(

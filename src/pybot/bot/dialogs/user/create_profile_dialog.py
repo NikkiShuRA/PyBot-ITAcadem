@@ -1,3 +1,5 @@
+from typing import Any, TypedDict
+
 from aiogram.types import Message
 from aiogram_dialog import Dialog, DialogManager, Window
 from aiogram_dialog.widgets.input import MessageInput
@@ -9,8 +11,21 @@ from ....services.users import create_user_profile
 from .states import CreateProfileSG
 
 
+class CreateProfileData(TypedDict, total=False):
+    """
+    Структура данных для диалога создания профиля.
+    total=False означает, что ключи могут отсутствовать.
+    """
+
+    phone: str
+    tg_id: int
+    first_name: str
+    last_name: str | None
+    user_id: int
+
+
 async def on_profile_start(
-    start_data: dict,
+    start_data: dict[Any, Any],
     manager: DialogManager,
 ) -> None:
     # сюда прилетит data из dialog_manager.start(...)
@@ -27,7 +42,7 @@ async def on_first_name_input(
     manager: DialogManager,
 ) -> None:
     """Обработка ввода имени."""
-    first_name = message.text.strip() if message.text else ""
+    first_name: str = message.text.strip() if message.text else ""
     if not first_name:
         await message.answer("❌ Имя не может быть пустым. Попробуйте снова.")
         return
@@ -59,13 +74,15 @@ async def on_patronymic_input(
     patronymic = None if text == "-" or not text else text
 
     dialog_data = manager.dialog_data
-    phone: str = dialog_data.get("phone")
-    tg_id: int = dialog_data.get("tg_id")
+    phone: str | None = dialog_data.get("phone")
+    tg_id: int | None = dialog_data.get("tg_id")
     if not phone or not tg_id:
         await message.answer("Ошибка: нет данных для создания профиля, попробуй ещё раз /start")
         await manager.done()
         return
-    first_name: str = dialog_data.get("first_name")
+    first_name: str | None = dialog_data.get("first_name")
+    if first_name is None:
+        raise ValueError("Ошибка: нет данных для создания профиля, имя отсуствует.")
     last_name: str | None = dialog_data.get("last_name")
 
     db: AsyncSession = manager.middleware_data["db"]

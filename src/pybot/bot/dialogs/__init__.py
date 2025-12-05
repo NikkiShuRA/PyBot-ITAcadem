@@ -1,1 +1,1 @@
-from .user import user_router
+from .user import user_router as user_router
