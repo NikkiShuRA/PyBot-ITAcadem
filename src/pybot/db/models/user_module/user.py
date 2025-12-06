@@ -28,7 +28,8 @@ class User(Base):
         BigInteger,
         ForeignKey("user_activity_statuses.id"),
     )
-    points: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    academic_points: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    reputation_points: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     level_id: Mapped[int | None] = mapped_column(
         BigInteger,
         ForeignKey("levels.id"),
