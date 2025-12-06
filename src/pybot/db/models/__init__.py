@@ -20,7 +20,6 @@ from .user_module import (
     Competence,
     UserCompetence,
     UserAchievement,
-    UserTask,
     Valuation,
 )
 
@@ -61,7 +60,6 @@ __all__ = [
     "Competence",
     "UserCompetence",
     "UserAchievement",
-    "UserTask",
     "Valuation",
     # project_module
     "Project",
