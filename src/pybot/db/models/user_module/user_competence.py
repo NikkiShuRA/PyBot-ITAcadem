@@ -1,9 +1,15 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from sqlalchemy import BigInteger, Boolean, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ...base_class import Base
+
+if TYPE_CHECKING:
+    from .competence import Competence
+    from .user import User
 
 
 class UserCompetence(Base):
@@ -14,6 +20,7 @@ class UserCompetence(Base):
         ForeignKey("users.id", ondelete="CASCADE"),
         primary_key=True,
     )
+
     competence_id: Mapped[int] = mapped_column(
         BigInteger,
         ForeignKey("competencies.id", ondelete="CASCADE"),
@@ -21,11 +28,12 @@ class UserCompetence(Base):
     )
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
-    user: Mapped[object] = relationship(
+    user: Mapped[User] = relationship(
         "User",
         back_populates="competencies",
     )
-    competence: Mapped[object] = relationship(
+
+    competence: Mapped[Competence] = relationship(
         "Competence",
         back_populates="user_competencies",
     )
