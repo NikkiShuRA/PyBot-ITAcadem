@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 from sqlalchemy import BigInteger, ForeignKey, Integer, Text
+from sqlalchemy.dialects.postgresql import ENUM
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from ....core.constants import PointsTypeEnum
 from ...base_class import Base
+from .user import User
 
 
 class Valuation(Base):
@@ -22,13 +25,15 @@ class Valuation(Base):
     )
     reason: Mapped[str | None] = mapped_column(Text)
     points: Mapped[int] = mapped_column(Integer, nullable=False)
-
-    recipient: Mapped[object] = relationship(
+    points_type: Mapped[PointsTypeEnum] = mapped_column(
+        ENUM(PointsTypeEnum, name="points_type_enum", create_type=True), nullable=False
+    )
+    recipient: Mapped[User] = relationship(
         "User",
         foreign_keys=[recipient_id],
         back_populates="valuations_received",
     )
-    giver: Mapped[object] = relationship(
+    giver: Mapped[User] = relationship(
         "User",
         foreign_keys=[giver_id],
         back_populates="valuations_given",

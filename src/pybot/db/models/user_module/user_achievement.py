@@ -1,9 +1,15 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from sqlalchemy import BigInteger, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ...base_class import Base
+
+if TYPE_CHECKING:
+    from ..achievement import Achievement
+    from .user import User
 
 
 class UserAchievement(Base):
@@ -20,11 +26,12 @@ class UserAchievement(Base):
         primary_key=True,
     )
 
-    user: Mapped[object] = relationship(
+    user: Mapped[User] = relationship(
         "User",
         back_populates="achievements",
     )
-    achievement: Mapped[object] = relationship(
+
+    achievement: Mapped[Achievement] = relationship(
         "Achievement",
         back_populates="user_achievements",
     )

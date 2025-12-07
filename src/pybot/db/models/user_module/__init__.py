@@ -8,7 +8,6 @@ from .level import Level
 from .competence import Competence
 from .user_competence import UserCompetence
 from .user_achievement import UserAchievement
-from .user_tasks import UserTask
 from .valuation import Valuation
 
 __all__ = [
