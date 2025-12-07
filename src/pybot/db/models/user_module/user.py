@@ -1,11 +1,26 @@
 from __future__ import annotations
 
 from datetime import date
+from typing import TYPE_CHECKING
 
 from sqlalchemy import BigInteger, Date, ForeignKey, Integer, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ...base_class import Base
+
+if TYPE_CHECKING:
+    from ..comments import Comment
+    from ..project_module import Project, ProjectMember
+    from ..task_module import Task, TaskSolution
+    from ..user_module import (
+        AcademicRole,
+        AdminRole,
+        Level,
+        UserAchievement,
+        UserActivityStatus,
+        UserCompetence,
+        Valuation,
+    )
 
 
 class User(Base):
@@ -43,40 +58,60 @@ class User(Base):
         ForeignKey("admin_roles.id"),
     )
 
-    activity_status: Mapped[object | None] = relationship(
+    activity_status: Mapped[UserActivityStatus | None] = relationship(
         "UserActivityStatus",
         back_populates="users",
     )
-    level: Mapped[object | None] = relationship(
+
+    level: Mapped[Level | None] = relationship(
         "Level",
         back_populates="users",
     )
-    academic_role: Mapped[object | None] = relationship(
+
+    academic_role: Mapped[AcademicRole | None] = relationship(
         "AcademicRole",
         back_populates="users",
     )
-    admin_role: Mapped[object | None] = relationship(
+
+    admin_role: Mapped[AdminRole | None] = relationship(
         "AdminRole",
         back_populates="users",
     )
 
-    competencies: Mapped[list[object]] = relationship(
+    competencies: Mapped[list[UserCompetence]] = relationship(
         "UserCompetence",
         back_populates="user",
         cascade="all, delete-orphan",
     )
-    achievements: Mapped[list[object]] = relationship(
+
+    achievements: Mapped[list[UserAchievement]] = relationship(
         "UserAchievement",
         back_populates="user",
         cascade="all, delete-orphan",
     )
-    valuations_received: Mapped[list[object]] = relationship(
+
+    valuations_received: Mapped[list[Valuation]] = relationship(
         "Valuation",
         foreign_keys="Valuation.recipient_id",
         back_populates="recipient",
     )
-    valuations_given: Mapped[list[object]] = relationship(
+
+    valuations_given: Mapped[list[Valuation]] = relationship(
         "Valuation",
         foreign_keys="Valuation.giver_id",
         back_populates="giver",
+    )
+
+    created_tasks: Mapped[list[Task]] = relationship("Task", back_populates="author")
+    solutions: Mapped[list[TaskSolution]] = relationship("TaskSolution", back_populates="author")
+
+    created_projects: Mapped[list[Project]] = relationship(
+        "Project",
+        foreign_keys="Project.user_id",  # Указываем ForeignKey для SQLAlchemy
+        back_populates="author",
+    )
+
+    comments: Mapped[list[Comment]] = relationship("Comment", back_populates="author")
+    projects: Mapped[list[ProjectMember]] = relationship(
+        "ProjectMember", back_populates="user", cascade="all, delete-orphan"
     )
