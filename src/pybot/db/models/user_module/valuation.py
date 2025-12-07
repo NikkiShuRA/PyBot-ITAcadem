@@ -10,7 +10,7 @@ from .user import User
 
 
 class Valuation(Base):
-    __tablename__ = "valuation"
+    __tablename__ = "valuations"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     recipient_id: Mapped[int] = mapped_column(
