@@ -11,7 +11,7 @@ from ....core.constants import PointsTypeEnum
 from ....db.models import User
 from ....services.points import adjust_user_points
 from ....services.users import get_user_by_telegram_id
-from ...filters import check_text_message_correction, create_chat_type_routers
+from ...filters import check_text_message_correction, create_chat_type_routers, validate_points_value
 
 (_, _, grand_points_global_router) = create_chat_type_routers("grand_points")
 
@@ -138,9 +138,14 @@ async def _handle_points_command(
         logger.warning(f"Не удалось определить целевого пользователя: {message.text}")
         return
 
-    # 👈 Вот тут меняем на новую функцию
     points, reason = await _extract_points_and_reason(message)
     if points is None:
+        return
+
+    try:
+        validate_points_value(points)
+    except ValueError as e:
+        await message.reply(f"❌ {e}")
         return
 
     recipient_user: User | None = await get_user_by_telegram_id(db, target_user_id)
