@@ -2,3 +2,4 @@ from .chat_filters import IS_ANY_CHAT, IS_GROUP, IS_PRIVATE
 
 from .router_factories import create_chat_type_routers as create_chat_type_routers
 from .message_value_filters import check_text_message_correction as check_text_message_correction
+from .message_value_filters import validate_points_value as validate_points_value
