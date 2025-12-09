@@ -15,10 +15,10 @@ if TYPE_CHECKING:
     from ..user_module import (
         AcademicRole,
         AdminRole,
-        Level,
         UserAchievement,
         UserActivityStatus,
         UserCompetence,
+        UserLevel,
         Valuation,
     )
 
@@ -45,10 +45,6 @@ class User(Base):
     )
     academic_points: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     reputation_points: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    level_id: Mapped[int | None] = mapped_column(
-        BigInteger,
-        ForeignKey("levels.id"),
-    )
     academic_role_id: Mapped[int | None] = mapped_column(
         BigInteger,
         ForeignKey("academic_roles.id"),
@@ -63,9 +59,11 @@ class User(Base):
         back_populates="users",
     )
 
-    level: Mapped[Level | None] = relationship(
-        "Level",
-        back_populates="users",
+    user_levels: Mapped[UserLevel] = relationship(
+        "UserLevel",
+        back_populates="user",
+        foreign_keys="UserLevel.user_id",
+        cascade="all, delete-orphan",
     )
 
     academic_role: Mapped[AcademicRole | None] = relationship(
