@@ -1,10 +1,10 @@
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..core import logger
 from ..core.constants import PointsTypeEnum
 from ..db.models import User, Valuation
-from ..db.models.user_module import Level, UserLevel
+from .levels import get_level_by_id, get_next_level, get_user_current_level
+from .users import get_user_by_id
 
 
 async def adjust_user_points(  # noqa: PLR0913, PLR0917
@@ -18,9 +18,7 @@ async def adjust_user_points(  # noqa: PLR0913, PLR0917
     """Изменяет баллы пользователя и обновляет уровень если необходимо."""
 
     # Получаем пользователя
-    recipient = await db.execute(select(User).where(User.id == recipient_id))
-    recipient_user = recipient.scalar_one_or_none()
-
+    recipient_user = await get_user_by_id(db, recipient_id)
     if recipient_user is None:
         raise ValueError(f"Получатель с ID {recipient_id} не найден.")
 
@@ -44,58 +42,25 @@ async def adjust_user_points(  # noqa: PLR0913, PLR0917
     else:
         raise ValueError("Неизвестный тип баллов.")
 
-    if getattr(recipient_user, f"{points_type.value}_points") < 0:
-        setattr(recipient_user, f"{points_type.value}_points", 0)
-        current_points = 0
+    # Получаем текущий уровень пользователя
+    current_user_level = await get_user_current_level(db, recipient_user.id, points_type)
 
-    has_level_change = True
-    while has_level_change:
-        has_level_change = False
-        # Получаем текущий уровень пользователя
-        current_user_level = await db.execute(
-            select(UserLevel)
-            .join(Level)
-            .where(UserLevel.user_id == recipient_user.id, Level.level_type == points_type)
-            .order_by(Level.required_points.desc())
-            .limit(1)
-        )
-        current_level_obj = current_user_level.scalar_one_or_none()
+    if current_user_level is None:
+        raise ValueError(f"Текущий уровень для пользователя с ID {recipient_id} и типа {points_type.value} не найден.")
 
-        if not current_level_obj:
-            has_level_change = False
-            continue
+    current_level = await get_level_by_id(db, current_user_level.level_id)
+    if current_level is None:
+        raise ValueError(f"Уровень с ID {current_user_level.level_id} не найден.")
 
-        current_level = await db.execute(select(Level).where(Level.id == current_level_obj.level_id))
-        current_level_data = current_level.scalar_one()
+    # Проверяем, достиг ли пользователь следующего уровня
+    if current_points >= current_level.required_points:
+        next_level = await get_next_level(db, current_level, points_type)
 
-        if points >= 0:
-            # Ищем СЛЕДУЮЩИЙ уровень
-            next_level = await db.execute(
-                select(Level)
-                .where(Level.level_type == points_type, Level.required_points > current_level_data.required_points)
-                .order_by(Level.required_points.asc())
-                .limit(1)
-            )
-            next_level_obj = next_level.scalar_one_or_none()
-
-            if next_level_obj is not None and current_points >= next_level_obj.required_points:
-                current_level_obj.level_id = next_level_obj.id
-                has_level_change = True
-                logger.info(f"Пользователь {recipient_user.id} повышен до {next_level_obj.name}")
+        if next_level:
+            current_user_level.level_id = next_level.id
+            logger.info(f"Пользователь {recipient_user.id} повышен до уровня {next_level.name} ({points_type.value}).")
         else:
-            # Ищем ПРЕДЫДУЩИЙ уровень
-            prev_level = await db.execute(
-                select(Level)
-                .where(Level.level_type == points_type, Level.required_points < current_level_data.required_points)
-                .order_by(Level.required_points.desc())
-                .limit(1)
-            )
-            prev_level_obj = prev_level.scalar_one_or_none()
-
-            if prev_level_obj is not None and current_points < current_level_data.required_points:
-                current_level_obj.level_id = prev_level_obj.id
-                has_level_change = True
-                logger.info(f"Пользователь {recipient_user.id} понижен до {prev_level_obj.name}")
+            logger.info(f"Пользователь {recipient_user.id} достиг максимального уровня ({points_type.value}).")
 
     await db.commit()
     await db.refresh(recipient_user)
