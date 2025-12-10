@@ -15,7 +15,7 @@ from src.pybot.core.logger import setup_logger
 from src.pybot.db.database import SessionLocal, engine
 from src.pybot.db.models import Level
 
-from .src import create_user_profile, update_user_points_by_id
+from .src.pybot import create_user_profile, update_user_points_by_id
 
 logger = setup_logger()
 fake = Faker("ru_RU")
