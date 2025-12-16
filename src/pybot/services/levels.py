@@ -57,6 +57,21 @@ async def get_next_level(
     return result.scalar_one_or_none()
 
 
+async def get_previous_level(db: AsyncSession, current_level: Level, points_type: PointsTypeEnum) -> Level | None:
+    """
+    Находит предыдущий уровень для заданного типа баллов.
+    Предполагается, что уровни можно отсортировать по 'required_points'.
+    """
+    query = (
+        select(Level)
+        .where(Level.level_type == points_type, Level.required_points < current_level.required_points)
+        .order_by(Level.required_points.desc())  # Сортируем по убыванию, чтобы найти ближайший меньший
+        .limit(1)
+    )
+    result = await db.execute(query)
+    return result.scalars().first()
+
+
 async def get_level_by_id(db: AsyncSession, level_id: int) -> Level | None:
     """Получить уровень по ID"""
     stmt = select(Level).where(Level.id == level_id)

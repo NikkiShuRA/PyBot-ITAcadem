@@ -3,19 +3,68 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..core import logger
 from ..core.constants import PointsTypeEnum
 from ..db.models import User, Valuation
-from .levels import get_level_by_id, get_next_level, get_user_current_level
+from ..db.models.user_module import UserLevel
+from .levels import get_level_by_id, get_next_level, get_previous_level, get_user_current_level
+from .schemas import AdjustUserPointsDTO, UpdateUserLevelDTO
 from .users import get_user_by_id
 
 
-async def adjust_user_points(  # noqa: PLR0913, PLR0917
+async def update_user_level(db: AsyncSession, dto: UpdateUserLevelDTO) -> UserLevel:
+    """Обновляет уровень пользователя, принимает DTO с данными."""
+    current_user = dto.user
+    current_user_level = dto.user_level
+    points_type = dto.points_type
+    current_points = dto.current_points
+    inputed_points = dto.inputed_points
+
+    has_level_changed = True
+    # Нужна начальная ссылка на текущий уровень для проверки понижения
+    current_level = await get_level_by_id(db, current_user_level.level_id)
+    while has_level_changed:
+        has_level_changed = False
+        if inputed_points > 0:
+            next_level = await get_next_level(db, current_user_level, points_type)
+
+            # Проверяем, достаточно ли баллов для СЛЕДУЮЩЕГО уровня
+            if next_level and current_points >= next_level.required_points:
+                current_user_level.level_id = next_level.id
+                logger.info(
+                    f"Пользователь {current_user.id} повышен до уровня {next_level.name} {next_level.required_points} ({points_type.value})."  # noqa: E501
+                )
+                has_level_changed = True
+                current_level = next_level
+            elif not next_level:
+                logger.info(f"Пользователь {current_user.id} достиг максимального уровня ({points_type.value}).")
+
+        # 2. Логика понижения уровня (срабатывает только при снятии баллов)
+        elif inputed_points < 0:
+            # Проверяем, стало ли баллов меньше, чем нужно для ТЕКУЩЕГО уровня
+            if current_points < current_level.required_points:
+                previous_level = await get_previous_level(db, current_level, points_type)
+
+                if previous_level:
+                    current_user_level.level_id = previous_level.id
+                    logger.info(
+                        f"Пользователь {current_user.id} понижен до уровня {previous_level.name} {previous_level.required_points} ({points_type.value})."  # noqa: E501
+                    )
+                    has_level_changed = True
+                    current_level = previous_level
+                else:
+                    logger.info(
+                        f"Пользователь {current_user.id} на минимальном уровне ({points_type.value}) и не может быть понижен."  # noqa: E501
+                    )
+
+
+async def adjust_user_points(
     db: AsyncSession,
-    recipient_id: int,
-    giver_id: int,
-    points: int,
-    points_type: PointsTypeEnum,
-    reason: str | None = None,
+    dto: AdjustUserPointsDTO,
 ) -> User:
     """Изменяет баллы пользователя и обновляет уровень если необходимо."""
+    recipient_id = dto.recipient_id
+    giver_id = dto.giver_id
+    points = dto.points
+    points_type = dto.points_type
+    reason = dto.reason
 
     # Получаем пользователя
     recipient_user = await get_user_by_id(db, recipient_id)
@@ -52,15 +101,16 @@ async def adjust_user_points(  # noqa: PLR0913, PLR0917
     if current_level is None:
         raise ValueError(f"Уровень с ID {current_user_level.level_id} не найден.")
 
-    # Проверяем, достиг ли пользователь следующего уровня
-    if current_points >= current_level.required_points:
-        next_level = await get_next_level(db, current_level, points_type)
-
-        if next_level:
-            current_user_level.level_id = next_level.id
-            logger.info(f"Пользователь {recipient_user.id} повышен до уровня {next_level.name} ({points_type.value}).")
-        else:
-            logger.info(f"Пользователь {recipient_user.id} достиг максимального уровня ({points_type.value}).")
+    current_level = await update_user_level(
+        db,
+        UpdateUserLevelDTO(
+            user=recipient_user,
+            user_level=current_user_level,
+            points_type=points_type,
+            current_points=current_points,
+            inputed_points=points,
+        ),
+    )
 
     await db.commit()
     await db.refresh(recipient_user)

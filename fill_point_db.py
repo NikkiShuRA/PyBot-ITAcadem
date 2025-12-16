@@ -10,12 +10,12 @@ from faker import Faker
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.pybot import create_user_profile, update_user_points_by_id
 from src.pybot.core.constants import PointsTypeEnum
 from src.pybot.core.logger import setup_logger
 from src.pybot.db.database import SessionLocal, engine
 from src.pybot.db.models import Level
-
-from .src.pybot import create_user_profile, update_user_points_by_id
+from src.pybot.services import UserCreateDTO
 
 logger = setup_logger()
 fake = Faker("ru_RU")
@@ -63,7 +63,7 @@ def calculate_xp(n: int) -> int:
     """Рассчитывает необходимое количество опыта (XP) для уровня N."""
     if n <= 0:
         return 0
-    return 5 * n * (n - 1)
+    return 50 * n * (n - 1)
 
 
 async def generate_levels_data(session: AsyncSession) -> Sequence[Level]:
@@ -186,11 +186,13 @@ async def generate_users_data(session: AsyncSession, num_users: int) -> None:
 
             user = await create_user_profile(
                 db=session,
-                first_name=user_data["first_name"],
-                last_name=user_data["last_name"],
-                patronymic=user_data["patronymic"],
-                phone=user_data["phone"],
-                tg_id=user_data["tg_id"],
+                data=UserCreateDTO(
+                    first_name=user_data["first_name"],
+                    last_name=user_data["last_name"],
+                    patronymic=user_data["patronymic"],
+                    phone=user_data["phone"],
+                    tg_id=user_data["tg_id"],
+                ),
             )
 
             if not user or not user.id:

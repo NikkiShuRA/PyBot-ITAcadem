@@ -7,30 +7,45 @@ from ..core.constants import PointsTypeEnum
 from ..db.models import User, Valuation
 from ..db.models.user_module import UserLevel
 from .levels import get_all_levels
+from .schemas import UserCreateDTO, UserReadDTO
 
 
-async def get_user_by_id(db: AsyncSession, user_id: int) -> User | None:
+async def get_user_by_id(db: AsyncSession, user_id: int) -> UserReadDTO | None:
     """Получить пользователя по ID"""
     result = await db.execute(select(User).where(User.id == user_id))
-    return result.scalar_one_or_none()
+    user = result.scalar_one_or_none()
+    if user:
+        return UserReadDTO.model_validate(user)
+    else:
+        return None
 
 
 async def get_user_by_telegram_id(db: AsyncSession, tg_id: int) -> User | None:
     """Получить пользователя по Telegram ID"""
     result = await db.execute(select(User).where(User.telegram_id == tg_id))
-    return result.scalar_one_or_none()
+    user = result.scalar_one_or_none()
+    if user:
+        return UserReadDTO.model_validate(user)
+    else:
+        return None
 
 
 async def get_user_by_phone(db: AsyncSession, phone: str) -> User | None:
     """Получить пользователя по номеру телефона"""
     res = await db.execute(select(User).where(User.phone_number == phone))
-    return res.scalar_one_or_none()
+    user = res.scalar_one_or_none()
+    if user:
+        return UserReadDTO.model_validate(user)
+    else:
+        return None
 
 
 async def get_all_users(db: AsyncSession) -> Sequence[User]:
     """Получить всех пользователей"""
     result = await db.execute(select(User))
-    return result.scalars().all()
+    user_list = result.scalars().all()
+    if user_list:
+        return [UserReadDTO.model_validate(user) for user in user_list]
 
 
 async def get_user_point_history_by_id(
@@ -50,7 +65,7 @@ async def get_user_point_history_by_id(
     return result.scalars().all()
 
 
-async def attach_telegram_to_user(db: AsyncSession, user: User, tg_id: int) -> User:
+async def attach_telegram_to_user(db: AsyncSession, user: User, tg_id: int) -> User:  # TODO Добавить доменный объект
     """Привязать Telegram ID к пользователю"""
     if user.telegram_id != tg_id:
         user.telegram_id = tg_id
@@ -59,15 +74,11 @@ async def attach_telegram_to_user(db: AsyncSession, user: User, tg_id: int) -> U
     return user
 
 
-async def create_user_profile(  # noqa: PLR0913
+async def create_user_profile(
     db: AsyncSession,
     *,
-    phone: str,
-    tg_id: int,
-    first_name: str,
-    last_name: str | None = None,
-    patronymic: str | None = None,
-) -> User:
+    data: UserCreateDTO,
+) -> UserReadDTO:
     """Создает профиль пользователя с начальными уровнями"""
 
     # Получаем все уровни
@@ -84,11 +95,11 @@ async def create_user_profile(  # noqa: PLR0913
 
     # Создаем пользователя
     user = User(
-        phone_number=phone,
-        telegram_id=tg_id,
-        first_name=first_name,
-        last_name=last_name,
-        patronymic=patronymic,
+        phone_number=data.phone,
+        telegram_id=data.tg_id,
+        first_name=data.first_name,
+        last_name=data.last_name,
+        patronymic=data.patronymic,
     )
 
     db.add(user)
@@ -102,7 +113,7 @@ async def create_user_profile(  # noqa: PLR0913
     await db.commit()
     await db.refresh(user)
 
-    return user
+    return UserReadDTO.model_validate(user)
 
 
 async def update_user_points_by_id(
