@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..core.constants import PointsTypeEnum
 from ..db.models import User, Valuation
 from ..db.models.user_module import UserLevel
+from ..domain import UserEntity
 from .levels import get_all_levels
 from .schemas import UserCreateDTO, UserReadDTO
 
@@ -20,7 +21,7 @@ async def get_user_by_id(db: AsyncSession, user_id: int) -> UserReadDTO | None:
         return None
 
 
-async def get_user_by_telegram_id(db: AsyncSession, tg_id: int) -> User | None:
+async def get_user_by_telegram_id(db: AsyncSession, tg_id: int) -> UserReadDTO | None:
     """Получить пользователя по Telegram ID"""
     result = await db.execute(select(User).where(User.telegram_id == tg_id))
     user = result.scalar_one_or_none()
@@ -30,22 +31,24 @@ async def get_user_by_telegram_id(db: AsyncSession, tg_id: int) -> User | None:
         return None
 
 
-async def get_user_by_phone(db: AsyncSession, phone: str) -> User | None:
+async def get_user_by_phone(db: AsyncSession, phone: str) -> UserEntity | None:
     """Получить пользователя по номеру телефона"""
     res = await db.execute(select(User).where(User.phone_number == phone))
     user = res.scalar_one_or_none()
     if user:
-        return UserReadDTO.model_validate(user)
+        return UserEntity.model_validate(user)
     else:
         return None
 
 
-async def get_all_users(db: AsyncSession) -> Sequence[User]:
+async def get_all_users(db: AsyncSession) -> Sequence[UserReadDTO]:
     """Получить всех пользователей"""
     result = await db.execute(select(User))
     user_list = result.scalars().all()
     if user_list:
         return [UserReadDTO.model_validate(user) for user in user_list]
+    else:
+        raise ValueError("Пользователи не найдены")
 
 
 async def get_user_point_history_by_id(
@@ -65,7 +68,7 @@ async def get_user_point_history_by_id(
     return result.scalars().all()
 
 
-async def attach_telegram_to_user(db: AsyncSession, user: User, tg_id: int) -> User:  # TODO Добавить доменный объект
+async def attach_telegram_to_user(db: AsyncSession, user: UserEntity, tg_id: int) -> UserEntity:
     """Привязать Telegram ID к пользователю"""
     if user.telegram_id != tg_id:
         user.telegram_id = tg_id
@@ -121,7 +124,7 @@ async def update_user_points_by_id(
     user_id: int,
     points: int,
     points_type: PointsTypeEnum,
-) -> User:
+) -> UserReadDTO:
     """Обновить баллы пользователя"""
     user = await get_user_by_id(db, user_id)
     if user is None:

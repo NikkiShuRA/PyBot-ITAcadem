@@ -46,13 +46,24 @@ async def on_patronymic_input(
     """Обработка ввода отчества и создание профиля."""
     text = message.text.strip() if message.text else ""
     patronymic = text if text else None
+    phone = manager.dialog_data.get("phone")
+    tg_id = manager.dialog_data.get("tg_id")
+    first_name = manager.dialog_data.get("first_name")
+
+    if not (phone and tg_id and first_name):
+        logger.error(
+            f"Недостаточно данных для создания профиля. phone: {phone}, tg_id: {tg_id}, first_name: {first_name}"
+        )
+        await message.answer("Произошла внутренняя ошибка. Пожалуйста, начните заново /start")
+        await manager.done()
+        return
 
     # Собираем данные в DTO
     try:
         user_data = UserCreateDTO(
-            phone=manager.dialog_data.get("phone"),
-            tg_id=manager.dialog_data.get("tg_id"),
-            first_name=manager.dialog_data.get("first_name"),
+            phone=phone,
+            tg_id=tg_id,
+            first_name=first_name,
             last_name=manager.dialog_data.get("last_name"),
             patronymic=patronymic,
         )
@@ -72,11 +83,23 @@ async def on_patronymic_input(
 
 
 async def on_patronymic_skip(callback: CallbackQuery, button: Button, manager: DialogManager) -> None:
+    phone = manager.dialog_data.get("phone")
+    tg_id = manager.dialog_data.get("tg_id")
+    first_name = manager.dialog_data.get("first_name")
+
+    if not (phone and tg_id and first_name):
+        logger.error(
+            f"Недостаточно данных для создания профиля. phone: {phone}, tg_id: {tg_id}, first_name: {first_name}"
+        )
+        await callback.answer("Произошла внутренняя ошибка. Пожалуйста, начните заново /start")
+        await manager.done()
+        return
+
     try:
         user_data = UserCreateDTO(
-            phone=manager.dialog_data.get("phone"),
-            tg_id=manager.dialog_data.get("tg_id"),
-            first_name=manager.dialog_data.get("first_name"),
+            phone=phone,
+            tg_id=tg_id,
+            first_name=first_name,
             last_name=manager.dialog_data.get("last_name"),
             patronymic=None,
         )

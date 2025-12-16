@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 from datetime import date
+from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, Field, conint, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from ..core.constants import PointsTypeEnum
-from ..db.models import User
 from ..db.models.user_module import UserLevel
 
 
@@ -21,7 +21,7 @@ class UpdateUserLevelDTO(BaseDTO):
     arguments to `update_user_level` into a single validated object.
     """
 
-    user: User
+    user: UserReadDTO
     user_level: UserLevel
     points_type: PointsTypeEnum
     current_points: int
@@ -37,7 +37,7 @@ class AdjustUserPointsDTO(BaseDTO):
 
     recipient_id: int
     giver_id: int
-    points: conint(ge=-(2**31), le=2**31 - 1)
+    points: Annotated[int, Field(strict=True, ge=-(2**31), le=2**31 - 1)]
     points_type: PointsTypeEnum
     reason: str | None = None
 

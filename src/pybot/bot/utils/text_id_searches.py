@@ -4,7 +4,7 @@ from re import Match
 from aiogram.types import Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ...db.models import User
+from ...services import UserReadDTO
 from ...services.users import get_user_by_telegram_id
 from ..filters.message_value_filters import check_text_message_correction
 
@@ -51,7 +51,7 @@ async def _get_target_user_id_from_text(message: Message, db: AsyncSession) -> i
         return None
 
     user_parsed_id: int = int(match.group(1))
-    user_from_id: User | None = await get_user_by_telegram_id(db, user_parsed_id)
+    user_from_id: UserReadDTO | None = await get_user_by_telegram_id(db, user_parsed_id)
 
     if user_from_id is None:
         await message.reply(

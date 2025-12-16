@@ -2,10 +2,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..core import logger
 from ..core.constants import PointsTypeEnum
-from ..db.models import User, Valuation
+from ..db.models import Valuation
 from ..db.models.user_module import UserLevel
 from .levels import get_level_by_id, get_next_level, get_previous_level, get_user_current_level
-from .schemas import AdjustUserPointsDTO, UpdateUserLevelDTO
+from .schemas import AdjustUserPointsDTO, UpdateUserLevelDTO, UserReadDTO
 from .users import get_user_by_id
 
 
@@ -20,10 +20,12 @@ async def update_user_level(db: AsyncSession, dto: UpdateUserLevelDTO) -> UserLe
     has_level_changed = True
     # Нужна начальная ссылка на текущий уровень для проверки понижения
     current_level = await get_level_by_id(db, current_user_level.level_id)
+    if current_level is None:
+        raise ValueError(f"Уровень с ID {current_user_level.level_id} не найден.")
     while has_level_changed:
         has_level_changed = False
         if inputed_points > 0:
-            next_level = await get_next_level(db, current_user_level, points_type)
+            next_level = await get_next_level(db, current_level, points_type)
 
             # Проверяем, достаточно ли баллов для СЛЕДУЮЩЕГО уровня
             if next_level and current_points >= next_level.required_points:
@@ -54,11 +56,13 @@ async def update_user_level(db: AsyncSession, dto: UpdateUserLevelDTO) -> UserLe
                         f"Пользователь {current_user.id} на минимальном уровне ({points_type.value}) и не может быть понижен."  # noqa: E501
                     )
 
+    return current_user_level
+
 
 async def adjust_user_points(
     db: AsyncSession,
     dto: AdjustUserPointsDTO,
-) -> User:
+) -> UserReadDTO:
     """Изменяет баллы пользователя и обновляет уровень если необходимо."""
     recipient_id = dto.recipient_id
     giver_id = dto.giver_id
@@ -101,7 +105,7 @@ async def adjust_user_points(
     if current_level is None:
         raise ValueError(f"Уровень с ID {current_user_level.level_id} не найден.")
 
-    current_level = await update_user_level(
+    current_user_level = await update_user_level(
         db,
         UpdateUserLevelDTO(
             user=recipient_user,

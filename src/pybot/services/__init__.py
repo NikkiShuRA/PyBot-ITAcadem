@@ -3,3 +3,8 @@ from .levels import level_exists as level_exists
 
 from .users import create_user_profile as create_user_profile
 from .users import update_user_points_by_id as update_user_points_by_id
+
+from .schemas import AdjustUserPointsDTO as AdjustUserPointsDTO
+from .schemas import UpdateUserLevelDTO as UpdateUserLevelDTO
+from .schemas import UserCreateDTO as UserCreateDTO
+from .schemas import UserReadDTO as UserReadDTO
