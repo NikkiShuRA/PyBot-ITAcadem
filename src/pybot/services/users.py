@@ -7,8 +7,8 @@ from ..core.constants import PointsTypeEnum
 from ..db.models import User, Valuation
 from ..db.models.user_module import UserLevel
 from ..domain import UserEntity
+from ..dto import UserCreateDTO, UserReadDTO
 from .levels import get_all_levels
-from .schemas import UserCreateDTO, UserReadDTO
 
 
 async def get_user_by_id(db: AsyncSession, user_id: int) -> UserReadDTO | None:

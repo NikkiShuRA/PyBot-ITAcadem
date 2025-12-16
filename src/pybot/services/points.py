@@ -4,8 +4,8 @@ from ..core import logger
 from ..core.constants import PointsTypeEnum
 from ..db.models import Valuation
 from ..db.models.user_module import UserLevel
+from ..dto import AdjustUserPointsDTO, UpdateUserLevelDTO, UserReadDTO
 from .levels import get_level_by_id, get_next_level, get_previous_level, get_user_current_level
-from .schemas import AdjustUserPointsDTO, UpdateUserLevelDTO, UserReadDTO
 from .users import get_user_by_id
 
 

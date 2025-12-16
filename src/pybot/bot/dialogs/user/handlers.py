@@ -6,7 +6,7 @@ from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ....core import logger
-from ....services.schemas import UserCreateDTO
+from ....dto import UserCreateDTO
 from ....services.users import create_user_profile
 
 

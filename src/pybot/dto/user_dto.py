@@ -1,31 +1,11 @@
-from __future__ import annotations
-
 from datetime import date
 from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import Field, field_validator
 
 from ..core.constants import PointsTypeEnum
 from ..db.models.user_module import UserLevel
-
-
-class BaseDTO(BaseModel):
-    class Config:
-        model_config = ConfigDict(from_attributes=True, extra="forbid")
-
-
-class UpdateUserLevelDTO(BaseDTO):
-    """DTO for updating a user's level.
-
-    This bundles the parameters previously passed as many separate
-    arguments to `update_user_level` into a single validated object.
-    """
-
-    user: UserReadDTO
-    user_level: UserLevel
-    points_type: PointsTypeEnum
-    current_points: int
-    inputed_points: int
+from .base_dto import BaseDTO
 
 
 class AdjustUserPointsDTO(BaseDTO):
@@ -54,6 +34,16 @@ class UserCreateDTO(BaseDTO):
     @field_validator("first_name", "last_name", "patronymic")
     @classmethod
     def clean_string(cls, v: str | None) -> str | None:
+        """Clean a string by stripping whitespace.
+
+        This is a helper function for validating UserCreateDTO fields.
+        It is used as a field validator to clean strings passed in the
+        UserCreateDTO. If the string is None, it is returned unchanged.
+        Otherwise, it is stripped of leading and trailing whitespace.
+
+        :param v: The string to clean.
+        :return: The cleaned string, or None if the string was None.
+        """
         if v is not None:
             return v.strip()
         return v
@@ -82,3 +72,17 @@ class UserReadDTO(BaseDTO):
     academic_points: int
     reputation_points: int
     join_date: date
+
+
+class UpdateUserLevelDTO(BaseDTO):
+    """DTO for updating a user's level.
+
+    This bundles the parameters previously passed as many separate
+    arguments to `update_user_level` into a single validated object.
+    """
+
+    user: UserReadDTO
+    user_level: UserLevel
+    points_type: PointsTypeEnum
+    current_points: int
+    inputed_points: int
