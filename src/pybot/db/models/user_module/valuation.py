@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date
 
 from sqlalchemy import BigInteger, ForeignKey, Integer, Text, func
 from sqlalchemy.dialects.postgresql import ENUM, TIMESTAMP
@@ -30,7 +30,7 @@ class Valuation(Base):
     points_type: Mapped[PointsTypeEnum] = mapped_column(
         ENUM(PointsTypeEnum, name="points_type_enum", create_type=True), nullable=False
     )
-    created_at: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=False, server_default=func.now())
+    created_at: Mapped[date] = mapped_column(TIMESTAMP, nullable=False, server_default=func.now())
     recipient: Mapped[User] = relationship(
         "User",
         foreign_keys=[recipient_id],
