@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ....core import logger
 from ....core.constants import PointsTypeEnum
-from ....services import AdjustUserPointsDTO, UserReadDTO
+from ....dto import AdjustUserPointsDTO, UserReadDTO
 from ....services.points import adjust_user_points
 from ....services.users import get_user_by_telegram_id
 from ...filters import check_text_message_correction, create_chat_type_routers, validate_points_value
@@ -103,7 +103,7 @@ async def _handle_points_command(
         return
 
     try:
-        edited_user: UserReadDTO = await adjust_user_points(
+        await adjust_user_points(
             db,
             AdjustUserPointsDTO(
                 recipient_id=recipient_user.id,
@@ -112,11 +112,6 @@ async def _handle_points_command(
                 points_type=points_type,
                 reason=reason,
             ),
-        )
-        logger.info(
-            f"""Пользователь {edited_user!r} получил {points} баллов.
-            Причина: {reason or "не указана"}.
-            Общее количество баллов пользователя {getattr(recipient_user, f"{points_type.value}_points")}."""
         )
 
         reason_text = f" Причина: {reason}" if reason else ""

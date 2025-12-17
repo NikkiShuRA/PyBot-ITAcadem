@@ -4,7 +4,7 @@ from re import Match
 from aiogram.types import Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ...services import UserReadDTO
+from ...dto import UserReadDTO
 from ...services.users import get_user_by_telegram_id
 from ..filters.message_value_filters import check_text_message_correction
 
