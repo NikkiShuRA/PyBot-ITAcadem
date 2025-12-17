@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..core.constants import PointsTypeEnum
 from ..db.models import User, Valuation
 from ..db.models.user_module import UserLevel
-from ..domain import UserEntity
+from ..domain.user import UserEntity
 from ..dto import UserCreateDTO, UserReadDTO
 from .levels import get_all_levels
 
@@ -51,7 +51,7 @@ async def get_all_users(db: AsyncSession) -> Sequence[UserReadDTO]:
         raise ValueError("Пользователи не найдены")
 
 
-async def get_user_point_history_by_id(
+async def get_user_point_history_by_id(  # TODO Заменить тут ORM модель на DTO
     db: AsyncSession,
     user_id: int,
     points_type: PointsTypeEnum,
