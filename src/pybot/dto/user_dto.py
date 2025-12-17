@@ -4,7 +4,6 @@ from typing import Annotated
 from pydantic import Field, field_validator
 
 from ..core.constants import PointsTypeEnum
-from ..db.models.user_module import UserLevel
 from .base_dto import BaseDTO
 
 
@@ -82,7 +81,6 @@ class UpdateUserLevelDTO(BaseDTO):
     """
 
     user: UserReadDTO
-    user_level: UserLevel
     points_type: PointsTypeEnum
     current_points: int
     inputed_points: int
