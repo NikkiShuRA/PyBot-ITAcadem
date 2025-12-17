@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date
 from typing import TYPE_CHECKING
 
 from sqlalchemy import BigInteger, Boolean, Date, ForeignKey, Text
@@ -18,9 +19,9 @@ class Task(Base):
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(Text, nullable=False)
     description: Mapped[str] = mapped_column(Text)
-    created_date: Mapped[str] = mapped_column(Date, nullable=False)
+    created_date: Mapped[date] = mapped_column(Date, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    due_date: Mapped[str] = mapped_column(Date)
+    due_date: Mapped[date] = mapped_column(Date)
     user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False)
 
     author: Mapped[User] = relationship("User", back_populates="created_tasks")
