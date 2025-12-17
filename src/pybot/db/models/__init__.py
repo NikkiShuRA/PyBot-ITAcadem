@@ -1,79 +1,41 @@
 from ..base_class import Base
 
 # Shared (общие) модели
-from .achievement import Achievement
+from .attachment_module import (
+    Attachment,
+    AttachmentTypes
+)
 
-from .attachments_types import AttachmentsType
-from .attachments import Attachment
-
-from .comment_answers import CommentAnswer
-from .comment_attachments import CommentAttachment
-from .comments import Comment
 
 # Доменные подпакеты
 from .user_module import (
     User,
-    UserActivityStatus,
-    AdminRole,
-    AcademicRole,
-    Level,
-    Competence,
-    UserCompetence,
-    UserAchievement,
-    Valuation,
-)
-
-from .project_module import (
-    Project,
-    ProjectStatus,
-    ProjectMember,
-    ProjectMemberRole,
-    ProjectAttachment,
-    ProjectAchievement,
-    ProjectComment,
+    UserActivity
 )
 
 from .task_module import (
     Task,
     TaskAttachment,
-    TaskComment,
     TaskSolution,
-    TaskSolutionStatus,
-    TaskSolutionComment,
+    TaskSolutionAttachment,
+    TaskSolutionStatus
 )
 
 __all__ = [
     "Base",
+
     # shared
-    "Achievement",
-    "AttachmentsType",
+    "AttachmentTypes",
     "Attachment",
-    "CommentAnswer",
-    "CommentAttachment",
-    "Comment",
+
     # user_module
     "User",
-    "UserActivityStatus",
-    "AdminRole",
-    "AcademicRole",
-    "Level",
-    "Competence",
-    "UserCompetence",
-    "UserAchievement",
-    "Valuation",
-    # project_module
-    "Project",
-    "ProjectStatus",
-    "ProjectMember",
-    "ProjectMemberRole",
-    "ProjectAttachment",
-    "ProjectAchievement",
-    "ProjectComment",
+    "UserActivity",
+
     # task_module
     "Task",
     "TaskAttachment",
-    "TaskComment",
     "TaskSolution",
+    "TaskSolutionAttachment",
     "TaskSolutionStatus",
-    "TaskSolutionComment",
 ]

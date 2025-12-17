@@ -9,9 +9,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from ...base_class import Base
 
 if TYPE_CHECKING:
-    from ..task_module import TaskAttachment, TaskComment, TaskSolution
+    from ..task_module import TaskAttachment, TaskSolution
     from ..user_module import User
-
 
 class Task(Base):
     __tablename__ = "tasks"
@@ -24,18 +23,15 @@ class Task(Base):
     due_date: Mapped[date] = mapped_column(Date)
     user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False)
 
-    author: Mapped[User] = relationship("User", back_populates="created_tasks")
+    author: Mapped["User"] = relationship("User", back_populates="created_tasks")
 
-    solutions: Mapped[list[TaskSolution]] = relationship(
+    solutions: Mapped[list["TaskSolution"]] = relationship(
         "TaskSolution", back_populates="task", cascade="all, delete-orphan"
     )
 
-    # Связь через ассоциативную таблицу TaskComment
-    comments: Mapped[list[TaskComment]] = relationship(
-        "TaskComment", back_populates="task", cascade="all, delete-orphan"
-    )
+
 
     # Связь через ассоциативную таблицу TaskAttachment
-    attachments: Mapped[list[TaskAttachment]] = relationship(
+    attachments: Mapped[list["TaskAttachment"]] = relationship(
         "TaskAttachment", back_populates="task", cascade="all, delete-orphan"
     )

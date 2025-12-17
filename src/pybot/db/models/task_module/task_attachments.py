@@ -8,8 +8,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from ...base_class import Base
 
 if TYPE_CHECKING:
-    from ..attachments import Attachment
-    from .tasks import Task
+    from ..attachment_module import Attachment
+    from ..task_module import Task
 
 
 class TaskAttachment(Base):
@@ -18,5 +18,5 @@ class TaskAttachment(Base):
     task_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("tasks.id"), primary_key=True)
     attachments_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("attachments.id"), primary_key=True)
 
-    task: Mapped[Task] = relationship("Task", back_populates="attachments")
-    attachment: Mapped[Attachment] = relationship("Attachment", back_populates="task_attachments")
+    task: Mapped["Task"] = relationship("Task", back_populates="attachments")
+    attachment: Mapped["Attachment"] = relationship("Attachment", back_populates="task_attachments")

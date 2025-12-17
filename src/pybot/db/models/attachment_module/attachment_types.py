@@ -8,7 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from ...base_class import Base
 
 if TYPE_CHECKING:
-    from .attachments import Attachment
+    from ..attachment_module import Attachment
 
 class AttachmentTypes(Base):
     __tablename__ = "attachment_types"

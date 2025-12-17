@@ -8,7 +8,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from ...base_class import Base
 
 if TYPE_CHECKING:
-    from .attachment_types import AttachmentTypes
+    from ..attachment_module import AttachmentTypes
+    from ..task_module import TaskAttachment
 
 class Attachment(Base):
     __tablename__ = "attachments"
@@ -19,3 +20,9 @@ class Attachment(Base):
     type_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("attachment_types.id", ondelete="CASCADE"), nullable=False)
 
     attachment_type: Mapped["AttachmentTypes"] = relationship(back_populates="attachments")
+
+    task_attachments: Mapped[list["TaskAttachment"]] = relationship(
+        "TaskAttachment",
+        back_populates="attachment",
+        cascade="all, delete-orphan",
+    )

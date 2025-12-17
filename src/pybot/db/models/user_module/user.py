@@ -1,15 +1,14 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from sqlalchemy import BigInteger, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from typing import TYPE_CHECKING
 
 from ...base_class import Base
 
 if TYPE_CHECKING:
-    from ..user_module import (
-        UserActivity,
-    )
+    from ..user_module import UserActivity
 
 class User(Base):
     __tablename__ = "users"
