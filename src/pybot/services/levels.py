@@ -8,6 +8,8 @@ from ..core.constants import PointsTypeEnum
 from ..db.models.user_module import Level, UserLevel
 from ..domain import LevelEntity
 
+# TODO Добавить функцию маппер для уровня
+
 
 async def get_all_levels(db: AsyncSession) -> Sequence[LevelEntity]:
     """Получить все уровни из БД"""
