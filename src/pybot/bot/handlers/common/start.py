@@ -36,7 +36,7 @@ async def cmd_start_private(message: Message, db: AsyncSession) -> None:
 
 # /start - в групповом чате
 @start_global_router.message(CommandStart())
-async def cmd_start_group(message: Message, db: AsyncSession) -> None:
+async def cmd_start_group(message: Message) -> None:
     await message.answer("Всем привет!")
 
 
