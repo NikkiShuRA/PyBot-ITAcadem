@@ -18,4 +18,7 @@ class UserActivity(Base):
     user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True)
     last_activity: Mapped[date] = mapped_column(Date, nullable=False)
 
-    user: Mapped["User"] = relationship(back_populates="activity")
+    user: Mapped["User"] = relationship(
+        back_populates="activity"
+    )
+

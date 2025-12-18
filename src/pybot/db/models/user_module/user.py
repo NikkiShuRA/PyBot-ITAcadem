@@ -9,6 +9,8 @@ from ...base_class import Base
 
 if TYPE_CHECKING:
     from ..user_module import UserActivity
+    from ..role_module import UserRole, Role, RoleEvent
+
 
 class User(Base):
     __tablename__ = "users"
@@ -20,8 +22,33 @@ class User(Base):
     telegram_id: Mapped[int] = mapped_column(BigInteger, nullable=False, unique=True)
 
     activity: Mapped["UserActivity"] = relationship(
-        back_populates="user", 
-        uselist=False, 
-        cascade="all, delete-orphan", 
+        back_populates="user",
+        uselist=False,
+        cascade="all, delete-orphan",
         passive_deletes=True,
+        lazy="selectin"
+    )
+    user_roles: Mapped[list["UserRole"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        lazy="selectin"
+    )
+    roles: Mapped[list["Role"]] = relationship(
+        secondary="user_roles",
+        back_populates="users",
+        viewonly=True,
+        lazy="selectin"
+    )
+    role_events: Mapped[list["RoleEvent"]] = relationship(
+        back_populates="user",
+        foreign_keys="RoleEvent.user_id",
+        passive_deletes=True,
+        lazy="selectin"
+    )
+    performed_role_events: Mapped[list["RoleEvent"]] = relationship(
+        back_populates="performed_by",
+        foreign_keys="RoleEvent.performed_by_user_id",
+        passive_deletes=True,
+        lazy="selectin"
     )
