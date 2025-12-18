@@ -14,7 +14,11 @@ class TaskSolutionStatus(Base):
     __tablename__ = "task_solution_statuses"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-    name: Mapped[str] = mapped_column(Text, nullable=False)
-    description: Mapped[str] = mapped_column(Text)
+    name: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
+    description: Mapped[str | None] = mapped_column(Text)
 
-    solutions: Mapped[list["TaskSolution"]] = relationship("TaskSolution", back_populates="status")
+    solutions: Mapped[list["TaskSolution"]] = relationship(
+        back_populates="status",
+        passive_deletes=True,
+        lazy="selectin"
+    )

@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from ..user_module import UserActivity
     from ..role_module import UserRole, Role, RoleEvent
     from ..level_module import UserLevelState, PointEvent
+    from ..task_module import Task, TaskSolution
 
 
 class User(Base):
@@ -69,6 +70,17 @@ class User(Base):
     performed_points_events: Mapped[list["PointEvent"]] = relationship(
         back_populates="performed_by",
         foreign_keys="PointEvent.performed_by_user_id",
+        passive_deletes=True,
+        lazy="selectin"
+    )
+    created_tasks: Mapped[list["Task"]] = relationship(
+        back_populates="creator",
+        passive_deletes=True,
+        lazy="selectin"
+    )
+
+    task_solutions: Mapped[list["TaskSolution"]] = relationship(
+        back_populates="user",
         passive_deletes=True,
         lazy="selectin"
     )

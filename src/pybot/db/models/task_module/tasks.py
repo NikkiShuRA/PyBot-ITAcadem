@@ -1,37 +1,48 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, Boolean, Date, ForeignKey, Text
+from sqlalchemy import BigInteger, Boolean, Date, DateTime, ForeignKey, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ...base_class import Base
 
 if TYPE_CHECKING:
-    from ..task_module import TaskAttachment, TaskSolution
     from ..user_module import User
+    from ..task_module import TaskSolution, TaskAttachment
+    from ..attachment_module import Attachment
 
 class Task(Base):
     __tablename__ = "tasks"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(Text, nullable=False)
-    description: Mapped[str] = mapped_column(Text)
-    created_date: Mapped[date] = mapped_column(Date, nullable=False)
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    due_date: Mapped[date] = mapped_column(Date)
-    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text)
+    user_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    tasks_content: Mapped[str] = mapped_column(Text, nullable=False)
+    created_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    due_date: Mapped[date | None] = mapped_column(Date)
 
-    author: Mapped["User"] = relationship("User", back_populates="created_tasks")
-
-    solutions: Mapped[list["TaskSolution"]] = relationship(
-        "TaskSolution", back_populates="task", cascade="all, delete-orphan"
+    creator: Mapped["User | None"] = relationship(
+        back_populates="created_tasks",
+        lazy="selectin"
     )
-
-
-
-    # Связь через ассоциативную таблицу TaskAttachment
-    attachments: Mapped[list["TaskAttachment"]] = relationship(
-        "TaskAttachment", back_populates="task", cascade="all, delete-orphan"
+    solutions: Mapped[list["TaskSolution"]] = relationship(
+        back_populates="task",
+        passive_deletes=True,
+        lazy="selectin"
+    )
+    task_attachments: Mapped[list["TaskAttachment"]] = relationship(
+        back_populates="task",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        lazy="selectin"
+    )
+    attachments: Mapped[list["Attachment"]] = relationship(
+        secondary="task_attachments",
+        back_populates="tasks",
+        viewonly=True,
+        lazy="selectin"
     )

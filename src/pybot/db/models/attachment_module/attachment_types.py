@@ -10,15 +10,15 @@ from ...base_class import Base
 if TYPE_CHECKING:
     from ..attachment_module import Attachment
 
-class AttachmentTypes(Base):
+class AttachmentType(Base):
     __tablename__ = "attachment_types"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
-    description: Mapped[str] = mapped_column(Text)
+    description: Mapped[str | None] = mapped_column(Text)
 
     attachments: Mapped[list["Attachment"]] = relationship(
         back_populates="attachment_type",
-        cascade="all, delete-orphan", 
-        passive_deletes=True, 
+        passive_deletes=True,
+        lazy="selectin"
     )
