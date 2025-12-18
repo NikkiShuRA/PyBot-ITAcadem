@@ -10,6 +10,7 @@ from ...base_class import Base
 if TYPE_CHECKING:
     from ..user_module import UserActivity
     from ..role_module import UserRole, Role, RoleEvent
+    from ..level_module import UserLevelState, PointEvent
 
 
 class User(Base):
@@ -52,3 +53,23 @@ class User(Base):
         passive_deletes=True,
         lazy="selectin"
     )
+    level_state: Mapped["UserLevelState | None"] = relationship(
+        back_populates="user",
+        uselist=False,
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        lazy="selectin"
+    )
+    points_events: Mapped[list["PointEvent"]] = relationship(
+        back_populates="user",
+        foreign_keys="PointEvent.user_id",
+        passive_deletes=True,
+        lazy="selectin"
+    )
+    performed_points_events: Mapped[list["PointEvent"]] = relationship(
+        back_populates="performed_by",
+        foreign_keys="PointEvent.performed_by_user_id",
+        passive_deletes=True,
+        lazy="selectin"
+    )
+
