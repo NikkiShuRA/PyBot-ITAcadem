@@ -1,6 +1,6 @@
 [project]
 name = "pybot-itacadem"
-version = "0.1.9"
+version = "0.2.0"
 description = "PyBot — an asynchronous Telegram bot written in Python"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -15,6 +15,7 @@ dependencies = [
     "pydantic-settings>=2.12.0",
     "pydantic>=2.11.10",
     "phonenumbers>=9.0.21",
+    "yaspin>=3.4.0",
 ]
 
 [dependency-groups]
@@ -28,6 +29,7 @@ dev = [
     "uv>=0.9.13",
     "mypy>=1.19.0",
     "faker>=38.2.0",
+    "icecream>=2.1.8",
 ]
 
 [tool.ruff]
