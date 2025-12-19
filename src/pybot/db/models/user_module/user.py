@@ -19,7 +19,7 @@ class User(Base):
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(Text, nullable=False)
-    surname: Mapped[str | None] = mapped_column(Text)
+    surname: Mapped[str] = mapped_column(Text, nullable=False)
     patronymic: Mapped[str | None] = mapped_column(Text)
     telegram_id: Mapped[int] = mapped_column(BigInteger, nullable=False, unique=True)
 
