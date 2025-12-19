@@ -20,17 +20,18 @@ repos:
       - id: check-json
       - id: check-docstring-first
       - id: debug-statements
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.10.0
+  - repo: local
     hooks:
-      - id: mypy
-        args: [--strict, --explicit-package-bases]
-        additional_dependencies:
-          - aiogram>=3
-          - sqlalchemy[asyncio]>=2
-          - alembic>=1
-          - aiogram-dialog>=2
-          - pydantic>=2
-          - pydantic-settings>=2
-          - loguru>=0.7
-          - faker>=38
+      - id: ty
+        name: ty-check
+        types: [python]
+        files: ^src/
+        language: python
+        entry: ty check
+        pass_filenames: false
+        args: [
+          "--python=.venv/",
+          "--output-format", "github",
+          "--target-version", "3.12"
+        ]
+        additional_dependencies: [ty]

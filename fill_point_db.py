@@ -15,7 +15,7 @@ from src.pybot.core.constants import PointsTypeEnum
 from src.pybot.core.logger import setup_logger
 from src.pybot.db.database import SessionLocal, engine
 from src.pybot.db.models import Level
-from src.pybot.services import UserCreateDTO
+from src.pybot.dto import UserCreateDTO
 
 logger = setup_logger()
 fake = Faker("ru_RU")

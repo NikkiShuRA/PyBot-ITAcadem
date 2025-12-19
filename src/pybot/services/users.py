@@ -2,12 +2,15 @@ from collections.abc import Sequence
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
 from ..core.constants import PointsTypeEnum
 from ..db.models import User, Valuation
 from ..db.models.user_module import UserLevel
-from ..domain.user import UserEntity
+from ..domain import UserEntity, ValuationEntity
 from ..dto import UserCreateDTO, UserReadDTO
+from ..mappers.points_mappers import map_orm_valuations_to_domain
+from ..mappers.user_mappers import map_orm_levels_to_domain
 from .levels import get_all_levels
 
 
@@ -33,10 +36,40 @@ async def get_user_by_telegram_id(db: AsyncSession, tg_id: int) -> UserReadDTO |
 
 async def get_user_by_phone(db: AsyncSession, phone: str) -> UserEntity | None:
     """Получить пользователя по номеру телефона"""
-    res = await db.execute(select(User).where(User.phone_number == phone))
-    user = res.scalar_one_or_none()
-    if user:
-        return UserEntity.model_validate(user)
+    stmt = (
+        select(User)
+        .options(
+            joinedload(User.user_levels).joinedload(UserLevel.level),
+            joinedload(User.competencies),
+            joinedload(User.achievements),
+            joinedload(User.created_tasks),
+            joinedload(User.solutions),
+            joinedload(User.comments),
+            joinedload(User.created_projects),
+            joinedload(User.projects),
+        )
+        .where(User.phone_number == phone)
+    )
+    res = await db.execute(stmt)
+    user_from_orm = res.unique().scalar_one_or_none()
+
+    if user_from_orm:
+        levels_entities = await map_orm_levels_to_domain(user_from_orm)
+        if levels_entities is None:
+            return None
+        # Создаём UserEntity с manual полями
+        user_entity = UserEntity(
+            id=user_from_orm.id,
+            first_name=user_from_orm.first_name,
+            last_name=user_from_orm.last_name,
+            patronymic=user_from_orm.patronymic,
+            telegram_id=user_from_orm.telegram_id,
+            academic_points=user_from_orm.academic_points,
+            reputation_points=user_from_orm.reputation_points,
+            join_date=user_from_orm.join_date,
+            user_levels=levels_entities,
+        )  # TODO Добавить маппинг связей с другими list связями модели
+        return user_entity
     else:
         return None
 
@@ -56,7 +89,7 @@ async def get_user_point_history_by_id(  # TODO Заменить тут ORM мо
     user_id: int,
     points_type: PointsTypeEnum,
     selection_limit: int = 10,
-) -> Sequence[Valuation]:
+) -> Sequence[ValuationEntity]:
     """Получить историю изменения баллов пользователю по ID"""
     result = await db.execute(
         select(Valuation)
@@ -65,7 +98,7 @@ async def get_user_point_history_by_id(  # TODO Заменить тут ORM мо
         .order_by(Valuation.created_at.desc())
         .limit(selection_limit)
     )
-    return result.scalars().all()
+    return await map_orm_valuations_to_domain(result.scalars().all())
 
 
 async def attach_telegram_to_user(db: AsyncSession, user: UserEntity, tg_id: int) -> UserEntity:

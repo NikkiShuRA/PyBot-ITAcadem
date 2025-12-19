@@ -1,6 +1,6 @@
 [project]
 name = "pybot-itacadem"
-version = "0.1.8"
+version = "0.1.9"
 description = "PyBot — an asynchronous Telegram bot written in Python"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -14,6 +14,7 @@ dependencies = [
     "loguru>=0.7.3",
     "pydantic-settings>=2.12.0",
     "pydantic>=2.11.10",
+    "phonenumbers>=9.0.21",
 ]
 
 [dependency-groups]

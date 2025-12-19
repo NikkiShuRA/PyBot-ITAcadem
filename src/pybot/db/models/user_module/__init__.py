@@ -18,6 +18,7 @@ __all__ = [
     "AdminRole",
     "AcademicRole",
     "Level",
+    "UserLevel",
     "Competence",
     "UserCompetence",
     "UserAchievement",
