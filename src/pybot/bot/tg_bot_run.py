@@ -6,6 +6,7 @@ from aiogram import BaseMiddleware, Bot, Dispatcher
 from aiogram.types import TelegramObject, Update
 from aiogram_dialog import setup_dialogs
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from yaspin import yaspin
 
 from ..core import logger
 from ..core.config import settings
@@ -34,20 +35,22 @@ class DbSessionMiddleware(BaseMiddleware):
 
 
 async def tg_bot_main() -> None:
-    bot = Bot(settings.bot_token_test)
-    dp = Dispatcher()
-    dp.update.middleware(DbSessionMiddleware(SessionLocal))
+    with yaspin(text="Инициализация бота...", color="cyan") as sp:
+        bot = Bot(settings.bot_token_test)
+        dp = Dispatcher()
+        dp.update.middleware(DbSessionMiddleware(SessionLocal))
 
-    # Подключаем остальные роутеры common
-    dp.include_router(common_router)
-    dp.include_router(points_router)
-    dp.include_router(user_router)
+        # Подключаем остальные роутеры common
+        dp.include_router(common_router)
+        dp.include_router(points_router)
+        dp.include_router(user_router)
 
-    # Инициализируем DialogManager для работы с диалогами
-    setup_dialogs(dp)
+        # Инициализируем DialogManager для работы с диалогами
+        setup_dialogs(dp)
 
-    # сбросить накопившиеся апдейты
-    await bot.delete_webhook(drop_pending_updates=True)
+        # сбросить накопившиеся апдейты
+        await bot.delete_webhook(drop_pending_updates=True)
 
-    logger.info("Запуск бота")
+        logger.info("Запуск бота")
+        sp.ok("✅ Бот запущен!")
     await dp.start_polling(bot)
