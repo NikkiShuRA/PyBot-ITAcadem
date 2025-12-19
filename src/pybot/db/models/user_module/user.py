@@ -59,7 +59,7 @@ class User(Base):
         back_populates="users",
     )
 
-    user_levels: Mapped[UserLevel] = relationship(
+    user_levels: Mapped[list[UserLevel]] = relationship(
         "UserLevel",
         back_populates="user",
         foreign_keys="UserLevel.user_id",
@@ -80,12 +80,14 @@ class User(Base):
         "UserCompetence",
         back_populates="user",
         cascade="all, delete-orphan",
+        uselist=True,
     )
 
     achievements: Mapped[list[UserAchievement]] = relationship(
         "UserAchievement",
         back_populates="user",
         cascade="all, delete-orphan",
+        uselist=True,
     )
 
     valuations_received: Mapped[list[Valuation]] = relationship(
@@ -109,7 +111,10 @@ class User(Base):
         back_populates="author",
     )
 
-    comments: Mapped[list[Comment]] = relationship("Comment", back_populates="author")
+    comments: Mapped[list[Comment]] = relationship("Comment", back_populates="author", uselist=True)
     projects: Mapped[list[ProjectMember]] = relationship(
         "ProjectMember", back_populates="user", cascade="all, delete-orphan"
     )
+
+    def __repr__(self) -> str:
+        return f"User(id={self.id!r}, first_name={self.first_name!r}, last_name={self.last_name!r}, telegram_id={self.telegram_id!r}, academic_points={self.academic_points!r}, computation_points={self.reputation_points!r}, join_date={self.join_date!r})"  # noqa: E501

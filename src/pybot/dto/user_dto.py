@@ -4,6 +4,7 @@ from typing import Annotated
 from pydantic import Field, field_validator
 
 from ..core.constants import PointsTypeEnum
+from ..utils import normalize_phone
 from .base_dto import BaseDTO
 
 
@@ -46,6 +47,11 @@ class UserCreateDTO(BaseDTO):
         if v is not None:
             return v.strip()
         return v
+
+    @field_validator("phone")
+    @classmethod
+    def normalize_phone(cls, v: str) -> str:
+        return normalize_phone(v)
 
 
 class UserReadDTO(BaseDTO):

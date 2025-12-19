@@ -13,6 +13,7 @@ from .comments import Comment
 # Доменные подпакеты
 from .user_module import (
     User,
+    UserLevel,
     UserActivityStatus,
     AdminRole,
     AcademicRole,
@@ -57,6 +58,7 @@ __all__ = [
     "AdminRole",
     "AcademicRole",
     "Level",
+    "UserLevel",
     "Competence",
     "UserCompetence",
     "UserAchievement",

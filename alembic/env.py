@@ -36,7 +36,8 @@ if config.config_file_name is not None:
 
 # Устанавливаем DATABASE_URL в конфигурации из твоих Pydantic-настроек
 # Это связывает alembic.ini с твоим config.py
-config.set_main_option("sqlalchemy.url", settings.database_url)
+if settings.database_url:
+    config.set_main_option("sqlalchemy.url", settings.database_url)
 
 # Устанавливаем target_metadata для автогенерации Alembic
 target_metadata = Base.metadata
@@ -73,10 +74,14 @@ async def run_migrations_online() -> None:
     In this scenario we need to create an Engine
     and associate a connection with the context.
     """
-    connectable = create_async_engine(
-        config.get_main_option("sqlalchemy.url"),
-        poolclass=pool.NullPool,
-    )
+    url_to_database = config.get_main_option("sqlalchemy.url")
+    if url_to_database is None:
+        raise ValueError("Database URL is not configured.")
+    else:
+        connectable = create_async_engine(
+            url_to_database,
+            poolclass=pool.NullPool,
+        )
 
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)
