@@ -29,6 +29,7 @@ dev = [
     "uv>=0.9.13",
     "mypy>=1.19.0",
     "faker>=38.2.0",
+    "icecream>=2.1.8",
 ]
 
 [tool.ruff]
