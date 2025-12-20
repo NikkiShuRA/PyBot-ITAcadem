@@ -101,15 +101,6 @@ async def get_user_point_history_by_id(  # TODO Заменить тут ORM мо
     return await map_orm_valuations_to_domain(result.scalars().all())
 
 
-async def attach_telegram_to_user(db: AsyncSession, user: UserEntity, tg_id: int) -> UserEntity:
-    """Привязать Telegram ID к пользователю"""
-    if user.telegram_id != tg_id:
-        user.telegram_id = tg_id
-        await db.commit()
-        await db.refresh(user)
-    return user
-
-
 async def create_user_profile(
     db: AsyncSession,
     *,

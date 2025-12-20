@@ -1,12 +1,11 @@
 import textwrap
 
-from aiogram import F
 from aiogram.filters import Command, CommandStart
-from aiogram.types import Contact, Message
+from aiogram.types import Message
 from aiogram_dialog import DialogManager
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ....services.users import attach_telegram_to_user, get_user_by_phone, get_user_by_telegram_id
+from ....services.users import get_user_by_telegram_id
 from ...dialogs.user.states import CreateProfileSG
 from ...filters import create_chat_type_routers
 from ...keyboards.auth import request_contact_kb
@@ -16,7 +15,7 @@ start_private_router, start_group_router, start_global_router = create_chat_type
 
 # /start - в личном чате
 @start_private_router.message(CommandStart())
-async def cmd_start_private(message: Message, db: AsyncSession) -> None:
+async def cmd_start_private(message: Message, dialog_manager: DialogManager, db: AsyncSession) -> None:
     if message.from_user:
         user = await get_user_by_telegram_id(db, message.from_user.id)
     else:
@@ -32,44 +31,13 @@ async def cmd_start_private(message: Message, db: AsyncSession) -> None:
             "Для авторизации отправь свой номер телефона кнопкой ниже.",
             reply_markup=request_contact_kb,
         )
+        await dialog_manager.start(CreateProfileSG.contact)
 
 
 # /start - в групповом чате
 @start_global_router.message(CommandStart())
 async def cmd_start_group(message: Message) -> None:
     await message.answer("Всем привет!")
-
-
-@start_private_router.message(F.contact)
-async def handle_contact(message: Message, dialog_manager: DialogManager, db: AsyncSession) -> None:
-    contact: Contact | None = message.contact
-    if message.from_user:
-        if contact and contact.user_id != message.from_user.id:
-            await message.answer("Нужен именно твой номер, а не чужой.")
-            return
-    else:
-        await message.answer(
-            "Произошла ошибка при обработке пользователя.",
-        )
-        return
-    if contact is None:
-        await message.answer("Произошла ошибка при получении контакта. Попробуй ещё раз.")
-        return
-
-    phone: str = contact.phone_number
-    tg_id: int = message.from_user.id
-
-    user = await get_user_by_phone(db, phone)
-    if user:
-        await attach_telegram_to_user(db, user, tg_id)
-        await message.answer(f"Найден существующий профиль. Твой ID: {user.id}")
-        return
-
-    # пользователя нет — запускаем диалог создания профиля
-    await dialog_manager.start(
-        CreateProfileSG.first_name,
-        data={"phone": phone, "tg_id": tg_id},
-    )
 
 
 # /info - в личном/групповом чате
