@@ -2,4 +2,4 @@ from pydantic import BaseModel, ConfigDict
 
 
 class BaseDTO(BaseModel):
-    model_config = ConfigDict(from_attributes=True, extra="forbid")
+    model_config = ConfigDict(from_attributes=True, extra="forbid", frozen=True)
