@@ -1,13 +1,11 @@
 from ..base_class import Base
 
-# Shared (общие) модели
+
 from .attachment_module import (
     Attachment,
-    AttachmentTypes
+    AttachmentType
 )
 
-
-# Доменные подпакеты
 from .user_module import (
     User,
     UserActivity
@@ -21,11 +19,28 @@ from .task_module import (
     TaskSolutionStatus
 )
 
+from .role_module import (
+    Permission,
+    RoleSystem,
+    Role,
+    RolePermission,
+    UserRole,
+    RoleEvent
+)
+
+from .level_module import (
+    Level,
+    LevelSystem,
+    PointEvent,
+    PointReasonType,
+    UserLevelState
+)
+
 __all__ = [
     "Base",
 
-    # shared
-    "AttachmentTypes",
+    # attachment_module
+    "AttachmentType",
     "Attachment",
 
     # user_module
@@ -38,4 +53,19 @@ __all__ = [
     "TaskSolution",
     "TaskSolutionAttachment",
     "TaskSolutionStatus",
+
+    # role_module
+    "Permission",
+    "RoleSystem",
+    "Role",
+    "RolePermission",
+    "UserRole",
+    "RoleEvent",
+
+    # level_module
+    "Level",
+    "LevelSystem",
+    "PointEvent",
+    "PointReasonType",
+    "UserLevelState"
 ]
