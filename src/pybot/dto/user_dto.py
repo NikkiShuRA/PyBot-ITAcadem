@@ -28,7 +28,7 @@ class UserCreateDTO(BaseDTO):
     phone: str
     tg_id: int
     first_name: str = Field(..., min_length=1, max_length=100)
-    last_name: str | None = Field(None, min_length=1, max_length=100)
+    last_name: str = Field(..., min_length=1, max_length=100)
     patronymic: str | None = Field(None, min_length=1, max_length=100)
 
     @field_validator("first_name", "last_name", "patronymic")

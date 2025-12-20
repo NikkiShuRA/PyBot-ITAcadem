@@ -5,6 +5,7 @@ from aiogram.fsm.state import State, StatesGroup
 class CreateProfileSG(StatesGroup):
     """States для диалога создания профиля."""
 
+    contact = State()
     first_name = State()
     last_name = State()
     patronymic = State()
