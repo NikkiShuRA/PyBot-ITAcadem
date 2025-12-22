@@ -1,9 +1,9 @@
+import re
 from datetime import date
-from typing import Annotated
 
 from pydantic import Field, field_validator
 
-from ..core.constants import PointsTypeEnum
+from ..domain import Points
 from ..utils import normalize_phone
 from .base_dto import BaseDTO
 
@@ -17,8 +17,7 @@ class AdjustUserPointsDTO(BaseDTO):
 
     recipient_id: int
     giver_id: int
-    points: Annotated[int, Field(strict=True, ge=-(2**31), le=2**31 - 1)]
-    points_type: PointsTypeEnum
+    points: Points
     reason: str | None = None
 
 
@@ -45,7 +44,9 @@ class UserCreateDTO(BaseDTO):
         :return: The cleaned string, or None if the string was None.
         """
         if v is not None:
-            return v.strip()
+            v = re.sub(r"[^а-яА-Я\s]", "", v)
+            v = v.strip()
+
         return v
 
     @field_validator("phone")
@@ -74,8 +75,8 @@ class UserReadDTO(BaseDTO):
     last_name: str | None
     patronymic: str | None
     telegram_id: int
-    academic_points: int
-    reputation_points: int
+    academic_points: Points
+    reputation_points: Points
     join_date: date
 
 
@@ -87,6 +88,5 @@ class UpdateUserLevelDTO(BaseDTO):
     """
 
     user: UserReadDTO
-    points_type: PointsTypeEnum
-    current_points: int
-    inputed_points: int
+    current_points: Points
+    inputed_points: Points
