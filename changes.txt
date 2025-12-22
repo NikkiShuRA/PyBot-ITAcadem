@@ -1,0 +1,810 @@
+commit d1bf6b19af6484f904e59060cfb6f62b3fe70ec5
+Author: Cewerty <88933231+Cewerty@users.noreply.github.com>
+Date:   Tue Dec 23 02:06:28 2025 +0500
+
+    Добавил Value object для Points, mapper для преобразования пользователя в dto, отрефакторил логику регистрации, добавив валидацию вводимых значений Ф.И.О., исправил логику зачисления баллов
+
+diff --git a/fill_point_db.py b/fill_point_db.py
+index ab90b3a..43181ff 100644
+--- a/fill_point_db.py
++++ b/fill_point_db.py
+@@ -204,14 +204,14 @@ async def generate_users_data(session: AsyncSession, num_users: int) -> None:
+             await update_user_points_by_id(
+                 db=session,
+                 user_id=user.id,
+-                points=user_data["academic_points"],
++                points_value=user_data["academic_points"],
+                 points_type=PointsTypeEnum.ACADEMIC,
+             )
+
+             await update_user_points_by_id(
+                 db=session,
+                 user_id=user.id,
+-                points=user_data["reputation_points"],
++                points_value=user_data["reputation_points"],
+                 points_type=PointsTypeEnum.REPUTATION,
+             )
+
+diff --git a/src/pybot/bot/dialogs/user/handlers.py b/src/pybot/bot/dialogs/user/handlers.py
+index e9c098f..30c7aff 100644
+--- a/src/pybot/bot/dialogs/user/handlers.py
++++ b/src/pybot/bot/dialogs/user/handlers.py
+@@ -5,6 +5,7 @@ from aiogram_dialog.widgets.kbd import Button
+ from sqlalchemy.ext.asyncio import AsyncSession
+
+ from ....core import logger
++from ....dto import UserCreateDTO
+ from ....mappers.user_mappers import map_dialog_data_to_user_create_dto
+ from ....services.users import create_user_profile, get_user_by_phone
+
+@@ -72,11 +73,25 @@ async def on_first_name_input(
+         None
+     """
+     first_name: str | None = message.text if message.text else None
++
+     if not first_name:
+         await message.answer("❌ Имя не может быть пустым. Попробуйте снова.")
+         return
+
+-    manager.dialog_data["first_name"] = first_name
++    cleaned_first_name = UserCreateDTO.clean_string(first_name)
++
++    if not cleaned_first_name or len(cleaned_first_name) < UserCreateDTO.model_fields["first_name"].min_length:
++        await message.answer("❌ Имя должно содержать только русские буквы и пробелы, и быть не менее 1 символа.")
++        return
++
++    # Здесь можно добавить проверку на max_length, если это критично до сохранения в dialog_data
++    if len(cleaned_first_name) > UserCreateDTO.model_fields["first_name"].max_length:
++        await message.answer(
++            f"❌ Имя слишком длинное. Максимум {UserCreateDTO.model_fields['first_name'].max_length} символов."
++        )
++        return
++
++    manager.dialog_data["first_name"] = cleaned_first_name
+     await manager.next()
+
+
+@@ -97,10 +112,24 @@ async def on_last_name_input(
+         None
+     """
+     last_name: str | None = message.text if message.text else None
++
+     if not last_name:
+         await message.answer("❌ Имя не может быть пустым. Попробуйте снова.")
+         return
+-    manager.dialog_data["last_name"] = last_name
++
++    cleaned_last_name = UserCreateDTO.clean_string(last_name)
++
++    if not cleaned_last_name or len(cleaned_last_name) < UserCreateDTO.model_fields["last_name"].min_length:
++        await message.answer("❌ Фамилия должна содержать только русские буквы и пробелы, и быть не менее 1 символа.")
++        return
++
++    if len(cleaned_last_name) > UserCreateDTO.model_fields["last_name"].max_length:
++        await message.answer(
++            f"❌ Фамилия слишком длинная. Максимум {UserCreateDTO.model_fields['last_name'].max_length} символов."
++        )
++        return
++
++    manager.dialog_data["last_name"] = cleaned_last_name
+     await manager.next()
+
+
+@@ -121,7 +150,21 @@ async def on_patronymic_input(
+         None
+     """
+     patronymic = message.text if message.text else None
+-    manager.dialog_data["patronymic"] = patronymic
++    cleaned_patronymic = None
++    if patronymic:
++        cleaned_patronymic = UserCreateDTO.clean_string(patronymic)
++        if cleaned_patronymic and len(cleaned_patronymic) < UserCreateDTO.model_fields["patronymic"].min_length:
++            await message.answer(
++                "❌ Отчество должно содержать только русские буквы и пробелы, и быть не менее 1 символа."
++            )
++            return
++
++        if cleaned_patronymic and len(cleaned_patronymic) > UserCreateDTO.model_fields["patronymic"].max_length:
++            await message.answer(
++                f"❌ Отчество слишком длинное. Максимум {UserCreateDTO.model_fields['patronymic'].max_length} символов."
++            )
++            return
++    manager.dialog_data["patronymic"] = cleaned_patronymic
+     user_data = await map_dialog_data_to_user_create_dto(manager)
+
+     if not user_data:
+@@ -133,6 +176,11 @@ async def on_patronymic_input(
+
+     user = await create_user_profile(db, data=user_data)
+
++    if not user_data:
++        await message.answer("Произошла внутренняя ошибка. Пожалуйста, начните заново.")
++        await manager.done()
++        return
++
+     logger.info(f"Создан user: {user}")
+     manager.dialog_data["user_id"] = user.id
+     await manager.next()
+@@ -153,7 +201,7 @@ async def on_patronymic_skip(callback: CallbackQuery, button: Button, manager: D
+     user_data = await map_dialog_data_to_user_create_dto(manager)
+
+     if not user_data:
+-        await callback.answer("Произошла внутренняя ошибка. Пожалуйста, начните заново /start")
++        await callback.answer("Произошла внутренняя ошибка. Пожалуйста, начните заново.")
+         await manager.done()
+         return
+
+diff --git a/src/pybot/bot/filters/__init__.py b/src/pybot/bot/filters/__init__.py
+index 71afa7d..2b6b777 100644
+--- a/src/pybot/bot/filters/__init__.py
++++ b/src/pybot/bot/filters/__init__.py
+@@ -2,4 +2,3 @@ from .chat_filters import IS_ANY_CHAT, IS_GROUP, IS_PRIVATE
+
+ from .router_factories import create_chat_type_routers as create_chat_type_routers
+ from .message_value_filters import check_text_message_correction as check_text_message_correction
+-from .message_value_filters import validate_points_value as validate_points_value
+diff --git a/src/pybot/bot/filters/message_value_filters.py b/src/pybot/bot/filters/message_value_filters.py
+index db515e7..aee82b9 100644
+--- a/src/pybot/bot/filters/message_value_filters.py
++++ b/src/pybot/bot/filters/message_value_filters.py
+@@ -6,11 +6,3 @@ def check_text_message_correction(message: Message) -> str | None:
+     if message.text is None or not message.text.strip():
+         return None
+     return message.text
+-
+-
+-def validate_points_value(points: int) -> None:
+-    """Проверяет, что значение баллов соответствует int32."""
+-    int32_range = (2**31 - 1, -(2**31))
+-
+-    if not int32_range[1] <= points <= int32_range[0]:
+-        raise ValueError(f"Баллы {points} должны быть в диапазоне int32")
+diff --git a/src/pybot/bot/handlers/points/grand_points.py b/src/pybot/bot/handlers/points/grand_points.py
+index 8021f38..69d1b29 100644
+--- a/src/pybot/bot/handlers/points/grand_points.py
++++ b/src/pybot/bot/handlers/points/grand_points.py
+@@ -2,14 +2,16 @@ import re
+
+ from aiogram.filters.command import Command
+ from aiogram.types import Message
++from pydantic import ValidationError
+ from sqlalchemy.ext.asyncio import AsyncSession
+
+ from ....core import logger
+ from ....core.constants import PointsTypeEnum
++from ....domain import Points
+ from ....dto import AdjustUserPointsDTO, UserReadDTO
+ from ....services.points import adjust_user_points
+ from ....services.users import get_user_by_telegram_id
+-from ...filters import check_text_message_correction, create_chat_type_routers, validate_points_value
++from ...filters import check_text_message_correction, create_chat_type_routers
+ from ...utils import (
+     _get_target_user_id_from_mention,
+     _get_target_user_id_from_reply,
+@@ -90,8 +92,8 @@ async def _handle_points_command(
+         return
+
+     try:
+-        validate_points_value(points)
+-    except ValueError as e:
++        points = Points(value=points, point_type=points_type)
++    except ValidationError as e:
+         await message.reply(f"❌ {e}")
+         return
+
+@@ -109,7 +111,6 @@ async def _handle_points_command(
+                 recipient_id=recipient_user.id,
+                 giver_id=giver_user.id,
+                 points=points,
+-                points_type=points_type,
+                 reason=reason,
+             ),
+         )
+diff --git a/src/pybot/domain/__init__.py b/src/pybot/domain/__init__.py
+index 2ca1bab..bebb396 100644
+--- a/src/pybot/domain/__init__.py
++++ b/src/pybot/domain/__init__.py
+@@ -8,6 +8,8 @@ from .comment import CommentEntity as CommentEntity
+ from .task import TaskEntity as TaskEntity
+ from .project import ProjectEntity as ProjectEntity
+ from .valuation import ValuationEntity as ValuationEntity
++from .value_objects import Points as Points
++from .factories import default_academic_points, default_reputation_points
+
+ UserEntity.model_rebuild()
+ LevelEntity.model_rebuild()
+diff --git a/src/pybot/domain/factories.py b/src/pybot/domain/factories.py
+new file mode 100644
+index 0000000..5170a8f
+--- /dev/null
++++ b/src/pybot/domain/factories.py
+@@ -0,0 +1,12 @@
++from ..core.constants import PointsTypeEnum
++from .value_objects import Points
++
++
++def default_academic_points() -> Points:
++    """Дефолтные академические баллы (value=0, type=ACADEMIC)."""
++    return Points(value=0, point_type=PointsTypeEnum.ACADEMIC)
++
++
++def default_reputation_points() -> Points:
++    """Дефолтные репутационные баллы (value=0, type=REPUTATION)."""
++    return Points(value=0, point_type=PointsTypeEnum.REPUTATION)
+diff --git a/src/pybot/domain/user.py b/src/pybot/domain/user.py
+index 104e01a..c40db59 100644
+--- a/src/pybot/domain/user.py
++++ b/src/pybot/domain/user.py
+@@ -1,9 +1,11 @@
+ from datetime import date
+-from typing import TYPE_CHECKING, Optional
++from typing import TYPE_CHECKING, Annotated, Optional
+
+ from pydantic import Field
+
+ from .base import BaseEntityModel
++from .factories import default_academic_points, default_reputation_points
++from .value_objects import Points
+
+ if TYPE_CHECKING:
+     from .achievement import AchievementEntity
+@@ -24,8 +26,8 @@ class UserEntity(BaseEntityModel):
+     last_name: str | None
+     patronymic: str | None
+     telegram_id: int
+-    academic_points: int
+-    reputation_points: int
++    academic_points: Annotated[Points, Field(default_factory=default_academic_points)]
++    reputation_points: Annotated[Points, Field(default_factory=default_reputation_points)]
+     join_date: date
+
+     user_levels: list["LevelEntity"] = Field(default_factory=list)
+diff --git a/src/pybot/domain/value_objects.py b/src/pybot/domain/value_objects.py
+new file mode 100644
+index 0000000..d1de957
+--- /dev/null
++++ b/src/pybot/domain/value_objects.py
+@@ -0,0 +1,68 @@
++from typing import Annotated
++
++from pydantic import BaseModel, ConfigDict, Field
++
++from ..core.constants import PointsTypeEnum
++
++
++class BaseValueModel(BaseModel):
++    model_config = ConfigDict(extra="forbid", frozen=True)
++
++
++class Points(BaseValueModel):
++    """
++    Класс для представления количества очков.
++
++    Attributes:
++        value (int): Количество очков.
++        point_type (Points_type_enum): Тип очков.
++
++    Methods:
++        adjust (int): Меняет количество очков на заданное значение.
++
++    Returns:
++        Points: Новый объект Points с измененным количеством очков.
++
++    """
++
++    value: Annotated[int, Field(strict=True, ge=-(2**31), le=2**31 - 1)]
++    point_type: PointsTypeEnum
++
++    def adjust(self, delta: int) -> "Points":
++        new_value = self.value + delta
++        return Points(value=new_value, point_type=self.point_type)
++
++    def is_positive(self) -> bool:
++        """Семантика: value > 0?"""
++        return self.value > 0
++
++    def is_negative(self) -> bool:
++        """Семантика: value < 0?"""
++        return self.value < 0
++
++    def is_negative_delta(self, delta: int) -> bool:
++        """Семантика: delta < 0?"""
++        return delta < 0
++
++    def compare_to_threshold(self, threshold: int) -> bool:
++        """Семантика: value >= threshold?"""
++        return self.value >= threshold
++
++    def compare_to_past_threshold(self, threshold: int) -> bool:
++        """Семантика: value < threshold?"""
++        return self.value < threshold
++
++    def __eq__(self, other: object) -> bool:
++        if isinstance(other, Points):
++            return self.value == other.value and self.point_type == other.point_type
++        return False
++
++    def __hash__(self) -> int:
++        return hash((self.value, self.point_type))
++
++    def __str__(self) -> str:
++        type_name = self.point_type.value.lower()
++        return f"{self.value} {type_name})"
++
++    def __repr__(self) -> str:
++        return f"Points(value={self.value}, point_type={self.point_type})"
+diff --git a/src/pybot/dto/user_dto.py b/src/pybot/dto/user_dto.py
+index 9b45aeb..8a88846 100644
+--- a/src/pybot/dto/user_dto.py
++++ b/src/pybot/dto/user_dto.py
+@@ -1,9 +1,9 @@
++import re
+ from datetime import date
+-from typing import Annotated
+
+ from pydantic import Field, field_validator
+
+-from ..core.constants import PointsTypeEnum
++from ..domain import Points
+ from ..utils import normalize_phone
+ from .base_dto import BaseDTO
+
+@@ -17,8 +17,7 @@ class AdjustUserPointsDTO(BaseDTO):
+
+     recipient_id: int
+     giver_id: int
+-    points: Annotated[int, Field(strict=True, ge=-(2**31), le=2**31 - 1)]
+-    points_type: PointsTypeEnum
++    points: Points
+     reason: str | None = None
+
+
+@@ -45,7 +44,9 @@ class UserCreateDTO(BaseDTO):
+         :return: The cleaned string, or None if the string was None.
+         """
+         if v is not None:
+-            return v.strip()
++            v = re.sub(r"[^а-яА-Я\s]", "", v)
++            v = v.strip()
++
+         return v
+
+     @field_validator("phone")
+@@ -74,8 +75,8 @@ class UserReadDTO(BaseDTO):
+     last_name: str | None
+     patronymic: str | None
+     telegram_id: int
+-    academic_points: int
+-    reputation_points: int
++    academic_points: Points
++    reputation_points: Points
+     join_date: date
+
+
+@@ -87,6 +88,5 @@ class UpdateUserLevelDTO(BaseDTO):
+     """
+
+     user: UserReadDTO
+-    points_type: PointsTypeEnum
+-    current_points: int
+-    inputed_points: int
++    current_points: Points
++    inputed_points: Points
+diff --git a/src/pybot/mappers/user_mappers.py b/src/pybot/mappers/user_mappers.py
+index 0c7d75a..6214319 100644
+--- a/src/pybot/mappers/user_mappers.py
++++ b/src/pybot/mappers/user_mappers.py
+@@ -2,9 +2,10 @@ from aiogram_dialog import DialogManager
+ from pydantic import ValidationError
+
+ from ..core import logger
++from ..core.constants import PointsTypeEnum
+ from ..db.models import User
+-from ..domain import LevelEntity
+-from ..dto import UserCreateDTO
++from ..domain import LevelEntity, Points
++from ..dto import UserCreateDTO, UserReadDTO
+ from .level_mappers import map_user_levels_to_domain_levels
+
+
+@@ -20,6 +21,23 @@ async def map_orm_levels_to_domain(user: User) -> list[LevelEntity] | None:
+         return None
+
+
++async def map_orm_user_to_user_read_dto(orm_user: User) -> UserReadDTO:
++    """
++    Маппит ORM User объект в UserReadDTO.
++    Конвертирует int-баллы в объекты Points.
++    """
++    return UserReadDTO(
++        id=orm_user.id,
++        first_name=orm_user.first_name,
++        last_name=orm_user.last_name,
++        patronymic=orm_user.patronymic,
++        telegram_id=orm_user.telegram_id,
++        academic_points=Points(value=orm_user.academic_points, point_type=PointsTypeEnum.ACADEMIC),
++        reputation_points=Points(value=orm_user.reputation_points, point_type=PointsTypeEnum.REPUTATION),
++        join_date=orm_user.join_date,
++    )
++
++
+ async def map_dialog_data_to_user_create_dto(manager: DialogManager) -> UserCreateDTO | None:
+     """
+     Маппинг данных из dialog_data в UserCreateDTO.
+@@ -30,7 +48,7 @@ async def map_dialog_data_to_user_create_dto(manager: DialogManager) -> UserCrea
+     first_name = manager.dialog_data.get("first_name")
+     last_name = manager.dialog_data.get("last_name")
+     patronymic = manager.dialog_data.get("patronymic")
+-    # Проверяем наличие всех обязательных полей
++
+     if not (phone and tg_id and first_name and last_name):
+         logger.error(
+             f"Недостаточно данных для создания профиля в dialog_data. "
+@@ -48,6 +66,7 @@ async def map_dialog_data_to_user_create_dto(manager: DialogManager) -> UserCrea
+         )
+     except (ValidationError, TypeError):
+         logger.exception("Ошибка валидации данных для создания профиля из dialog_data")
++        await manager.done()
+         return None
+     else:
+         return user_data
+diff --git a/src/pybot/services/points.py b/src/pybot/services/points.py
+index 08bdb7f..68e9d3b 100644
+--- a/src/pybot/services/points.py
++++ b/src/pybot/services/points.py
+@@ -1,10 +1,12 @@
++from sqlalchemy import select
+ from sqlalchemy.ext.asyncio import AsyncSession
+
+ from ..core import logger
+ from ..core.constants import PointsTypeEnum
+ from ..db.models import User, Valuation
+-from ..domain import LevelEntity
++from ..domain import LevelEntity, Points
+ from ..dto import AdjustUserPointsDTO, UpdateUserLevelDTO, UserReadDTO
++from ..mappers.user_mappers import map_orm_user_to_user_read_dto
+ from .levels import get_next_level, get_previous_level, get_user_current_level
+
+
+@@ -13,11 +15,10 @@ async def update_user_level(
+     dto: UpdateUserLevelDTO,
+ ) -> LevelEntity:
+     user = dto.user
+-    points_type = dto.points_type
+-    current_points = dto.current_points
+-    inputed_points = dto.inputed_points
++    current_points_domain = dto.current_points
++    inputed_points_domain = dto.inputed_points
++    points_type = inputed_points_domain.point_type
+
+-    # Получаем оба объекта
+     result = await get_user_current_level(db, user.id, points_type)
+     if result is None:
+         raise ValueError(f"Уровень для пользователя {user.id} не найден.")
+@@ -28,17 +29,16 @@ async def update_user_level(
+     while has_changed:
+         has_changed = False
+
+-        if inputed_points > 0:
++        if inputed_points_domain.is_positive():
+             next_level_entity = await get_next_level(db, current_level_entity, points_type)
+-            if next_level_entity and current_points >= next_level_entity.required_points:
++            if next_level_entity and current_points_domain.compare_to_threshold(next_level_entity.required_points):
+                 user_level_orm.level_id = next_level_entity.id
+-                # Объект уже в сессии — изменения сохранятся при commit
+                 logger.info(f"Пользователь {user.id} повышен до уровня {next_level_entity.name} ({points_type.value})")
+                 has_changed = True
+                 current_level_entity = next_level_entity
+
+-        elif inputed_points < 0:
+-            if current_points < current_level_entity.required_points:
++        elif inputed_points_domain.is_negative():
++            if inputed_points_domain.compare_to_past_threshold(current_level_entity.required_points):
+                 prev_level_entity = await get_previous_level(db, current_level_entity, points_type)
+                 if prev_level_entity:
+                     user_level_orm.level_id = prev_level_entity.id
+@@ -48,7 +48,6 @@ async def update_user_level(
+                     has_changed = True
+                     current_level_entity = prev_level_entity
+
+-    # Возвращаем актуальную доменную сущность
+     return current_level_entity
+
+
+@@ -59,40 +58,45 @@ async def adjust_user_points(
+     """Изменяет баллы пользователя и обновляет уровень если необходимо."""
+     recipient_id = dto.recipient_id
+     giver_id = dto.giver_id
+-    points = dto.points
+-    points_type = dto.points_type
++    points_domain = dto.points
++    points_type = points_domain.point_type
+     reason = dto.reason
+
+-    # Получаем пользователя
+-    recipient_user = await db.get(User, dto.recipient_id)
+-    if recipient_user is None:
++    recipient_user = await db.execute(select(User).where(User.id == recipient_id))
++    recipient_user_orm: User | None = recipient_user.scalar_one_or_none()
++    if recipient_user_orm is None:
+         raise ValueError(f"Получатель с ID {recipient_id} не найден.")
+
+-    # Создаём запись о транзакции
+     valuation = Valuation(
+         recipient_id=recipient_id,
+         giver_id=giver_id,
+-        points=points,
++        points=points_domain.value,
+         points_type=points_type,
+         reason=reason,
+     )
+     db.add(valuation)
+
+-    # Обновляем баллы
++    current_points_value: int
+     if points_type == PointsTypeEnum.ACADEMIC:
+-        recipient_user.academic_points += points
+-        current_points = recipient_user.academic_points
++        recipient_user_orm.academic_points += points_domain.value
++        current_points_value = recipient_user_orm.academic_points
+     elif points_type == PointsTypeEnum.REPUTATION:
+-        recipient_user.reputation_points += points
+-        current_points = recipient_user.reputation_points
++        recipient_user_orm.reputation_points += points_domain.value
++        current_points_value = recipient_user_orm.reputation_points
+     else:
+         raise ValueError("Неизвестный тип баллов.")
+
+-    if getattr(recipient_user, f"{points_type.value}_points") <= 0:
+-        setattr(recipient_user, f"{points_type.value}_points", 0)
++    if current_points_value < 0:
++        current_points_value = 0
++        if points_type == PointsTypeEnum.ACADEMIC:
++            recipient_user_orm.academic_points = 0
++        else:
++            recipient_user_orm.reputation_points = 0
+
+-    # Получаем текущий уровень пользователя
+-    result = await get_user_current_level(db, recipient_user.id, points_type)
++    if getattr(recipient_user_orm, f"{points_type.value}_points") <= 0:
++        setattr(recipient_user_orm, f"{points_type.value}_points", 0)
++
++    result = await get_user_current_level(db, recipient_user_orm.id, points_type)
+
+     if result is None:
+         raise ValueError(f"Уровень для пользователя с ID {recipient_id} и типа {points_type.value} не найден.")
+@@ -102,27 +106,30 @@ async def adjust_user_points(
+     if current_user_level is None:
+         raise ValueError(f"Текущий уровень для пользователя с ID {recipient_id} и типа {points_type.value} не найден.")
+
+-    user_dto: UserReadDTO = UserReadDTO.model_validate(recipient_user)
++    user_read_dto_for_level_update = await map_orm_user_to_user_read_dto(recipient_user_orm)
++
++    current_points_obj = Points(value=current_points_value, point_type=points_type)
+
+     current_user_level = await update_user_level(
+         db,
+         UpdateUserLevelDTO(
+-            user=user_dto,
+-            points_type=points_type,
+-            current_points=current_points,
+-            inputed_points=points,
++            user=user_read_dto_for_level_update,
++            current_points=current_points_obj,
++            inputed_points=points_domain,
+         ),
+     )
+
+     await db.commit()
+-    await db.refresh(recipient_user)
++    await db.refresh(recipient_user_orm)
+
+-    action_description = "добавлены" if points >= 0 else "сняты"
+-    logger.info(f"Баллы {action_description}: user_id={recipient_id}, type={points_type.value}, amount={points}")
++    action_description = "добавлены" if points_domain.value >= 0 else "сняты"
++    logger.info(
++        f"Баллы {action_description}: user_id={recipient_id}, type={points_type.value}, amount={points_domain.value}."
++    )
+
+     logger.info(
+-        f"""Пользователь {recipient_user!r} получил {points} баллов.
++        f"""Пользователь {recipient_user!r} получил {points_domain.value} баллов.
+             Причина: {reason or "не указана"}.
+-            Общее количество баллов пользователя {getattr(recipient_user, f"{points_type.value}_points")}."""
++            Общее количество баллов пользователя {getattr(recipient_user_orm, f"{points_type.value}_points")}."""
+     )
+-    return UserReadDTO.model_validate(recipient_user)
++    return await map_orm_user_to_user_read_dto(recipient_user_orm)
+diff --git a/src/pybot/services/users.py b/src/pybot/services/users.py
+index 6bd3087..70cd8ad 100644
+--- a/src/pybot/services/users.py
++++ b/src/pybot/services/users.py
+@@ -7,10 +7,10 @@ from sqlalchemy.orm import joinedload
+ from ..core.constants import PointsTypeEnum
+ from ..db.models import User, Valuation
+ from ..db.models.user_module import UserLevel
+-from ..domain import UserEntity, ValuationEntity
++from ..domain import Points, UserEntity, ValuationEntity
+ from ..dto import UserCreateDTO, UserReadDTO
+ from ..mappers.points_mappers import map_orm_valuations_to_domain
+-from ..mappers.user_mappers import map_orm_levels_to_domain
++from ..mappers.user_mappers import map_orm_levels_to_domain, map_orm_user_to_user_read_dto
+ from .levels import get_all_levels
+
+
+@@ -19,7 +19,7 @@ async def get_user_by_id(db: AsyncSession, user_id: int) -> UserReadDTO | None:
+     result = await db.execute(select(User).where(User.id == user_id))
+     user = result.scalar_one_or_none()
+     if user:
+-        return UserReadDTO.model_validate(user)
++        return await map_orm_user_to_user_read_dto(user)
+     else:
+         return None
+
+@@ -29,7 +29,7 @@ async def get_user_by_telegram_id(db: AsyncSession, tg_id: int) -> UserReadDTO |
+     result = await db.execute(select(User).where(User.telegram_id == tg_id))
+     user = result.scalar_one_or_none()
+     if user:
+-        return UserReadDTO.model_validate(user)
++        return await map_orm_user_to_user_read_dto(user)
+     else:
+         return None
+
+@@ -56,7 +56,7 @@ async def get_user_by_phone(db: AsyncSession, phone: str) -> UserEntity | None:
+     if user_from_orm:
+         levels_entities = await map_orm_levels_to_domain(user_from_orm)
+         if levels_entities is None:
+-            return None
++            raise ValueError("Уровни пользователя не найдены")
+         # Создаём UserEntity с manual полями
+         user_entity = UserEntity(
+             id=user_from_orm.id,
+@@ -64,8 +64,8 @@ async def get_user_by_phone(db: AsyncSession, phone: str) -> UserEntity | None:
+             last_name=user_from_orm.last_name,
+             patronymic=user_from_orm.patronymic,
+             telegram_id=user_from_orm.telegram_id,
+-            academic_points=user_from_orm.academic_points,
+-            reputation_points=user_from_orm.reputation_points,
++            academic_points=Points(value=user_from_orm.academic_points, point_type=PointsTypeEnum.ACADEMIC),
++            reputation_points=Points(value=user_from_orm.reputation_points, point_type=PointsTypeEnum.REPUTATION),
+             join_date=user_from_orm.join_date,
+             user_levels=levels_entities,
+         )  # TODO Добавить маппинг связей с другими list связями модели
+@@ -74,17 +74,17 @@ async def get_user_by_phone(db: AsyncSession, phone: str) -> UserEntity | None:
+         return None
+
+
+-async def get_all_users(db: AsyncSession) -> Sequence[UserReadDTO]:
++async def get_all_users(db: AsyncSession) -> Sequence[UserReadDTO]:  # TODO Использовать тут mapper
+     """Получить всех пользователей"""
+     result = await db.execute(select(User))
+     user_list = result.scalars().all()
+     if user_list:
+-        return [UserReadDTO.model_validate(user) for user in user_list]
++        return [await map_orm_user_to_user_read_dto(user) for user in user_list]
+     else:
+         raise ValueError("Пользователи не найдены")
+
+
+-async def get_user_point_history_by_id(  # TODO Заменить тут ORM модель на DTO
++async def get_user_point_history_by_id(
+     db: AsyncSession,
+     user_id: int,
+     points_type: PointsTypeEnum,
+@@ -140,27 +140,30 @@ async def create_user_profile(
+     await db.commit()
+     await db.refresh(user)
+
+-    return UserReadDTO.model_validate(user)
++    return await map_orm_user_to_user_read_dto(user)
+
+
+ async def update_user_points_by_id(
+     db: AsyncSession,
+     user_id: int,
+-    points: int,
++    points_value: int,
+     points_type: PointsTypeEnum,
+ ) -> UserReadDTO:
+     """Обновить баллы пользователя"""
+-    user = await get_user_by_id(db, user_id)
++    result = await db.execute(select(User).where(User.id == user_id))
++    user = result.scalar_one_or_none()
+     if user is None:
+         raise ValueError(f"Пользователь с ID {user_id} не найден.")
+
+     if points_type == PointsTypeEnum.ACADEMIC:
+-        user.academic_points = points
++        user.academic_points += points_value
++        user.academic_points = max(user.academic_points, 0)
+     elif points_type == PointsTypeEnum.REPUTATION:
+-        user.reputation_points = points
++        user.reputation_points += points_value
++        user.reputation_points = max(user.reputation_points, 0)
+     else:
+         raise ValueError("Неизвестный тип баллов.")
+
+     await db.commit()
+     await db.refresh(user)
+-    return user
++    return await map_orm_user_to_user_read_dto(user)
+diff --git a/uv.lock b/uv.lock
+index cbc323f..b2a0967 100644
+--- a/uv.lock
++++ b/uv.lock
+@@ -836,15 +836,6 @@ wheels = [
+     { url = "https://files.pythonhosted.org/packages/cc/20/ff623b09d963f88bfde16306a54e12ee5ea43e9b597108672ff3a408aad6/pathspec-0.12.1-py3-none-any.whl", hash = "sha256:a0d503e138a4c123b27490a4f7beda6a01c6f288df0e4a8b79c7eb0dc7b4cc08", size = 31191, upload-time = "2023-12-10T22:30:43.14Z" },
+ ]
+
+-[[package]]
+-name = "phonenumbers"
+-version = "9.0.21"
+-source = { registry = "https://pypi.org/simple" }
+-sdist = { url = "https://files.pythonhosted.org/packages/df/c9/15e160ae4a8a34c93a8eddd930b0a801e8826cf4df3586f19d46809e60b4/phonenumbers-9.0.21.tar.gz", hash = "sha256:df4145cba0a8b3ee9c425d5d9b5dbe1b4fceccc68b030ac549ea13c95592b602", size = 2297827, upload-time = "2025-12-18T07:37:26.495Z" }
+-wheels = [
+-    { url = "https://files.pythonhosted.org/packages/37/71/364ea74338bde467bec6b6b0ab33b5ced57e473dfb427b96cc78da8e6af4/phonenumbers-9.0.21-py2.py3-none-any.whl", hash = "sha256:3a0f717fddf901a5a424f47c43fb72722cb45bd25ee87331987b00eafe6855bf", size = 2584216, upload-time = "2025-12-18T07:37:24.539Z" },
+-]
+-
+ [[package]]
+ name = "platformdirs"
+ version = "4.5.1"
+@@ -972,13 +963,11 @@ dependencies = [
+     { name = "aiogram-dialog" },
+     { name = "asyncpg" },
+     { name = "loguru" },
+-    { name = "phonenumbers" },
+     { name = "pydantic" },
+     { name = "pydantic-settings" },
+     { name = "python-dotenv" },
+     { name = "sqlalchemy", extra = ["asyncio"] },
+     { name = "uvicorn" },
+-    { name = "yaspin" },
+ ]
+
+ [package.dev-dependencies]
+@@ -1001,13 +990,11 @@ requires-dist = [
+     { name = "aiogram-dialog", specifier = ">=2.4.0" },
+     { name = "asyncpg", specifier = ">=0.31.0" },
+     { name = "loguru", specifier = ">=0.7.3" },
+-    { name = "phonenumbers", specifier = ">=9.0.21" },
+     { name = "pydantic", specifier = ">=2.11.10" },
+     { name = "pydantic-settings", specifier = ">=2.12.0" },
+     { name = "python-dotenv", specifier = ">=1.2.1" },
+     { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0.44" },
+     { name = "uvicorn", specifier = ">=0.38.0" },
+-    { name = "yaspin", specifier = ">=3.4.0" },
+ ]
+
+ [package.metadata.requires-dev]
+@@ -1244,15 +1231,6 @@ wheels = [
+     { url = "https://files.pythonhosted.org/packages/f4/40/8561ce06dc46fd17242c7724ab25b257a2ac1b35f4ebf551b40ce6105cfa/stevedore-5.6.0-py3-none-any.whl", hash = "sha256:4a36dccefd7aeea0c70135526cecb7766c4c84c473b1af68db23d541b6dc1820", size = 54428, upload-time = "2025-11-20T10:06:05.946Z" },
+ ]
+
+-[[package]]
+-name = "termcolor"
+-version = "3.2.0"
+-source = { registry = "https://pypi.org/simple" }
+-sdist = { url = "https://files.pythonhosted.org/packages/87/56/ab275c2b56a5e2342568838f0d5e3e66a32354adcc159b495e374cda43f5/termcolor-3.2.0.tar.gz", hash = "sha256:610e6456feec42c4bcd28934a8c87a06c3fa28b01561d46aa09a9881b8622c58", size = 14423, upload-time = "2025-10-25T19:11:42.586Z" }
+-wheels = [
+-    { url = "https://files.pythonhosted.org/packages/f9/d5/141f53d7c1eb2a80e6d3e9a390228c3222c27705cbe7f048d3623053f3ca/termcolor-3.2.0-py3-none-any.whl", hash = "sha256:a10343879eba4da819353c55cb8049b0933890c2ebf9ad5d3ecd2bb32ea96ea6", size = 7698, upload-time = "2025-10-25T19:11:41.536Z" },
+-]
+-
+ [[package]]
+ name = "typing-extensions"
+ version = "4.15.0"
+@@ -1438,15 +1416,3 @@ wheels = [
+     { url = "https://files.pythonhosted.org/packages/48/b7/503c98092fb3b344a179579f55814b613c1fbb1c23b3ec14a7b008a66a6e/yarl-1.22.0-cp314-cp314t-win_arm64.whl", hash = "sha256:9f6d73c1436b934e3f01df1e1b21ff765cd1d28c77dfb9ace207f746d4610ee1", size = 85171, upload-time = "2025-10-06T14:12:16.935Z" },
+     { url = "https://files.pythonhosted.org/packages/73/ae/b48f95715333080afb75a4504487cbe142cae1268afc482d06692d605ae6/yarl-1.22.0-py3-none-any.whl", hash = "sha256:1380560bdba02b6b6c90de54133c81c9f2a453dee9912fe58c1dcced1edb7cff", size = 46814, upload-time = "2025-10-06T14:12:53.872Z" },
+ ]
+-
+-[[package]]
+-name = "yaspin"
+-version = "3.4.0"
+-source = { registry = "https://pypi.org/simple" }
+-dependencies = [
+-    { name = "termcolor" },
+-]
+-sdist = { url = "https://files.pythonhosted.org/packages/8d/c5/826a862dcfcb9e85321f96d6f1b4b96b3b9bf37df6f63dce9cffd0b17053/yaspin-3.4.0.tar.gz", hash = "sha256:a83a81ac7a9d161e116fb668a7e4d10d87fb18d02b4b08a17b7e472f465f3c90", size = 42396, upload-time = "2025-12-06T12:33:51.889Z" }
+-wheels = [
+-    { url = "https://files.pythonhosted.org/packages/93/6f/7403e6ae864a0a7f1cdd8814d39690062766e141339127f2b3469201ff6f/yaspin-3.4.0-py3-none-any.whl", hash = "sha256:2a40572a38d39846d0df0a421733459481b7da17789f7a2618c3181bb0a82819", size = 21822, upload-time = "2025-12-06T12:33:50.633Z" },
+-]
