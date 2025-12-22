@@ -204,14 +204,14 @@ async def generate_users_data(session: AsyncSession, num_users: int) -> None:
             await update_user_points_by_id(
                 db=session,
                 user_id=user.id,
-                points=user_data["academic_points"],
+                points_value=user_data["academic_points"],
                 points_type=PointsTypeEnum.ACADEMIC,
             )
 
             await update_user_points_by_id(
                 db=session,
                 user_id=user.id,
-                points=user_data["reputation_points"],
+                points_value=user_data["reputation_points"],
                 points_type=PointsTypeEnum.REPUTATION,
             )
 
