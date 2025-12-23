@@ -80,15 +80,13 @@ async def on_first_name_input(
 
     cleaned_first_name = UserCreateDTO.clean_string(first_name)
 
-    if not cleaned_first_name or len(cleaned_first_name) < UserCreateDTO.model_fields["first_name"].min_length:
+    if not cleaned_first_name or len(cleaned_first_name) < UserCreateDTO.NAME_MIN_LENGTH:
         await message.answer("❌ Имя должно содержать только русские буквы и пробелы, и быть не менее 1 символа.")
         return
 
     # Здесь можно добавить проверку на max_length, если это критично до сохранения в dialog_data
-    if len(cleaned_first_name) > UserCreateDTO.model_fields["first_name"].max_length:
-        await message.answer(
-            f"❌ Имя слишком длинное. Максимум {UserCreateDTO.model_fields['first_name'].max_length} символов."
-        )
+    if len(cleaned_first_name) > UserCreateDTO.NAME_MAX_LENGTH:
+        await message.answer(f"❌ Имя слишком длинное. Максимум {UserCreateDTO.NAME_MAX_LENGTH} символов.")
         return
 
     manager.dialog_data["first_name"] = cleaned_first_name
@@ -119,14 +117,12 @@ async def on_last_name_input(
 
     cleaned_last_name = UserCreateDTO.clean_string(last_name)
 
-    if not cleaned_last_name or len(cleaned_last_name) < UserCreateDTO.model_fields["last_name"].min_length:
+    if not cleaned_last_name or len(cleaned_last_name) < UserCreateDTO.NAME_MIN_LENGTH:
         await message.answer("❌ Фамилия должна содержать только русские буквы и пробелы, и быть не менее 1 символа.")
         return
 
-    if len(cleaned_last_name) > UserCreateDTO.model_fields["last_name"].max_length:
-        await message.answer(
-            f"❌ Фамилия слишком длинная. Максимум {UserCreateDTO.model_fields['last_name'].max_length} символов."
-        )
+    if len(cleaned_last_name) > UserCreateDTO.NAME_MAX_LENGTH:
+        await message.answer(f"❌ Фамилия слишком длинная. Максимум {UserCreateDTO.NAME_MAX_LENGTH} символов.")
         return
 
     manager.dialog_data["last_name"] = cleaned_last_name
@@ -153,16 +149,14 @@ async def on_patronymic_input(
     cleaned_patronymic = None
     if patronymic:
         cleaned_patronymic = UserCreateDTO.clean_string(patronymic)
-        if cleaned_patronymic and len(cleaned_patronymic) < UserCreateDTO.model_fields["patronymic"].min_length:
+        if cleaned_patronymic and len(cleaned_patronymic) < UserCreateDTO.NAME_MIN_LENGTH:
             await message.answer(
                 "❌ Отчество должно содержать только русские буквы и пробелы, и быть не менее 1 символа."
             )
             return
 
-        if cleaned_patronymic and len(cleaned_patronymic) > UserCreateDTO.model_fields["patronymic"].max_length:
-            await message.answer(
-                f"❌ Отчество слишком длинное. Максимум {UserCreateDTO.model_fields['patronymic'].max_length} символов."
-            )
+        if cleaned_patronymic and len(cleaned_patronymic) > UserCreateDTO.NAME_MAX_LENGTH:
+            await message.answer(f"❌ Отчество слишком длинное. Максимум {UserCreateDTO.NAME_MAX_LENGTH} символов.")
             return
     manager.dialog_data["patronymic"] = cleaned_patronymic
     user_data = await map_dialog_data_to_user_create_dto(manager)

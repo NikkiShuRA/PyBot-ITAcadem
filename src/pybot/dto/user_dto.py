@@ -1,5 +1,6 @@
 import re
 from datetime import date
+from typing import ClassVar
 
 from pydantic import Field, field_validator
 
@@ -24,11 +25,14 @@ class AdjustUserPointsDTO(BaseDTO):
 class UserCreateDTO(BaseDTO):
     """DTO для создания нового пользователя."""
 
+    NAME_MIN_LENGTH: ClassVar[int] = 1
+    NAME_MAX_LENGTH: ClassVar[int] = 100
+
     phone: str
     tg_id: int
-    first_name: str = Field(..., min_length=1, max_length=100)
-    last_name: str = Field(..., min_length=1, max_length=100)
-    patronymic: str | None = Field(None, min_length=1, max_length=100)
+    first_name: str = Field(..., min_length=NAME_MIN_LENGTH, max_length=NAME_MAX_LENGTH)
+    last_name: str = Field(..., min_length=NAME_MIN_LENGTH, max_length=NAME_MAX_LENGTH)
+    patronymic: str | None = Field(None, min_length=NAME_MIN_LENGTH, max_length=NAME_MAX_LENGTH)
 
     @field_validator("first_name", "last_name", "patronymic")
     @classmethod
