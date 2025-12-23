@@ -29,6 +29,17 @@ class Points(BaseValueModel):
     point_type: PointsTypeEnum
 
     def adjust(self, delta: int) -> "Points":
+        """
+        Меняет количество очков на заданное значение.
+
+        Args:
+            delta (int): Заданное изменение количества очков.
+
+        Returns:
+            Points: Новый объект Points с измененным количеством очков.
+
+        """
+
         new_value = self.value + delta
         return Points(value=new_value, point_type=self.point_type)
 

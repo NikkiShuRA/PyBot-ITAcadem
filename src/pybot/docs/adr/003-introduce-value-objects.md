@@ -22,6 +22,8 @@
 
 В качестве базовой технологии для реализации Value Objects (VO) выбран **Pydantic V2**. Это обеспечивает единообразие с DTO и предоставляет мощные механизмы валидации «из коробки».
 
+Была произведена замена полей для очков геймификации и их типов в DTO и доменных сущностях, также логика начисления баллов была адаптирована под работу с Value object.
+
 ### Детали реализации
 
 1.  **Базовый класс:** Создается абстракция `BaseValueModel` (наследник `BaseModel` Pydantic) с конфигурацией `frozen=True` для обеспечения технической иммутабельности.
@@ -31,29 +33,51 @@
 
 Пример реализации:
 
-```python
+```python:disable-run
 from typing import Annotated
 from enum import Enum
 from pydantic import BaseModel, Field, ConfigDict
 
 class BaseValueModel(BaseModel):
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(extra="forbid", frozen=True)
 
-class PointsTypeEnum(str, Enum):
-    STUDY = "study"
-    KARMA = "karma"
 
 class Points(BaseValueModel):
+    """
+    Класс для представления количества очков.
+
+    Attributes:
+        value (int): Количество очков.
+        point_type (Points_type_enum): Тип очков.
+
+    Methods:
+        adjust (int): Меняет количество очков на заданное значение.
+
+    Returns:
+        Points: Новый объект Points с измененным количеством очков.
+
+    """
+
     value: Annotated[int, Field(strict=True, ge=-(2**31), le=2**31 - 1)]
     point_type: PointsTypeEnum
 
     def adjust(self, delta: int) -> "Points":
-        """Возвращает новый объект с измененным значением."""
+        """
+        Меняет количество очков на заданное значение.
+
+        Args:
+            delta (int): Заданное изменение количества очков.
+
+        Returns:
+            Points: Новый объект Points с измененным количеством очков.
+
+        """
+
         new_value = self.value + delta
-        # Валидация сработает автоматически при создании нового экземпляра
         return Points(value=new_value, point_type=self.point_type)
 
     def is_positive(self) -> bool:
+        """Семантика: value > 0?"""
         return self.value > 0
 
     # ... другие семантические методы
@@ -63,7 +87,7 @@ class Points(BaseValueModel):
 
 *   **Продолжать использовать `int` (Primitive Obsession):**
     *   *Плюсы:* Простота, отсутствие оверхеда на создание объектов.
-    *   *Минусы:* Нарушение принципа DRY (валидация везде), низкая связность кода, сложность поддержки при усложнении логики начисления баллов.
+    *   *Минусы:* Нарушение принципа DRY (валидация везде), низкая связность кода, сложность поддержки при усложнении логики начисления баллов. [Ссылка на code smell](https://refactoring.guru/ru/smells/primitive-obsession)
 
 *   **Использовать мутабельные объекты:**
     *   *Плюсы:* Экономия памяти (изменение in-place).
