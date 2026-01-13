@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 class UserRole(Base):
     __tablename__ = "user_roles"
-    __table_args__ = (UniqueConstraint("user_id", "role_system_id", name="uq_user_role_systems"))
+    __table_args__ = (UniqueConstraint("user_id", "role_system_id", name="uq_user_role_systems"),)
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)

@@ -14,5 +14,5 @@ __all__ = [
     "UserRole",
     "Permission",
     "RolePermission",
-    "RoleEvent"
+    "RoleEvent",
 ]

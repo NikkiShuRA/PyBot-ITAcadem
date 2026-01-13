@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 class Level(Base):
     __tablename__ = "levels"
-    __table_args__ = (UniqueConstraint("type_level_system_id", "name", name="uq_levels_system_name"))
+    __table_args__ = (UniqueConstraint("level_system_id", "name", name="uq_levels_system_name"),)
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     level_system_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("level_systems.id", ondelete="CASCADE"),nullable=False)

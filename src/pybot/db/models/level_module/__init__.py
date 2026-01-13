@@ -12,5 +12,5 @@ __all__ = [
     "Level",
     "UserLevelState",
     "PointEvent",
-    "PointReasonType"
+    "PointReasonType",
 ]

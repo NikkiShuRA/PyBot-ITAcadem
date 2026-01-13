@@ -8,5 +8,5 @@ __all__ = [
     "Base",
     "Task",
     "TaskSolution",
-    "TaskSolutionStatus"
+    "TaskSolutionStatus",
 ]
