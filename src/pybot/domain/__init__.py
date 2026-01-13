@@ -7,7 +7,9 @@ from .attachment import AttachmentEntity as AttachmentEntity
 from .comment import CommentEntity as CommentEntity
 from .task import TaskEntity as TaskEntity
 from .project import ProjectEntity as ProjectEntity
-
+from .valuation import ValuationEntity as ValuationEntity
+from .value_objects import Points as Points
+from .factories import default_academic_points, default_reputation_points
 
 UserEntity.model_rebuild()
 LevelEntity.model_rebuild()
@@ -18,3 +20,4 @@ RoleEntity.model_rebuild()
 CompetenceEntity.model_rebuild()
 CommentEntity.model_rebuild()
 AttachmentEntity.model_rebuild()
+ValuationEntity.model_rebuild()

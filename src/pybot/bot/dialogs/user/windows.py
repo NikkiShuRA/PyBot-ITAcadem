@@ -4,11 +4,24 @@ from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.kbd import Back, Cancel, Next
 from aiogram_dialog.widgets.text import Const, Format
 
-from .getters import on_profile_start
-from .handlers import on_first_name_input, on_last_name_input, on_patronymic_input, on_patronymic_skip
+from .handlers import (
+    on_contact_input,
+    on_first_name_input,
+    on_last_name_input,
+    on_other_messages,
+    on_patronymic_input,
+    on_patronymic_skip,
+)
 from .states import CreateProfileSG
 
 profile_create_dialog = Dialog(
+    Window(
+        Const("👤 Твой контакт?"),
+        MessageInput(on_contact_input, content_types=ContentType.CONTACT, id="send_contact_info"),
+        MessageInput(on_other_messages),
+        Cancel(Const("❌ Отмена")),
+        state=CreateProfileSG.contact,
+    ),
     Window(
         Const("👤 Твоё имя?"),
         MessageInput(on_first_name_input, content_types=ContentType.TEXT),
@@ -19,7 +32,6 @@ profile_create_dialog = Dialog(
         Const("👨‍👩 Фамилия?"),
         MessageInput(on_last_name_input, content_types=ContentType.TEXT),
         Back(Const("⬅️ Назад")),
-        Next(Const("➡️ Пропустить")),
         state=CreateProfileSG.last_name,
     ),
     Window(
@@ -33,5 +45,4 @@ profile_create_dialog = Dialog(
         Format("✅ Профиль создан. Твой ID: {dialog_data[user_id]}"),
         state=CreateProfileSG.finish,
     ),
-    on_start=on_profile_start,
 )

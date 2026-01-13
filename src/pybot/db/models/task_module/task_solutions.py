@@ -10,8 +10,7 @@ from ...base_class import Base
 
 if TYPE_CHECKING:
     from ..user_module import User
-    from ..task_module import TaskSolutionStatus, Task, TaskSolutionAttachment
-    from ..attachment_module import Attachment
+    from ..task_module import TaskSolutionStatus, Task
 
 class TaskSolution(Base):
     __tablename__ = "task_solutions"
@@ -33,18 +32,6 @@ class TaskSolution(Base):
     )
     status: Mapped["TaskSolutionStatus"] = relationship(
         back_populates="solutions",
-        lazy="selectin"
-    )
-    solution_attachments: Mapped[list["TaskSolutionAttachment"]] = relationship(
-        back_populates="solution",
-        cascade="all, delete-orphan",
-        passive_deletes=True,
-        lazy="selectin"
-    )
-    attachments: Mapped[list["Attachment"]] = relationship(
-        secondary="task_solutions_attachments",
-        back_populates="task_solutions",
-        viewonly=True,
         lazy="selectin"
     )
 

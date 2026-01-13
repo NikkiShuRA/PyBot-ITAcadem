@@ -2,12 +2,15 @@ from collections.abc import Sequence
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
 from ..core.constants import PointsTypeEnum
 from ..db.models import User, Valuation
 from ..db.models.user_module import UserLevel
-from ..domain.user import UserEntity
+from ..domain import Points, UserEntity, ValuationEntity
 from ..dto import UserCreateDTO, UserReadDTO
+from ..mappers.points_mappers import map_orm_valuations_to_domain
+from ..mappers.user_mappers import map_orm_levels_to_domain, map_orm_user_to_user_read_dto
 from .levels import get_all_levels
 
 
@@ -16,7 +19,7 @@ async def get_user_by_id(db: AsyncSession, user_id: int) -> UserReadDTO | None:
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if user:
-        return UserReadDTO.model_validate(user)
+        return await map_orm_user_to_user_read_dto(user)
     else:
         return None
 
@@ -26,37 +29,67 @@ async def get_user_by_telegram_id(db: AsyncSession, tg_id: int) -> UserReadDTO |
     result = await db.execute(select(User).where(User.telegram_id == tg_id))
     user = result.scalar_one_or_none()
     if user:
-        return UserReadDTO.model_validate(user)
+        return await map_orm_user_to_user_read_dto(user)
     else:
         return None
 
 
 async def get_user_by_phone(db: AsyncSession, phone: str) -> UserEntity | None:
     """Получить пользователя по номеру телефона"""
-    res = await db.execute(select(User).where(User.phone_number == phone))
-    user = res.scalar_one_or_none()
-    if user:
-        return UserEntity.model_validate(user)
+    stmt = (
+        select(User)
+        .options(
+            joinedload(User.user_levels).joinedload(UserLevel.level),
+            joinedload(User.competencies),
+            joinedload(User.achievements),
+            joinedload(User.created_tasks),
+            joinedload(User.solutions),
+            joinedload(User.comments),
+            joinedload(User.created_projects),
+            joinedload(User.projects),
+        )
+        .where(User.phone_number == phone)
+    )
+    res = await db.execute(stmt)
+    user_from_orm = res.unique().scalar_one_or_none()
+
+    if user_from_orm:
+        levels_entities = await map_orm_levels_to_domain(user_from_orm)
+        if levels_entities is None:
+            raise ValueError("Уровни пользователя не найдены")
+        # Создаём UserEntity с manual полями
+        user_entity = UserEntity(
+            id=user_from_orm.id,
+            first_name=user_from_orm.first_name,
+            last_name=user_from_orm.last_name,
+            patronymic=user_from_orm.patronymic,
+            telegram_id=user_from_orm.telegram_id,
+            academic_points=Points(value=user_from_orm.academic_points, point_type=PointsTypeEnum.ACADEMIC),
+            reputation_points=Points(value=user_from_orm.reputation_points, point_type=PointsTypeEnum.REPUTATION),
+            join_date=user_from_orm.join_date,
+            user_levels=levels_entities,
+        )  # TODO Добавить маппинг связей с другими list связями модели
+        return user_entity
     else:
         return None
 
 
-async def get_all_users(db: AsyncSession) -> Sequence[UserReadDTO]:
+async def get_all_users(db: AsyncSession) -> Sequence[UserReadDTO]:  # TODO Использовать тут mapper
     """Получить всех пользователей"""
     result = await db.execute(select(User))
     user_list = result.scalars().all()
     if user_list:
-        return [UserReadDTO.model_validate(user) for user in user_list]
+        return [await map_orm_user_to_user_read_dto(user) for user in user_list]
     else:
         raise ValueError("Пользователи не найдены")
 
 
-async def get_user_point_history_by_id(  # TODO Заменить тут ORM модель на DTO
+async def get_user_point_history_by_id(
     db: AsyncSession,
     user_id: int,
     points_type: PointsTypeEnum,
     selection_limit: int = 10,
-) -> Sequence[Valuation]:
+) -> Sequence[ValuationEntity]:
     """Получить историю изменения баллов пользователю по ID"""
     result = await db.execute(
         select(Valuation)
@@ -65,16 +98,7 @@ async def get_user_point_history_by_id(  # TODO Заменить тут ORM мо
         .order_by(Valuation.created_at.desc())
         .limit(selection_limit)
     )
-    return result.scalars().all()
-
-
-async def attach_telegram_to_user(db: AsyncSession, user: UserEntity, tg_id: int) -> UserEntity:
-    """Привязать Telegram ID к пользователю"""
-    if user.telegram_id != tg_id:
-        user.telegram_id = tg_id
-        await db.commit()
-        await db.refresh(user)
-    return user
+    return await map_orm_valuations_to_domain(result.scalars().all())
 
 
 async def create_user_profile(
@@ -116,27 +140,30 @@ async def create_user_profile(
     await db.commit()
     await db.refresh(user)
 
-    return UserReadDTO.model_validate(user)
+    return await map_orm_user_to_user_read_dto(user)
 
 
 async def update_user_points_by_id(
     db: AsyncSession,
     user_id: int,
-    points: int,
+    points_value: int,
     points_type: PointsTypeEnum,
 ) -> UserReadDTO:
     """Обновить баллы пользователя"""
-    user = await get_user_by_id(db, user_id)
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
     if user is None:
         raise ValueError(f"Пользователь с ID {user_id} не найден.")
 
     if points_type == PointsTypeEnum.ACADEMIC:
-        user.academic_points = points
+        user.academic_points += points_value
+        user.academic_points = max(user.academic_points, 0)
     elif points_type == PointsTypeEnum.REPUTATION:
-        user.reputation_points = points
+        user.reputation_points += points_value
+        user.reputation_points = max(user.reputation_points, 0)
     else:
         raise ValueError("Неизвестный тип баллов.")
 
     await db.commit()
     await db.refresh(user)
-    return user
+    return await map_orm_user_to_user_read_dto(user)

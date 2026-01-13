@@ -7,24 +7,14 @@ from sqlalchemy.orm import joinedload
 from ..core.constants import PointsTypeEnum
 from ..db.models.user_module import Level, UserLevel
 from ..domain import LevelEntity
-
-# TODO Добавить функцию маппер для уровня
+from ..mappers.level_mappers import map_orm_level_to_domain, map_orm_levels_to_domain
 
 
 async def get_all_levels(db: AsyncSession) -> Sequence[LevelEntity]:
     """Получить все уровни из БД"""
     stmt = select(Level)
     result = await db.execute(stmt)
-    return [
-        LevelEntity(
-            id=user_level_orm.id,
-            name=user_level_orm.name,
-            description=user_level_orm.description,
-            required_points=user_level_orm.required_points,
-            level_type=user_level_orm.level_type,
-        )
-        for user_level_orm in result.scalars().all()
-    ]
+    return await map_orm_levels_to_domain(result.scalars().all())
 
 
 async def level_exists(db: AsyncSession) -> bool:
@@ -60,13 +50,7 @@ async def get_user_current_level(  # TODO Разбить это всё таки 
     if user_level_orm is None or user_level_orm.level is None:
         return None
 
-    level_entity = LevelEntity(
-        id=user_level_orm.level.id,
-        name=user_level_orm.level.name,
-        description=user_level_orm.level.description,
-        required_points=user_level_orm.level.required_points,
-        level_type=user_level_orm.level.level_type,
-    )
+    level_entity = await map_orm_level_to_domain(user_level_orm.level)
 
     return user_level_orm, level_entity
 
@@ -92,13 +76,7 @@ async def get_next_level(
     if next_level_orm is None:
         return None
 
-    return LevelEntity(
-        id=next_level_orm.id,
-        name=next_level_orm.name,
-        description=next_level_orm.description,
-        required_points=next_level_orm.required_points,
-        level_type=next_level_orm.level_type,
-    )
+    return await map_orm_level_to_domain(next_level_orm)
 
 
 async def get_previous_level(
@@ -120,10 +98,4 @@ async def get_previous_level(
     if prev_level_orm is None:
         return None
 
-    return LevelEntity(
-        id=prev_level_orm.id,
-        name=prev_level_orm.name,
-        description=prev_level_orm.description,
-        required_points=prev_level_orm.required_points,
-        level_type=prev_level_orm.level_type,
-    )
+    return await map_orm_level_to_domain(prev_level_orm)

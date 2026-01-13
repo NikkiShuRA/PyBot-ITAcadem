@@ -78,7 +78,6 @@ class User(Base):
         passive_deletes=True,
         lazy="selectin"
     )
-
     task_solutions: Mapped[list["TaskSolution"]] = relationship(
         back_populates="user",
         passive_deletes=True,

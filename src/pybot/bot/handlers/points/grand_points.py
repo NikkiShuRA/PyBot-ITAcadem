@@ -2,14 +2,16 @@ import re
 
 from aiogram.filters.command import Command
 from aiogram.types import Message
+from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ....core import logger
 from ....core.constants import PointsTypeEnum
+from ....domain import Points
 from ....dto import AdjustUserPointsDTO, UserReadDTO
 from ....services.points import adjust_user_points
 from ....services.users import get_user_by_telegram_id
-from ...filters import check_text_message_correction, create_chat_type_routers, validate_points_value
+from ...filters import check_text_message_correction, create_chat_type_routers
 from ...utils import (
     _get_target_user_id_from_mention,
     _get_target_user_id_from_reply,
@@ -90,8 +92,8 @@ async def _handle_points_command(
         return
 
     try:
-        validate_points_value(points)
-    except ValueError as e:
+        points = Points(value=points, point_type=points_type)
+    except ValidationError as e:
         await message.reply(f"❌ {e}")
         return
 
@@ -109,7 +111,6 @@ async def _handle_points_command(
                 recipient_id=recipient_user.id,
                 giver_id=giver_user.id,
                 points=points,
-                points_type=points_type,
                 reason=reason,
             ),
         )

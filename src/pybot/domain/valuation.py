@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 
 from ..core.constants import PointsTypeEnum
 from .base import BaseEntityModel
+from .user import UserEntity
 
 if TYPE_CHECKING:
     from .user import UserEntity

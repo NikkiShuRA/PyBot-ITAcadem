@@ -1,22 +1,15 @@
 from ..base_class import Base
 
 
-from .attachment_module import (
-    Attachment,
-    AttachmentType
-)
-
 from .user_module import (
     User,
-    UserActivity
+    UserActivity,
 )
 
 from .task_module import (
     Task,
-    TaskAttachment,
     TaskSolution,
-    TaskSolutionAttachment,
-    TaskSolutionStatus
+    TaskSolutionStatus,
 )
 
 from .role_module import (
@@ -25,7 +18,7 @@ from .role_module import (
     Role,
     RolePermission,
     UserRole,
-    RoleEvent
+    RoleEvent,
 )
 
 from .level_module import (
@@ -33,15 +26,11 @@ from .level_module import (
     LevelSystem,
     PointEvent,
     PointReasonType,
-    UserLevelState
+    UserLevelState,
 )
 
 __all__ = [
     "Base",
-
-    # attachment_module
-    "AttachmentType",
-    "Attachment",
 
     # user_module
     "User",
@@ -49,9 +38,7 @@ __all__ = [
 
     # task_module
     "Task",
-    "TaskAttachment",
     "TaskSolution",
-    "TaskSolutionAttachment",
     "TaskSolutionStatus",
 
     # role_module
@@ -67,5 +54,5 @@ __all__ = [
     "LevelSystem",
     "PointEvent",
     "PointReasonType",
-    "UserLevelState"
+    "UserLevelState",
 ]

@@ -1,9 +1,11 @@
 from datetime import date
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Annotated, Optional
 
 from pydantic import Field
 
 from .base import BaseEntityModel
+from .factories import default_academic_points, default_reputation_points
+from .value_objects import Points
 
 if TYPE_CHECKING:
     from .achievement import AchievementEntity
@@ -24,8 +26,8 @@ class UserEntity(BaseEntityModel):
     last_name: str | None
     patronymic: str | None
     telegram_id: int
-    academic_points: int
-    reputation_points: int
+    academic_points: Annotated[Points, Field(default_factory=default_academic_points)]
+    reputation_points: Annotated[Points, Field(default_factory=default_reputation_points)]
     join_date: date
 
     user_levels: list["LevelEntity"] = Field(default_factory=list)
