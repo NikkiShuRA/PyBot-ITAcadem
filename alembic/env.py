@@ -63,7 +63,7 @@ def run_migrations_offline() -> None:
 
 
 def do_run_migrations(connection: AsyncSession) -> None:
-    context.configure(connection=connection, target_metadata=target_metadata)
+    context.configure(connection=connection, target_metadata=target_metadata)  # ty:ignore[invalid-argument-type]
 
     with context.begin_transaction():
         context.run_migrations()
