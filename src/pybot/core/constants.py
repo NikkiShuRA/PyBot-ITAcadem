@@ -1,6 +1,6 @@
 import enum
 
 
-class PointsTypeEnum(enum.Enum):
+class LevelSystemEnum(enum.Enum):
     ACADEMIC = "academic"
     REPUTATION = "reputation"
