@@ -4,8 +4,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
-from ..core.constants import PointsTypeEnum
-from ..db.models.user_module import Level, UserLevel
+# from ..core.constants import PointsTypeEnum
+from ..db.models import Level, UserLevelState, LevelSystem
 from ..domain import LevelEntity
 from ..mappers.level_mappers import map_orm_level_to_domain, map_orm_levels_to_domain
 
@@ -27,44 +27,44 @@ async def level_exists(db: AsyncSession) -> bool:
 async def get_user_current_level(  # TODO Разбить это всё таки на две функции
     db: AsyncSession,
     user_id: int,
-    points_type: PointsTypeEnum,
-) -> tuple[UserLevel, LevelEntity] | None:
+    level_system_type: LevelSystem,
+) -> tuple[UserLevelState, LevelEntity] | None:
     """
     Возвращает кортеж (ORM-объект UserLevel, доменная LevelEntity)
     или None, если уровень не найден.
     """
     stmt = (
-        select(UserLevel)
-        .options(joinedload(UserLevel.level))
+        select(UserLevelState)
+        .options(joinedload(UserLevelState.level))
         .join(Level)
         .where(
-            UserLevel.user_id == user_id,
-            Level.level_type == points_type,
+            UserLevelState.user_id == user_id,
+            Level.level_system_id == level_system_type,
         )
         .order_by(Level.required_points.desc())
         .limit(1)
     )
     result = await db.execute(stmt)
-    user_level_orm: UserLevel | None = result.scalar_one_or_none()
+    user_level_state_orm: UserLevelState | None = result.scalar_one_or_none()
 
-    if user_level_orm is None or user_level_orm.level is None:
+    if user_level_state_orm is None or user_level_state_orm.level is None:
         return None
 
-    level_entity = await map_orm_level_to_domain(user_level_orm.level)
+    level_entity = await map_orm_level_to_domain(user_level_state_orm.level)
 
-    return user_level_orm, level_entity
+    return user_level_state_orm, level_entity
 
 
 async def get_next_level(
     db: AsyncSession,
     current_level: LevelEntity,
-    points_type: PointsTypeEnum,
+    level_system_type: LevelSystem,
 ) -> LevelEntity | None:
     """Получить следующий уровень для повышения"""
     stmt = (
         select(Level)
         .where(
-            Level.level_type == points_type,
+            Level.level_type == level_system_type,
             Level.required_points > current_level.required_points,
         )
         .order_by(Level.required_points.asc())
@@ -80,7 +80,7 @@ async def get_next_level(
 
 
 async def get_previous_level(
-    db: AsyncSession, current_level: LevelEntity, points_type: PointsTypeEnum
+    db: AsyncSession, current_level: LevelEntity, level_system_type: LevelSystem
 ) -> LevelEntity | None:
     """
     Находит предыдущий уровень для заданного типа баллов.
@@ -88,7 +88,7 @@ async def get_previous_level(
     """
     query = (
         select(Level)
-        .where(Level.level_type == points_type, Level.required_points < current_level.required_points)
+        .where(Level.level_type == level_system_type, Level.required_points < current_level.required_points)
         .order_by(Level.required_points.desc())  # Сортируем по убыванию, чтобы найти ближайший меньший
         .limit(1)
     )
