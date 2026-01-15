@@ -24,8 +24,8 @@ from .role_module import (
 from .level_module import (
     Level,
     LevelSystem,
-    PointEvent,
-    PointReasonType,
+    LevelEvent,
+    LevelEventReasonType,
     UserLevelState,
 )
 
@@ -52,7 +52,7 @@ __all__ = [
     # level_module
     "Level",
     "LevelSystem",
-    "PointEvent",
-    "PointReasonType",
+    "LevelEvent",
+    "LevelEventReasonType",
     "UserLevelState",
 ]
