@@ -22,7 +22,6 @@ dependencies = [
 dev = [
     "aiogram-tests>=1.0.3",
     "alembic>=1.17.2",
-    "bandit>=1.9.2",
     "pre-commit>=4.5.0",
     "pytest>=9.0.1",
     "pytest-asyncio>=1.3.0",
