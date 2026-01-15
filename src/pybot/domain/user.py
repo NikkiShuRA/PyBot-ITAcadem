@@ -1,21 +1,13 @@
 from datetime import date
-from typing import TYPE_CHECKING, Annotated, Optional
+from typing import TYPE_CHECKING, Optional
 
 from pydantic import Field
 
 from .base import BaseEntityModel
-from .factories import default_academic_points, default_reputation_points
-from .value_objects import Points
+# from .factories import default_academic_points, default_reputation_points
 
 if TYPE_CHECKING:
-    from .achievement import AchievementEntity
-    from .attachment import AttachmentEntity
-    from .comment import CommentEntity
-    from .competence import CompetenceEntity
-    from .level import LevelEntity
-    from .project import ProjectEntity
-    from .role import RoleEntity
-    from .task import TaskEntity
+    from ..domain import UserLevelStateEntity, RoleEntity, TaskEntity
 
 
 class UserEntity(BaseEntityModel):
@@ -23,26 +15,18 @@ class UserEntity(BaseEntityModel):
 
     id: int
     first_name: str
-    last_name: str | None
+    last_name: str
     patronymic: str | None
     telegram_id: int
-    academic_points: Annotated[Points, Field(default_factory=default_academic_points)]
-    reputation_points: Annotated[Points, Field(default_factory=default_reputation_points)]
+    
     join_date: date
 
-    user_levels: list["LevelEntity"] = Field(default_factory=list)
-
-    academic_role: Optional["RoleEntity"] = None
-    admin_role: Optional["RoleEntity"] = None
-
-    competencies: list["CompetenceEntity"] = Field(default_factory=list)
-    achievements: list["AchievementEntity"] = Field(default_factory=list)
+    user_level_states: list["UserLevelStateEntity"] = Field(default_factory=list)
+    # academic_points: Annotated[Points, Field(default_factory=default_academic_points)]
+    # reputation_points: Annotated[Points, Field(default_factory=default_reputation_points)]
+    
+    role: Optional["RoleEntity"] = None
 
     created_tasks: list["TaskEntity"] = Field(default_factory=list)
 
     solutions: list["TaskEntity"] = Field(default_factory=list)
-    comments: list["CommentEntity"] = Field(default_factory=list)
-    attachments: list["AttachmentEntity"] = Field(default_factory=list)
-
-    created_projects: list["ProjectEntity"] = Field(default_factory=list)
-    projects: list["ProjectEntity"] = Field(default_factory=list)

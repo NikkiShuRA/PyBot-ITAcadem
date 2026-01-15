@@ -2,7 +2,7 @@ from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from ..core.constants import PointsTypeEnum
+from .level_system import LevelSystemEntity
 
 
 class BaseValueModel(BaseModel):
@@ -15,7 +15,7 @@ class Points(BaseValueModel):
 
     Attributes:
         value (int): Количество очков.
-        point_type (Points_type_enum): Тип очков.
+        pointlevel_system_type_type (LevelSystemEntity): Тип системы уровня.
 
     Methods:
         adjust (int): Меняет количество очков на заданное значение.
@@ -26,7 +26,7 @@ class Points(BaseValueModel):
     """
 
     value: Annotated[int, Field(strict=True, ge=-(2**31), le=2**31 - 1)]
-    point_type: PointsTypeEnum
+    level_system_type: LevelSystemEntity
 
     def adjust(self, delta: int) -> "Points":
         """
