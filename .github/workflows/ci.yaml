@@ -1,0 +1,42 @@
+name: CI - Code Quality
+
+on:
+  push:
+    branches: [ main, dev-Ilya ]
+  pull_request:
+    branches: [ main, dev-Ilya ]
+
+jobs:
+  quality-checks:
+    name: Lint, Format Check & Type Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+          enable-cache: true
+
+      - name: Add uv to PATH
+        run: echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies (including dev-group)
+        run: make install-dev
+
+      - name: Ruff lint
+        run: make lint
+
+      - name: Ruff format check (fail if code is not formatted)
+        run: make format-check
+
+      - name: Type check with ty (GitHub annotations)
+        run: make type-check

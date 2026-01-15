@@ -34,4 +34,4 @@ class BotSettings(BaseSettings):
         return self
 
 
-settings: BotSettings = BotSettings()  # type: ignore[call-arg]
+settings: BotSettings = BotSettings()
