@@ -1,11 +1,8 @@
 import re
+
 import phonenumbers
 from phonenumbers import PhoneNumberFormat
 
-
-import re
-import phonenumbers
-from phonenumbers import PhoneNumberFormat
 
 def normalize_phone(
     phone: str,
@@ -57,4 +54,3 @@ def normalize_phone(
         raise ValueError("Некорректный номер телефона")
 
     return phonenumbers.format_number(parsed, PhoneNumberFormat.E164)
-
