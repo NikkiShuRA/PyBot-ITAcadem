@@ -1,6 +1,6 @@
-import enum
+from enum import StrEnum
 
 
-class PointsTypeEnum(enum.Enum):
+class PointsTypeEnum(StrEnum):
     ACADEMIC = "academic"
     REPUTATION = "reputation"
