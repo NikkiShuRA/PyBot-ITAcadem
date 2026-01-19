@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import datetime
 
-from sqlalchemy import BigInteger, ForeignKey, Integer, Text, func
-from sqlalchemy.dialects.postgresql import ENUM, TIMESTAMP
+from sqlalchemy import BigInteger, DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ....core.constants import PointsTypeEnum
@@ -14,7 +13,7 @@ from .user import User
 class Valuation(Base):
     __tablename__ = "valuations"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     recipient_id: Mapped[int] = mapped_column(
         BigInteger,
         ForeignKey("users.id", ondelete="CASCADE"),
@@ -28,9 +27,14 @@ class Valuation(Base):
     reason: Mapped[str | None] = mapped_column(Text)
     points: Mapped[int] = mapped_column(Integer, nullable=False)
     points_type: Mapped[PointsTypeEnum] = mapped_column(
-        ENUM(PointsTypeEnum, name="points_type_enum", create_type=True), nullable=False
+        String(50),
+        nullable=False,
     )
-    created_at: Mapped[date] = mapped_column(TIMESTAMP, nullable=False, server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=False),  # SQLite не поддерживает timezone
+        nullable=False,
+        server_default=func.now(),
+    )
     recipient: Mapped[User] = relationship(
         "User",
         foreign_keys=[recipient_id],

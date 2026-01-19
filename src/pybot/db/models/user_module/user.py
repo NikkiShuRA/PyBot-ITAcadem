@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 class User(Base):
     __tablename__ = "users"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     first_name: Mapped[str] = mapped_column(Text, nullable=False)
     last_name: Mapped[str | None] = mapped_column(Text)
     patronymic: Mapped[str | None] = mapped_column(Text)

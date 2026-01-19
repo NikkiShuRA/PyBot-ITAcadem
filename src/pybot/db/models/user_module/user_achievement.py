@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, ForeignKey
+from sqlalchemy import ForeignKey, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ...base_class import Base
@@ -16,12 +16,12 @@ class UserAchievement(Base):
     __tablename__ = "user_achievements"
 
     user_id: Mapped[int] = mapped_column(
-        BigInteger,
+        Integer,
         ForeignKey("users.id", ondelete="CASCADE"),
         primary_key=True,
     )
     achievements_id: Mapped[int] = mapped_column(
-        BigInteger,
+        Integer,
         ForeignKey("achievements.id", ondelete="CASCADE"),
         primary_key=True,
     )

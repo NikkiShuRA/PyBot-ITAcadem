@@ -49,8 +49,8 @@ def normalize_phone(
     except phonenumbers.NumberParseException as err:
         raise ValueError("Некорректный номер телефона") from err
 
-    ok = phonenumbers.is_valid_number(parsed) if strict else phonenumbers.is_possible_number(parsed)
-    if not ok:
-        raise ValueError("Некорректный номер телефона")
+    # ok = phonenumbers.is_valid_number(parsed) if strict else phonenumbers.is_possible_number(parsed)
+    # if not ok:
+    #     raise ValueError("Некорректный номер телефона")
 
     return phonenumbers.format_number(parsed, PhoneNumberFormat.E164)

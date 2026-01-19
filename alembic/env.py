@@ -51,11 +51,13 @@ def run_migrations_offline() -> None:
     we don't even need a DBAPI to be available.
     """
     url = config.get_main_option("sqlalchemy.url")
+    if url is None:
+        raise ValueError("Database URL is not configured.")
     context.configure(
         url=url,
         target_metadata=target_metadata,
         literal_binds=True,
-        dialect_opts={"paramstyle": "named"},
+        dialect_opts={"paramstyle": "qmark"} if "sqlite" in url else {"paramstyle": "named"},
     )
 
     with context.begin_transaction():
@@ -78,9 +80,13 @@ async def run_migrations_online() -> None:
     if url_to_database is None:
         raise ValueError("Database URL is not configured.")
     else:
+        connect_args = {}
+    if "sqlite" in url_to_database:
+        connect_args = {"check_same_thread": False}
         connectable = create_async_engine(
             url_to_database,
             poolclass=pool.NullPool,
+            connect_args=connect_args,
         )
 
     async with connectable.connect() as connection:
