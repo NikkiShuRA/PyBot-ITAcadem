@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, Boolean, ForeignKey
+from sqlalchemy import Boolean, ForeignKey, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ...base_class import Base
@@ -16,13 +16,13 @@ class UserCompetence(Base):
     __tablename__ = "user_competencies"
 
     user_id: Mapped[int] = mapped_column(
-        BigInteger,
+        Integer,
         ForeignKey("users.id", ondelete="CASCADE"),
         primary_key=True,
     )
 
     competence_id: Mapped[int] = mapped_column(
-        BigInteger,
+        Integer,
         ForeignKey("competencies.id", ondelete="CASCADE"),
         primary_key=True,
     )
