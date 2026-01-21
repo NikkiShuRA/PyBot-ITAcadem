@@ -3,9 +3,6 @@ from ..base_class import Base
 # Shared (общие) модели
 from .achievement import Achievement
 
-from .attachments_types import AttachmentsType
-from .attachments import Attachment
-
 from .comment_answers import CommentAnswer
 from .comment_attachments import CommentAttachment
 from .comments import Comment
@@ -47,8 +44,6 @@ __all__ = [
     "Base",
     # shared
     "Achievement",
-    "AttachmentsType",
-    "Attachment",
     "CommentAnswer",
     "CommentAttachment",
     "Comment",
