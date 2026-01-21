@@ -9,7 +9,6 @@ from ...base_class import Base
 
 if TYPE_CHECKING:
     from ..user_module import User
-    from .task_solution_comments import TaskSolutionComment
     from .task_solution_statuses import TaskSolutionStatus
     from .tasks import Task
 
@@ -28,9 +27,3 @@ class TaskSolution(Base):
     task: Mapped[Task] = relationship("Task", back_populates="solutions")
     author: Mapped[User] = relationship("User", back_populates="solutions")
     status: Mapped[TaskSolutionStatus] = relationship("TaskSolutionStatus", back_populates="solutions")
-
-    comments: Mapped[list[TaskSolutionComment]] = relationship(
-        "TaskSolutionComment",
-        back_populates="task",
-        cascade="all, delete-orphan",
-    )

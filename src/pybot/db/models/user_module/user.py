@@ -9,8 +9,6 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from ...base_class import Base
 
 if TYPE_CHECKING:
-    from ..comments import Comment
-    from ..project_module import Project, ProjectMember
     from ..task_module import Task, TaskSolution
     from ..user_module import (
         AcademicRole,
@@ -104,17 +102,6 @@ class User(Base):
 
     created_tasks: Mapped[list[Task]] = relationship("Task", back_populates="author")
     solutions: Mapped[list[TaskSolution]] = relationship("TaskSolution", back_populates="author")
-
-    created_projects: Mapped[list[Project]] = relationship(
-        "Project",
-        foreign_keys="Project.user_id",  # Указываем ForeignKey для SQLAlchemy
-        back_populates="author",
-    )
-
-    comments: Mapped[list[Comment]] = relationship("Comment", back_populates="author", uselist=True)
-    projects: Mapped[list[ProjectMember]] = relationship(
-        "ProjectMember", back_populates="user", cascade="all, delete-orphan"
-    )
 
     def __repr__(self) -> str:
         return f"User(id={self.id!r}, first_name={self.first_name!r}, last_name={self.last_name!r}, telegram_id={self.telegram_id!r}, academic_points={self.academic_points!r}, computation_points={self.reputation_points!r}, join_date={self.join_date!r})"  # noqa: E501
