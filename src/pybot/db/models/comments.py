@@ -8,7 +8,6 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from ..base_class import Base
 
 if TYPE_CHECKING:
-    from .project_module.project_comments import ProjectComment
     from .task_module.task_comments import TaskComment
     from .task_module.task_solution_comments import TaskSolutionComment
     from .user_module.user import User
@@ -36,8 +35,3 @@ class Comment(Base):
         cascade="all, delete-orphan",
     )
 
-    project_comments: Mapped[list[ProjectComment]] = relationship(
-        "ProjectComment",
-        back_populates="comment",
-        cascade="all, delete-orphan",
-    )
