@@ -103,6 +103,5 @@ class User(Base):
     created_tasks: Mapped[list[Task]] = relationship("Task", back_populates="author")
     solutions: Mapped[list[TaskSolution]] = relationship("TaskSolution", back_populates="author")
 
-
     def __repr__(self) -> str:
         return f"User(id={self.id!r}, first_name={self.first_name!r}, last_name={self.last_name!r}, telegram_id={self.telegram_id!r}, academic_points={self.academic_points!r}, computation_points={self.reputation_points!r}, join_date={self.join_date!r})"  # noqa: E501

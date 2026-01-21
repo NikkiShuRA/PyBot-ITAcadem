@@ -1,8 +1,6 @@
 from datetime import date
 from typing import TYPE_CHECKING
 
-from pydantic import Field
-
 from .base import BaseEntityModel
 
 if TYPE_CHECKING:
