@@ -21,16 +21,6 @@ from .user_module import (
     Valuation,
 )
 
-from .project_module import (
-    Project,
-    ProjectStatus,
-    ProjectMember,
-    ProjectMemberRole,
-    ProjectAttachment,
-    ProjectAchievement,
-    ProjectComment,
-)
-
 from .task_module import (
     Task,
     TaskAttachment,
@@ -58,14 +48,6 @@ __all__ = [
     "UserCompetence",
     "UserAchievement",
     "Valuation",
-    # project_module
-    "Project",
-    "ProjectStatus",
-    "ProjectMember",
-    "ProjectMemberRole",
-    "ProjectAttachment",
-    "ProjectAchievement",
-    "ProjectComment",
     # task_module
     "Task",
     "TaskAttachment",
