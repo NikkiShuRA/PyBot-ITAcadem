@@ -9,11 +9,8 @@ from .value_objects import Points
 
 if TYPE_CHECKING:
     from .achievement import AchievementEntity
-    from .attachment import AttachmentEntity
-    from .comment import CommentEntity
     from .competence import CompetenceEntity
     from .level import LevelEntity
-    from .project import ProjectEntity
     from .role import RoleEntity
     from .task import TaskEntity
 
@@ -41,8 +38,3 @@ class UserEntity(BaseEntityModel):
     created_tasks: list["TaskEntity"] = Field(default_factory=list)
 
     solutions: list["TaskEntity"] = Field(default_factory=list)
-    comments: list["CommentEntity"] = Field(default_factory=list)
-    attachments: list["AttachmentEntity"] = Field(default_factory=list)
-
-    created_projects: list["ProjectEntity"] = Field(default_factory=list)
-    projects: list["ProjectEntity"] = Field(default_factory=list)
