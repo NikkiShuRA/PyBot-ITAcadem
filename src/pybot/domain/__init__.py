@@ -3,7 +3,6 @@ from .level import LevelEntity as LevelEntity
 from .role import RoleEntity as RoleEntity
 from .competence import CompetenceEntity as CompetenceEntity
 from .achievement import AchievementEntity as AchievementEntity
-from .comment import CommentEntity as CommentEntity
 from .task import TaskEntity as TaskEntity
 from .valuation import ValuationEntity as ValuationEntity
 from .value_objects import Points as Points
@@ -15,5 +14,4 @@ TaskEntity.model_rebuild()
 AchievementEntity.model_rebuild()
 RoleEntity.model_rebuild()
 CompetenceEntity.model_rebuild()
-CommentEntity.model_rebuild()
 ValuationEntity.model_rebuild()

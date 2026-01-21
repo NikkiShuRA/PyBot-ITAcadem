@@ -6,7 +6,6 @@ from pydantic import Field
 from .base import BaseEntityModel
 
 if TYPE_CHECKING:
-    from .comment import CommentEntity
     from .user import UserEntity
 
 
@@ -20,5 +19,3 @@ class TaskEntity(BaseEntityModel):
     is_active: bool
     due_date: date
     author: "UserEntity"
-
-    comments: list["CommentEntity"] = Field(default_factory=list)

@@ -44,9 +44,6 @@ async def get_user_by_phone(db: AsyncSession, phone: str) -> UserEntity | None:
             joinedload(User.achievements),
             joinedload(User.created_tasks),
             joinedload(User.solutions),
-            joinedload(User.comments),
-            joinedload(User.created_projects),
-            joinedload(User.projects),
         )
         .where(User.phone_number == phone)
     )

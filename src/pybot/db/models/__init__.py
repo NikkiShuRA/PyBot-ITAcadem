@@ -3,8 +3,6 @@ from ..base_class import Base
 # Shared (общие) модели
 from .achievement import Achievement
 
-from .comment_answers import CommentAnswer
-from .comments import Comment
 
 # Доменные подпакеты
 from .user_module import (
@@ -22,19 +20,14 @@ from .user_module import (
 
 from .task_module import (
     Task,
-    TaskAttachment,
-    TaskComment,
     TaskSolution,
     TaskSolutionStatus,
-    TaskSolutionComment,
 )
 
 __all__ = [
     "Base",
     # shared
     "Achievement",
-    "CommentAnswer",
-    "Comment",
     # user_module
     "User",
     "UserActivityStatus",
@@ -48,8 +41,6 @@ __all__ = [
     "Valuation",
     # task_module
     "Task",
-    "TaskComment",
     "TaskSolution",
     "TaskSolutionStatus",
-    "TaskSolutionComment",
 ]
