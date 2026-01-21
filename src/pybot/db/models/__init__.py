@@ -4,7 +4,6 @@ from ..base_class import Base
 from .achievement import Achievement
 
 from .comment_answers import CommentAnswer
-from .comment_attachments import CommentAttachment
 from .comments import Comment
 
 # Доменные подпакеты
@@ -35,7 +34,6 @@ __all__ = [
     # shared
     "Achievement",
     "CommentAnswer",
-    "CommentAttachment",
     "Comment",
     # user_module
     "User",
@@ -50,7 +48,6 @@ __all__ = [
     "Valuation",
     # task_module
     "Task",
-    "TaskAttachment",
     "TaskComment",
     "TaskSolution",
     "TaskSolutionStatus",
