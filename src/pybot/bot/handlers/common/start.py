@@ -5,10 +5,8 @@ from aiogram.types import Message
 from aiogram_dialog import DialogManager
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ....services.users import get_user_by_telegram_id
-from ...dialogs.user.states import CreateProfileSG
 from ...filters import create_chat_type_routers
-from ...keyboards.auth import request_contact_kb
+
 
 start_private_router, start_group_router, start_global_router = create_chat_type_routers("start")
 
@@ -16,22 +14,8 @@ start_private_router, start_group_router, start_global_router = create_chat_type
 # /start - в личном чате
 @start_private_router.message(CommandStart())
 async def cmd_start_private(message: Message, dialog_manager: DialogManager, db: AsyncSession) -> None:
-    if message.from_user:
-        user = await get_user_by_telegram_id(db, message.from_user.id)
-    else:
-        await message.answer(
-            "Произошла ошибка при обработке пользователя.",
-        )
-        return
-    if user:
-        await message.answer("Ты уже авторизован, /help — список команд.")
-        return
-    else:
-        await message.answer(
-            "Для авторизации отправь свой номер телефона кнопкой ниже.",
-            reply_markup=request_contact_kb,
-        )
-        await dialog_manager.start(CreateProfileSG.contact)
+    from ..profile.grand_profile import cmd_profile_private
+    await cmd_profile_private(message, dialog_manager, db)
 
 
 # /start - в групповом чате
