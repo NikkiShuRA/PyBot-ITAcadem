@@ -41,19 +41,52 @@ async def cmd_profile_private(message: Message, dialog_manager: DialogManager, d
 
 # Показ профиля
 async def show_profile(message: Message, db: AsyncSession, user: UserReadDTO) -> None:
-    user_academ_level, academ_level_entity = await get_user_current_level(db, user.id, PointsTypeEnum.ACADEMIC)
-    next_academ_level = await get_next_level(db, academ_level_entity, PointsTypeEnum.ACADEMIC)
-    user_rep_level, rep_level_entity = await get_user_current_level(db, user.id, PointsTypeEnum.REPUTATION)
-    next_rep_level = await get_next_level(db, rep_level_entity, PointsTypeEnum.REPUTATION)
+    academ_res = await get_user_current_level(db, user.id, PointsTypeEnum.ACADEMIC)
+    if academ_res is None:
+        await message.answer("Ошибочка вышла с поиском academ данных.")
+        return
 
-    async def progress_bar(current: int, max_: int, width: int = 10) -> str:
+    user_academ_level, academ_level_entity = academ_res
+
+    next_academ_level = await get_next_level(db, academ_level_entity, PointsTypeEnum.ACADEMIC)
+    if next_academ_level is None:
+        await message.answer("Ошибочка: не найден следующий academ уровень (возможно, это максимальный уровень).")
+        return
+
+    rep_res = await get_user_current_level(db, user.id, PointsTypeEnum.REPUTATION)
+    if rep_res is None:
+        await message.answer("Ошибочка вышла с поиском rep данных.")
+        return
+
+    user_rep_level, rep_level_entity = rep_res
+
+    next_rep_level = await get_next_level(db, rep_level_entity, PointsTypeEnum.REPUTATION)
+    if next_rep_level is None:
+        await message.answer("Ошибочка: не найден следующий rep уровень (возможно, это максимальный уровень).")
+        return
+
+    def progress_bar(current: int, max_: int, width: int = 10) -> str:
+        if max_ <= 0:
+            return "░" * width
         filled = int(current / max_ * width)
+        filled = max(0, min(width, filled))
         return "█" * filled + "░" * (width - filled)
 
-    academ_bar = await progress_bar(user.academic_points.value, next_academ_level.required_points)
-    rep_bar = await progress_bar(user.reputation_points.value, next_rep_level.required_points)
-    academ_pct = int(user.academic_points.value / next_academ_level.required_points * 100)
-    rep_pct = int(user.reputation_points.value / next_rep_level.required_points * 100)
+    academ_req = next_academ_level.required_points
+    rep_req = next_rep_level.required_points
+
+    if academ_req <= 0:
+        await message.answer("Ошибочка: некорректный required_points для academ уровня.")
+        return
+    if rep_req <= 0:
+        await message.answer("Ошибочка: некорректный required_points для rep уровня.")
+        return
+
+    academ_bar = progress_bar(user.academic_points.value, academ_req)
+    rep_bar = progress_bar(user.reputation_points.value, rep_req)
+
+    academ_pct = int(user.academic_points.value / academ_req * 100)
+    rep_pct = int(user.reputation_points.value / rep_req * 100)
 
     await message.answer(
         textwrap.dedent(
@@ -62,15 +95,16 @@ async def show_profile(message: Message, db: AsyncSession, user: UserReadDTO) ->
 
                 📚 Академический уровень
                 {user_academ_level.level.name}
-                {user.academic_points.value} / {next_academ_level.required_points}
+                {user.academic_points.value} / {academ_req}
                 {academ_bar} {academ_pct}%
 
                 🤌 Репутационный уровень
                 {user_rep_level.level.name}
-                {user.reputation_points.value} / {next_rep_level.required_points}
+                {user.reputation_points.value} / {rep_req}
                 {rep_bar} {rep_pct}%
 
                 👇 Обновить профиль — /profile
                 """
         ),
     )
+
