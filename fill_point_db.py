@@ -80,7 +80,7 @@ async def generate_levels_data(session: AsyncSession) -> Sequence[Level]:
         required_xp = calculate_xp(level_num)
 
         academic_level = Level(
-            name=f"Академический Уровень {level_num}",
+            name=f"Уровень {level_num}",
             description=f"Требуется {required_xp} академических баллов для достижения этого уровня.",
             required_points=required_xp,
             level_type=PointsTypeEnum.ACADEMIC,
@@ -88,7 +88,7 @@ async def generate_levels_data(session: AsyncSession) -> Sequence[Level]:
         levels_to_add.append(academic_level)
 
         reputation_level = Level(
-            name=f"Репутационный Уровень {level_num}",
+            name=f"Уровень {level_num}",
             description=f"Требуется {required_xp} репутационных баллов для достижения этого уровня.",
             required_points=required_xp,
             level_type=PointsTypeEnum.REPUTATION,
