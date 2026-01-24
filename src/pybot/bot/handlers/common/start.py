@@ -52,6 +52,7 @@ async def cmd_info(message: Message) -> None:
         )
     )
 
+
 # /help - в личномчате
 @start_private_router.message(Command("help"))
 async def cmd_help_private(message: Message) -> None:
@@ -67,6 +68,7 @@ async def cmd_help_private(message: Message) -> None:
             """
         )
     )
+
 
 # /help - в групповом чате
 @start_group_router.message(Command("help"))
