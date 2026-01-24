@@ -5,12 +5,11 @@ from aiogram.types import Message
 from aiogram_dialog import DialogManager
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ....dto import UserReadDTO
 from ....services.users import get_user_by_telegram_id
 from ...dialogs.user.states import CreateProfileSG
 from ...filters import create_chat_type_routers
 from ...keyboards.auth import request_contact_kb
-
-from ....dto import UserReadDTO
 
 grand_profile_private_router, grand_profile_group_router, grand_profile_global_router = create_chat_type_routers("grand_profile")
 

@@ -7,7 +7,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...filters import create_chat_type_routers
 
-
 start_private_router, start_group_router, start_global_router = create_chat_type_routers("start")
 
 

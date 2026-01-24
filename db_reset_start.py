@@ -1,7 +1,8 @@
-import subprocess
 import os
+import subprocess
 import sys
 from urllib.parse import urlparse
+
 
 # Парсер URL для установки пути к БД
 def find_file_db():
@@ -42,7 +43,7 @@ def main():
     ]
     
     for cmd in commands:
-        print(f"\n{'='*50}")
+        print(f"\n{'=' * 50}")
         print(f"🚀 Команда: {cmd}")
         print("Вывод:")
         
