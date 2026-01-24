@@ -107,4 +107,3 @@ async def show_profile(message: Message, db: AsyncSession, user: UserReadDTO) ->
                 """
         ),
     )
-
