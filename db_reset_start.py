@@ -1,12 +1,13 @@
 import os
-import subprocess
+import subprocess  # noqa: S404
 import sys
 from urllib.parse import urlparse
 
+from src.pybot.core.config import settings
+
 
 # Парсер URL для установки пути к БД
-def find_file_db():
-    from src.pybot.core.config import settings
+def find_file_db() -> str:
     url = settings.database_url
     parsed = urlparse(url)
     db_path = parsed.path.lstrip("/")
@@ -17,38 +18,41 @@ def find_file_db():
 
 
 # Удаление существующей БД -> запуск миграций -> заполнение БД -> запуск бота
-def main():
+def main() -> None:
     db_file = find_file_db()
     if os.path.exists(db_file):
         print(f"Найдена БД: {db_file}")
-        
+
         confirm = input("Удалить БД? (y/n): ").lower().strip()
-        if confirm != 'y':
+        if confirm != "y":
             print("Отмена.")
             sys.exit(0)
-        
+
         try:
             os.remove(db_file)
-            if os.path.exists(db_file):
-                raise Exception("Файл БД не удалён!")
-            print("✅ БД удалена")
-        except Exception as e:
+        except OSError as e:
             print(f"❌ Ошибка: {e}")
             sys.exit(1)
-    
-    commands = [
-        "alembic upgrade head",
-        "py fill_point_db.py",
-        "py run.py"
+
+        if os.path.exists(db_file):
+            print("❌ Файл БД не удалён!")
+            sys.exit(1)
+
+        print("✅ БД удалена")
+
+    commands: list[list[str]] = [
+        ["alembic", "upgrade", "head"],
+        ["py", "fill_point_db.py"],
+        ["py", "run.py"],
     ]
-    
+
     for cmd in commands:
         print(f"\n{'=' * 50}")
-        print(f"🚀 Команда: {cmd}")
+        print(f"🚀 Команда: {' '.join(cmd)}")
         print("Вывод:")
-        
-        result = subprocess.run(cmd, shell=True)
-        
+
+        result = subprocess.run(cmd, check=False)  # noqa: S603
+
         print(f"Код возврата: {result.returncode}")
         if result.returncode != 0:
             print("❌ Команда упала!")

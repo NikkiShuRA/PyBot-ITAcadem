@@ -47,9 +47,9 @@ async def tg_bot_main() -> None:
         # Подключаем остальные роутеры common
         dp.include_router(common_router)
         dp.include_router(points_router)
-        dp.include_router(profile_router)                                           # !!! Костыль вывода профиля (Нужно перепроверить и улучшить)
+        dp.include_router(profile_router)  # !!! Костыль вывода профиля (Нужно перепроверить и улучшить)
         dp.include_router(user_router)
-        
+
         # Инициализируем DialogManager для работы с диалогами
         setup_dialogs(dp)
 
