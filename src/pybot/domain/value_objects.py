@@ -73,7 +73,7 @@ class Points(BaseValueModel):
 
     def __str__(self) -> str:
         type_name = self.point_type.value.lower()
-        return f"{self.value} {type_name})"
+        return f"{self.value} {type_name}"
 
     def __repr__(self) -> str:
         return f"Points(value={self.value}, point_type={self.point_type})"
