@@ -10,6 +10,8 @@ from ....services.users import get_user_by_telegram_id
 from ...dialogs.user.states import CreateProfileSG
 from ...filters import create_chat_type_routers
 from ...keyboards.auth import request_contact_kb
+from ....services.levels import get_next_level, get_user_current_level
+from ....core.constants import PointsTypeEnum
 
 grand_profile_private_router, grand_profile_group_router, grand_profile_global_router = create_chat_type_routers("grand_profile")
 
@@ -25,7 +27,7 @@ async def cmd_profile_private(message: Message, dialog_manager: DialogManager, d
         )
         return
     if user:
-        await show_profile(message, user)
+        await show_profile(message, db, user)
         return
     else:
         await message.answer(
@@ -36,17 +38,37 @@ async def cmd_profile_private(message: Message, dialog_manager: DialogManager, d
         
 
 # Показ профиля
-async def show_profile(message: Message, user: UserReadDTO) -> None:
+async def show_profile(message: Message, db: AsyncSession, user: UserReadDTO) -> None:
+    user_academ_level, academ_level_entity = await get_user_current_level(db, user.id, PointsTypeEnum.ACADEMIC)
+    next_academ_level = await get_next_level(db, academ_level_entity, PointsTypeEnum.ACADEMIC)
+    user_rep_level, rep_level_entity = await get_user_current_level(db, user.id, PointsTypeEnum.REPUTATION)
+    next_rep_level = await get_next_level(db, rep_level_entity, PointsTypeEnum.REPUTATION)
+    
+    async def progress_bar(current: int, max_: int, width: int = 10) -> str:
+        filled = int(current / max_ * width)
+        return "█" * filled + "░" * (width - filled)
+    
+    academ_bar = await progress_bar(user.academic_points.value, next_academ_level.required_points)
+    rep_bar = await progress_bar(user.reputation_points.value, next_rep_level.required_points)
+    academ_pct = int(user.academic_points.value / next_academ_level.required_points * 100)
+    rep_pct = int(user.reputation_points.value / next_rep_level.required_points * 100)
+
     await message.answer(
             textwrap.dedent(
                 f"""
-                👋 Доброго времени суток, {user.first_name}
+                👋 Доброго времени суток, {user.first_name}!
 
-                📚 Академ уровень — {user.academic_points.value}
-                Баллы — {user.academic_points.value} / {{азаза}}
+                📚 Академический уровень
+                {user_academ_level.level.name}
+                {user.academic_points.value} / {next_academ_level.required_points}
+                {academ_bar} {academ_pct}%
 
-                🤌 Реп уровень — {user.reputation_points.value}
-                Баллы — {user.reputation_points.value} / {{азаза}}
+                🤌 Репутационный уровень
+                {user_rep_level.level.name}
+                {user.reputation_points.value} / {next_rep_level.required_points}
+                {rep_bar} {rep_pct}%
+
+                👇 Обновить профиль — /profile
                 """
-            )
+            ),
         )
