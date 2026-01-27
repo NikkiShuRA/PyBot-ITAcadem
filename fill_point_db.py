@@ -11,10 +11,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.pybot import create_user_profile, update_user_points_by_id
-from src.pybot.core.constants import PointsTypeEnum
+from src.pybot.core.constants import PointsTypeEnum, RoleEnum
 from src.pybot.core.logger import setup_logger
 from src.pybot.db.database import SessionLocal, engine
-from src.pybot.db.models import Level
+from src.pybot.db.models import Level, Role
 from src.pybot.dto import UserCreateDTO
 
 logger = setup_logger()
@@ -230,6 +230,43 @@ async def generate_users_data(session: AsyncSession, num_users: int) -> None:
     logger.success(f"Успешно создано {successfully_created} пользователей. Ошибок: {failed_count}")
 
 
+async def get_all_roles(session: AsyncSession) -> Sequence[Role]:
+    """Получает все роли из базы данных."""
+    stmt = select(Role)
+    result = await session.execute(stmt)
+    return result.scalars().all()
+
+
+async def role_exists(session: AsyncSession) -> bool:
+    """Проверяет, существуют ли роли в базе данных."""
+    stmt = select(Role).limit(1)
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none() is not None
+
+
+async def add_roles_data(session: AsyncSession) -> Sequence[Role]:
+    """Добавляет роли в БД (если их там еще нет) из RoleEnum."""
+    logger.info("Начинаем генерацию ролей...")
+
+    if await role_exists(session):
+        logger.info("Роли уже существуют в БД. Пропускаем генерацию.")
+        return await get_all_roles(session)
+
+    roles_to_add = []
+
+    for role_obj in RoleEnum:
+        role = Role(
+            name=f"{role_obj.value}",
+        )
+        roles_to_add.append(role)
+
+    session.add_all(roles_to_add)
+    await session.commit()
+    logger.info(f"Добавлено {len(roles_to_add)} ролей в базу данных.")
+
+    return roles_to_add
+
+
 async def fill_database() -> None:
     """Основная функция для заполнения базы данных фейковыми данными."""
     logger.info("Запуск скрипта заполнения базы данных...")
@@ -239,7 +276,10 @@ async def fill_database() -> None:
             # 1️⃣ Генерация и добавление уровней
             await generate_levels_data(session)
 
-            # 2️⃣ Генерация и добавление пользователей
+            # 2️⃣ Добавление ролей
+            await add_roles_data(session)
+
+            # 3️⃣ Генерация и добавление пользователей
             await generate_users_data(session, NUM_FAKE_USERS)
 
             logger.success("Заполнение базы данных успешно завершено!")

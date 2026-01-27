@@ -9,7 +9,7 @@ from ....core.constants import PointsTypeEnum
 from ....dto import UserReadDTO
 from ....services.levels import get_next_level, get_user_current_level
 from ....services.users import get_user_by_telegram_id
-from ...dialogs.user.states import CreateProfileSG
+from ...dialogs.user_reg.states import CreateProfileSG
 from ...filters import create_chat_type_routers
 from ...keyboards.auth import request_contact_kb
 
