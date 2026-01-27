@@ -1,11 +1,5 @@
-from collections.abc import Awaitable, Callable
-from typing import Any
-
-# простейший middleware для сессии БД
-from aiogram import BaseMiddleware, Bot, Dispatcher
-from aiogram.types import TelegramObject, Update
+from aiogram import Bot, Dispatcher
 from aiogram_dialog import setup_dialogs
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from yaspin import yaspin
 
 from ..core import logger
@@ -17,25 +11,7 @@ from .handlers import (
     points_router,
     profile_router,  # !!! Костыль вывода профиля (Нужно перепроверить и улучшить)
 )
-
-
-class DbSessionMiddleware(BaseMiddleware):
-    def __init__(self, session_maker: async_sessionmaker[AsyncSession]) -> None:
-        super().__init__()
-        self.session_maker = session_maker
-
-    async def __call__(
-        self,
-        handler: Callable[[TelegramObject, dict[str, Any]], Awaitable[Any]],
-        event: TelegramObject,
-        data: dict[str, Any],
-    ) -> Any:
-        if not isinstance(event, Update):
-            return await handler(event, data)
-
-        async with self.session_maker() as session:
-            data["db"] = session
-            return await handler(event, data)
+from .middlewares import DbSessionMiddleware
 
 
 async def tg_bot_main() -> None:
