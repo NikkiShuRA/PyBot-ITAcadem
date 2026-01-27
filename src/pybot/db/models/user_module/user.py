@@ -9,10 +9,12 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from ...base_class import Base
 
 if TYPE_CHECKING:
+    from ..role_module import (
+        RoleEvent,
+        UserRole,
+    )
     from ..task_module import Task, TaskSolution
     from ..user_module import (
-        AcademicRole,
-        AdminRole,
         UserAchievement,
         UserActivityStatus,
         UserCompetence,
@@ -43,13 +45,13 @@ class User(Base):
     )
     academic_points: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     reputation_points: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    academic_role_id: Mapped[int | None] = mapped_column(
-        BigInteger,
-        ForeignKey("academic_roles.id"),
+
+    roles: Mapped[list[UserRole]] = relationship("UserRole", back_populates="user")
+    role_events_to: Mapped[list[RoleEvent]] = relationship(
+        "RoleEvent", foreign_keys="RoleEvent.to_user_id", back_populates="to_user"
     )
-    admin_role_id: Mapped[int | None] = mapped_column(
-        BigInteger,
-        ForeignKey("admin_roles.id"),
+    role_events_from: Mapped[list[RoleEvent]] = relationship(
+        "RoleEvent", foreign_keys="RoleEvent.from_user_id", back_populates="from_user"
     )
 
     activity_status: Mapped[UserActivityStatus | None] = relationship(
@@ -62,16 +64,6 @@ class User(Base):
         back_populates="user",
         foreign_keys="UserLevel.user_id",
         cascade="all, delete-orphan",
-    )
-
-    academic_role: Mapped[AcademicRole | None] = relationship(
-        "AcademicRole",
-        back_populates="users",
-    )
-
-    admin_role: Mapped[AdminRole | None] = relationship(
-        "AdminRole",
-        back_populates="users",
     )
 
     competencies: Mapped[list[UserCompetence]] = relationship(

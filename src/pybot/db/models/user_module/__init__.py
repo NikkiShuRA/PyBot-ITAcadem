@@ -2,8 +2,6 @@ from ...base_class import Base
 
 from .user import User
 from .user_activity_status import UserActivityStatus
-from .admin_role import AdminRole
-from .academic_role import AcademicRole
 from .level import Level
 from .competence import Competence
 from .user_competence import UserCompetence
@@ -15,8 +13,6 @@ __all__ = [
     "Base",
     "User",
     "UserActivityStatus",
-    "AdminRole",
-    "AcademicRole",
     "Level",
     "UserLevel",
     "Competence",
