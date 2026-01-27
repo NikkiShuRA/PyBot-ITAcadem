@@ -13,6 +13,7 @@ from ...dialogs.user.states import CreateProfileSG
 from ...filters import create_chat_type_routers
 from ...keyboards.auth import request_contact_kb
 
+# !!! Сомнительный нейминг файла и функции, ты начисляешь пользователю профиль?
 grand_profile_private_router, grand_profile_group_router, grand_profile_global_router = create_chat_type_routers(
     "grand_profile"
 )
@@ -41,9 +42,10 @@ async def cmd_profile_private(message: Message, dialog_manager: DialogManager, d
 
 # Показ профиля
 async def show_profile(message: Message, db: AsyncSession, user: UserReadDTO) -> None:
+    # !!! Выделить весь этот блок запросов в отдельную функцию на уровне бизнес-логики для получения данных для профиля
     academ_res = await get_user_current_level(db, user.id, PointsTypeEnum.ACADEMIC)
     if academ_res is None:
-        await message.answer("Ошибочка вышла с поиском academ данных.")
+        await message.answer("Ошибочка вышла с поиском academ данных.")  # !!! Более официальное сообщение
         return
 
     user_academ_level, academ_level_entity = academ_res
@@ -61,10 +63,12 @@ async def show_profile(message: Message, db: AsyncSession, user: UserReadDTO) ->
     user_rep_level, rep_level_entity = rep_res
 
     next_rep_level = await get_next_level(db, rep_level_entity, PointsTypeEnum.REPUTATION)
+    # !!! Учитывая работу логики, такой вариант не является ошибочным
     if next_rep_level is None:
         await message.answer("Ошибочка: не найден следующий rep уровень (возможно, это максимальный уровень).")
         return
 
+    # !!! Перенести в отдельную функцию и в Utils, не вижу причины для использования замыкания
     def progress_bar(current: int, max_: int, width: int = 10) -> str:
         if max_ <= 0:
             return "░" * width
@@ -75,6 +79,7 @@ async def show_profile(message: Message, db: AsyncSession, user: UserReadDTO) ->
     academ_req = next_academ_level.required_points
     rep_req = next_rep_level.required_points
 
+    # !!! Объединить в одно условие с тернарым оператором в message.answer
     if academ_req <= 0:
         await message.answer("Ошибочка: некорректный required_points для academ уровня.")
         return
@@ -82,6 +87,8 @@ async def show_profile(message: Message, db: AsyncSession, user: UserReadDTO) ->
         await message.answer("Ошибочка: некорректный required_points для rep уровня.")
         return
 
+    # !!! Вывод профиля также вывести в отдельную функцию на уровне приложения,
+    # !!! для источнее логики хэндлера, превратив её в функцию высшего порядка, используя композицию функций
     academ_bar = progress_bar(user.academic_points.value, academ_req)
     rep_bar = progress_bar(user.reputation_points.value, rep_req)
 

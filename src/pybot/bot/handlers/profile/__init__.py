@@ -24,5 +24,5 @@ profile_router.include_routers(
 )
 
 __all__ = [
-    "show_profile",
+    "show_profile",  #!!! Зачем она в all, если вне пакета она не используется и является частью инкапсулируемой модулем логики?
 ]

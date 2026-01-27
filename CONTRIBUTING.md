@@ -7,7 +7,7 @@
 Мы используем **Kanban** с элементами **FDD (Feature Driven Development)**.
 
 1. **Планирование:** Все задачи ведутся в **GitHub Projects**.
-2. **WIP Limit:** Не больше **1 задачи** в статусе "In Progress" на человека.
+2. **WIP Limit:** Не больше **1 задачи** в статусе "**In** Progress" на человека.
 3. **Feature Branch Workflow:**
     * `main` — священная, всегда рабочая ветка.
     * Разработка ведется в ветках `dev-Name`, `feat/name` или `fix/name`.

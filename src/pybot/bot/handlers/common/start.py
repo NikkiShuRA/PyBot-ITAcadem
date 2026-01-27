@@ -13,6 +13,7 @@ start_private_router, start_group_router, start_global_router = create_chat_type
 # /start - в личном чате
 @start_private_router.message(CommandStart())
 async def cmd_start_private(message: Message, dialog_manager: DialogManager, db: AsyncSession) -> None:
+    # !!! Зачем использовать импорт внутри функции?
     from ..profile.grand_profile import cmd_profile_private  # noqa: PLC0415
 
     await cmd_profile_private(message, dialog_manager, db)
@@ -54,6 +55,7 @@ async def cmd_info(message: Message) -> None:
 
 
 # /help - в личномчате
+# !!! Зачем дублировать логику?
 @start_private_router.message(Command("help"))
 async def cmd_help_private(message: Message) -> None:
     await message.answer(
