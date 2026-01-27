@@ -1,5 +1,5 @@
 from datetime import date
-from typing import TYPE_CHECKING, Annotated, Optional
+from typing import TYPE_CHECKING, Annotated
 
 from pydantic import Field
 
@@ -11,7 +11,6 @@ if TYPE_CHECKING:
     from .achievement import AchievementEntity
     from .competence import CompetenceEntity
     from .level import LevelEntity
-    from .role import RoleEntity
     from .task import TaskEntity
 
 
@@ -28,9 +27,6 @@ class UserEntity(BaseEntityModel):
     join_date: date
 
     user_levels: list["LevelEntity"] = Field(default_factory=list)
-
-    academic_role: Optional["RoleEntity"] = None
-    admin_role: Optional["RoleEntity"] = None
 
     competencies: list["CompetenceEntity"] = Field(default_factory=list)
     achievements: list["AchievementEntity"] = Field(default_factory=list)
