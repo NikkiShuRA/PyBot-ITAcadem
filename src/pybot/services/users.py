@@ -164,3 +164,37 @@ async def update_user_points_by_id(
     await db.commit()
     await db.refresh(user)
     return await map_orm_user_to_user_read_dto(user)
+
+
+#   !!!   Нужно доработать
+# async def collect_user_profile(db: AsyncSession, user: UserReadDTO) -> UserProfileDTO:
+#     """Собирает профиль пользователя"""
+
+#     academ_res = await get_user_current_level(db, user.id, PointsTypeEnum.ACADEMIC)
+#     if academ_res is None:
+#         raise ValueError("Academ данные не найдены!")
+#         return
+#     user_academ_level, academ_level_entity = academ_res
+
+#     next_academ_level = await get_next_level(db, academ_level_entity, PointsTypeEnum.ACADEMIC)
+#     if next_academ_level is None:
+#         raise ValueError("Academ данные не найдены!")
+#         return
+
+#     rep_res = await get_user_current_level(db, user.id, PointsTypeEnum.REPUTATION)
+#     if rep_res is None:
+#         return
+#     user_rep_level, rep_level_entity = rep_res
+
+#     next_rep_level = await get_next_level(db, rep_level_entity, PointsTypeEnum.REPUTATION)
+#     if next_rep_level is None:
+#         return
+
+#     academ_req = next_academ_level.required_points
+#     rep_req = next_rep_level.required_points
+
+#     # !!! Объединить в одно условие с тернарым оператором в message.answer
+#     if academ_req <= 0:
+#         return
+#     if rep_req <= 0:
+#         return
