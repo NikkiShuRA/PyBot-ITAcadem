@@ -9,9 +9,52 @@ from ..db.models import User, Valuation
 from ..db.models.user_module import UserLevel
 from ..domain import Points, UserEntity, ValuationEntity
 from ..dto import UserCreateDTO, UserReadDTO
+from ..infrastructure.user_repository import UserRepository
 from ..mappers.points_mappers import map_orm_valuations_to_domain
 from ..mappers.user_mappers import map_orm_levels_to_domain, map_orm_user_to_user_read_dto
 from .levels import get_all_levels
+
+
+class UserService:
+    def __init__(self, repository: UserRepository) -> None:
+        """
+        Инициализация — происходит ОДИН раз (APP scope).
+        Репозиторий НЕ меняется!
+        """
+        self.repository = repository
+
+    async def get_or_create_user(
+        self,
+        db: AsyncSession,  # ← REQUEST scope (передается в метод)
+        telegram_id: int,
+        first_name: str,
+    ) -> User:
+        """
+        Получить пользователя или создать его.
+
+        Сессия живет только для ЭТОГО метода!
+        """
+        # Проверяем, есть ли пользователь
+        user = await self.repository.get_by_telegram_id(db, telegram_id)
+
+        if user:
+            return user
+
+        # Создаём если не нашли
+        user = await self.repository.create(
+            db,
+            telegram_id=telegram_id,
+            first_name=first_name,
+        )
+        return user
+
+    async def is_admin(
+        self,
+        db: AsyncSession,
+        user_id: int,
+    ) -> bool:
+        """Проверить, администратор ли пользователь."""
+        return await self.repository.has_role(db, user_id, "Admin")
 
 
 async def get_user_by_id(db: AsyncSession, user_id: int) -> UserReadDTO | None:
