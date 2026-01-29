@@ -12,6 +12,7 @@ from ....services.users import get_user_by_telegram_id
 from ...dialogs.user_reg.states import CreateProfileSG
 from ...filters import create_chat_type_routers
 from ...keyboards.auth import request_contact_kb
+from ...utils import progress_bar
 
 # !!! Сомнительный нейминг файла и функции, ты начисляешь пользователю профиль?
 grand_profile_private_router, grand_profile_group_router, grand_profile_global_router = create_chat_type_routers(
@@ -68,14 +69,6 @@ async def show_profile(message: Message, db: AsyncSession, user: UserReadDTO) ->
         await message.answer("Ошибочка: не найден следующий rep уровень (возможно, это максимальный уровень).")
         return
 
-    # !!! Перенести в отдельную функцию и в Utils, не вижу причины для использования замыкания
-    def progress_bar(current: int, max_: int, width: int = 10) -> str:
-        if max_ <= 0:
-            return "░" * width
-        filled = int(current / max_ * width)
-        filled = max(0, min(width, filled))
-        return "█" * filled + "░" * (width - filled)
-
     academ_req = next_academ_level.required_points
     rep_req = next_rep_level.required_points
 
@@ -92,9 +85,6 @@ async def show_profile(message: Message, db: AsyncSession, user: UserReadDTO) ->
     academ_bar = progress_bar(user.academic_points.value, academ_req)
     rep_bar = progress_bar(user.reputation_points.value, rep_req)
 
-    academ_pct = int(user.academic_points.value / academ_req * 100)
-    rep_pct = int(user.reputation_points.value / rep_req * 100)
-
     await message.answer(
         textwrap.dedent(
             f"""
@@ -102,13 +92,13 @@ async def show_profile(message: Message, db: AsyncSession, user: UserReadDTO) ->
 
                 📚 Академический уровень
                 {user_academ_level.level.name}
+                {academ_bar}
                 {user.academic_points.value} / {academ_req}
-                {academ_bar} {academ_pct}%
 
                 🤌 Репутационный уровень
                 {user_rep_level.level.name}
+                {rep_bar}
                 {user.reputation_points.value} / {rep_req}
-                {rep_bar} {rep_pct}%
 
                 👇 Обновить профиль — /profile
                 """
