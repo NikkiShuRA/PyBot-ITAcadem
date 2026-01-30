@@ -15,7 +15,7 @@ from .handlers import (
     points_router,
     profile_router,  # !!! Костыль вывода профиля (Нужно перепроверить и улучшить)
 )
-from .middlewares import DbSessionMiddleware, LoggerMiddleware, RateLimitMiddleware
+from .middlewares import DbSessionMiddleware, LoggerMiddleware, RateLimitMiddleware, RoleMiddleware
 
 
 # TODO Разделить это на отдельные функции для инициализации разных частей бота (middlewares, роутеры и т.д.)
@@ -35,6 +35,11 @@ async def tg_bot_main() -> None:
             logger.info("✅ LoggerMiddleware включён")
         else:
             logger.info("⚠️ LoggerMiddleware отключён")
+
+        dp.update.middleware(RoleMiddleware())
+        dp.message.middleware(RoleMiddleware())
+        dp.callback_query.middleware(RoleMiddleware())
+        dp.inline_query.middleware(RoleMiddleware())
 
         dp.update.middleware(RateLimitMiddleware())
         dp.message.middleware(RateLimitMiddleware())

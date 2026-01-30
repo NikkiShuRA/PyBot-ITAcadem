@@ -167,6 +167,7 @@ async def create_user_profile(
         first_name=data.first_name,
         last_name=data.last_name,
         patronymic=data.patronymic,
+        # role=RoleEnum.STUDENT, # По умолчанию роль STUDENT
     )
 
     db.add(user)
