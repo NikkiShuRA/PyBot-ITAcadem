@@ -27,7 +27,14 @@
    - `LoggerMiddleware` — логирует минимальную информацию о событии
    - `RateLimitMiddleware` — проверяет флаг `rate_limit` через `get_flag` и применяет `AsyncLimiter`
    - `RoleMiddleware` — проверяет флаг `role` и вызывает `repo.has_role(telegram_id, role_name)`
-5. User Activity Status **не** реализуется в middleware (см. альтернативы).
+5. User Activity Status **реализуется** в отдельном middleware (UserActivityMiddleware),
+   потому что:
+   - В Telegram-боте необходимо фиксировать **любое** взаимодействие пользователя с ботом
+     (message, callback_query, inline_query, chat_member_updated и т.д.)
+   - Middleware — единственный централизованный механизм, который гарантированно
+     выполняется для всех типов событий
+   - Это позволяет эффективно и без дублирования обновлять статус активности
+     (last_seen, is_online и т.п.) для каждого запроса
 
 Пример RoleMiddleware:
 
