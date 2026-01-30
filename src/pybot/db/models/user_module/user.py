@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from datetime import date
 from typing import TYPE_CHECKING
 
@@ -7,9 +8,11 @@ from sqlalchemy import BigInteger, Date, ForeignKey, Integer, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ...base_class import Base
+from ..role_module.user_roles import UserRole
 
 if TYPE_CHECKING:
     from ..role_module import (
+        Role,
         RoleEvent,
         UserRole,
     )
@@ -21,6 +24,7 @@ if TYPE_CHECKING:
         UserLevel,
         Valuation,
     )
+    from .level import Level
 
 
 class User(Base):
@@ -97,3 +101,22 @@ class User(Base):
 
     def __repr__(self) -> str:
         return f"User(id={self.id!r}, first_name={self.first_name!r}, last_name={self.last_name!r}, telegram_id={self.telegram_id!r}, academic_points={self.academic_points!r}, computation_points={self.reputation_points!r}, join_date={self.join_date!r})"  # noqa: E501
+
+    def set_initial_levels(self, levels: Sequence[Level]) -> None:
+        for level in levels:
+            new_link = UserLevel(level_id=level.id)
+            self.user_levels.append(new_link)
+
+    def add_role(self, role: Role) -> None:
+        """
+        Доменная логика: Пользователь получает роль.
+        Мы проверяем, нет ли её уже, чтобы не дублировать.
+        """
+        # Проверяем по ID или имени, есть ли уже такая роль
+        for user_role in self.roles:
+            if user_role.role_id == role.id:
+                return  # Роль уже есть, ничего не делаем
+
+        # Создаем связь
+        new_link = UserRole(user_id=self.id, role_id=role.id)
+        self.roles.append(new_link)

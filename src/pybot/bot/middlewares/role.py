@@ -57,7 +57,7 @@ class RoleMiddleware(BaseMiddleware):
 
             has_permission = await repo.has_role(
                 db=db,
-                user_id=user.id,
+                telegram_id=user.id,
                 role_name=required_role,  # У тебя в репо аргумент role_name
             )
 

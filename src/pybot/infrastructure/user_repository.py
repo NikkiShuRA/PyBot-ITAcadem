@@ -1,9 +1,9 @@
-from typing import Any
-
-from sqlalchemy import and_, select
+from sqlalchemy import Sequence, and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from ..db.models import Role, User, UserRole
+from ..dto import UserCreateDTO
 
 
 class UserRepository:
@@ -28,34 +28,57 @@ class UserRepository:
         db: AsyncSession,
         tg_id: int,
     ) -> User | None:
-        stmt = select(User).where(User.telegram_id == tg_id)
+        stmt = select(User).where(User.telegram_id == tg_id).options(selectinload(User.roles))
         result = await db.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def create(
+    async def get_all_users(
         self,
         db: AsyncSession,
-        **kwargs: Any,
+    ) -> Sequence[User]:
+        stmt = select(User)
+        result = await db.execute(stmt)
+        return result.scalars().all()
+
+    async def get_user_by_phone(
+        self,
+        db: AsyncSession,
+        phone: str,
+    ) -> User | None:
+        stmt = select(User).where(User.phone_number == phone)
+        result = await db.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def create_user_profile(
+        self,
+        db: AsyncSession,
+        *,
+        data: UserCreateDTO,
     ) -> User:
-        user = User(**kwargs)
+        user = User(
+            phone_number=data.phone,
+            telegram_id=data.tg_id,
+            first_name=data.first_name,
+            last_name=data.last_name,
+            patronymic=data.patronymic,
+        )
         db.add(user)
-        await db.commit()
-        await db.refresh(user)
         return user
 
     async def has_role(
         self,
         db: AsyncSession,
-        user_id: int,
+        telegram_id: int,  # <- Меняем аргумент, мы ищем по TG ID
         role_name: str,
     ) -> bool:
         stmt = (
             select(1)
             .select_from(UserRole)
             .join(Role)
+            .join(User)  # <- Добавляем JOIN с User
             .where(
                 and_(
-                    UserRole.user_id == user_id,
+                    User.telegram_id == telegram_id,  # <- Сравниваем с telegram_id
                     Role.name == role_name,
                 )
             )
@@ -63,3 +86,18 @@ class UserRepository:
         )
         result = await db.execute(stmt)
         return result.scalar_one_or_none() is not None
+
+    async def get_role_by_name(self, db: AsyncSession, name: str) -> Role | None:
+        """Находит определение роли в таблице roles"""
+        stmt = select(Role).where(Role.name == name)
+        result = await db.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def get_user_roles(
+        self,
+        db: AsyncSession,
+        user_id: int,
+    ) -> Sequence[str]:
+        stmt = select(Role.name).select_from(UserRole).join(Role).where(UserRole.user_id == user_id)
+        result = await db.execute(stmt)
+        return result.scalars().all()

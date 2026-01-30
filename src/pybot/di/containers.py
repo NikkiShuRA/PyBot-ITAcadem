@@ -5,6 +5,7 @@ from dishka.integrations.aiogram import AiogramProvider
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from ..db.database import engine as global_engine
+from ..infrastructure.level_repository import LevelRepository
 from ..infrastructure.user_repository import UserRepository
 from ..services.users import UserService
 
@@ -54,17 +55,29 @@ class RepositoryProvider(Provider):
         """
         return UserRepository()
 
+    @provide(scope=Scope.APP)
+    def level_repository(self) -> LevelRepository:
+        """
+        ⚠️  ВАЖНО: репозиторий создается БЕЗ сессии!
+
+        Сессия будет внедрена позже в методы.
+        Репозиторий — это просто "конструктор запросов".
+        """
+        return LevelRepository()
+
 
 class ServiceProvider(Provider):
     """Сервисы — бизнес-логика."""
 
-    @provide(scope=Scope.APP)
+    @provide(scope=Scope.REQUEST)
     def user_service(
         self,
-        repository: UserRepository,  # ← Берется из APP scope
+        db: AsyncSession,  # ← Новая сессия на каждый запрос
+        user_repository: UserRepository,  # ← Берется из APP scope
+        level_repository: LevelRepository,  # ← Берется из APP scope
     ) -> UserService:
         """Сервис получает репозиторий один раз."""
-        return UserService(repository)
+        return UserService(db, user_repository, level_repository)
 
 
 async def setup_container() -> AsyncContainer:

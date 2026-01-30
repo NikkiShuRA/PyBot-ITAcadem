@@ -9,6 +9,7 @@ from ..db.models import User, Valuation
 from ..db.models.user_module import UserLevel
 from ..domain import Points, UserEntity, ValuationEntity
 from ..dto import UserCreateDTO, UserReadDTO
+from ..infrastructure.level_repository import LevelRepository
 from ..infrastructure.user_repository import UserRepository
 from ..mappers.points_mappers import map_orm_valuations_to_domain
 from ..mappers.user_mappers import map_orm_levels_to_domain, map_orm_user_to_user_read_dto
@@ -16,45 +17,75 @@ from .levels import get_all_levels
 
 
 class UserService:
-    def __init__(self, repository: UserRepository) -> None:
-        """
-        Инициализация — происходит ОДИН раз (APP scope).
-        Репозиторий НЕ меняется!
-        """
-        self.repository = repository
+    def __init__(self, db: AsyncSession, user_repository: UserRepository, level_repository: LevelRepository) -> None:
+        self.db: AsyncSession = db
+        self.user_repository: UserRepository = user_repository
+        self.level_repository: LevelRepository = level_repository
 
-    async def get_or_create_user(
+    async def register_student(self, dto: UserCreateDTO) -> UserReadDTO:
+        initial_levels = await self.level_repository.get_initial_levels(self.db)
+
+        if not initial_levels:
+            raise ValueError("В системе не настроены начальные уровни!")
+
+        user = await self.user_repository.create_user_profile(self.db, data=dto)
+
+        user.set_initial_levels(initial_levels)
+        self.db.add(user)
+
+        await self.db.commit()
+
+        return await map_orm_user_to_user_read_dto(user)
+
+    async def get_user(
         self,
-        db: AsyncSession,  # ← REQUEST scope (передается в метод)
-        telegram_id: int,
-        first_name: str,
-    ) -> User:
-        """
-        Получить пользователя или создать его.
-
-        Сессия живет только для ЭТОГО метода!
-        """
+        tg_id: int,
+    ) -> User | None:
         # Проверяем, есть ли пользователь
-        user = await self.repository.get_by_telegram_id(db, telegram_id)
+        user = await self.user_repository.get_by_telegram_id(self.db, tg_id)
 
         if user:
             return user
 
-        # Создаём если не нашли
-        user = await self.repository.create(
-            db,
-            telegram_id=telegram_id,
-            first_name=first_name,
-        )
-        return user
+        return None
 
-    async def is_admin(
+    async def check_user_role(
         self,
-        db: AsyncSession,
         user_id: int,
+        user_role: str,
     ) -> bool:
-        """Проверить, администратор ли пользователь."""
-        return await self.repository.has_role(db, user_id, "Admin")
+        """Проверить, имеет ли пользователь заданную роль."""
+        return await self.user_repository.has_role(self.db, user_id, user_role)
+
+    async def set_user_role(self, user_id: int, role_name: str) -> None:
+        """Присвоить роль пользователю"""
+
+        # 1. Получаем пользователя (обязательно с подгруженными ролями!)
+        # Тебе нужно убедиться, что repo.get_by_id делает .options(selectinload(User.roles))
+        user = await self.user_repository.get_by_id(self.db, user_id)
+        if not user:
+            raise ValueError(f"User {user_id} not found")
+
+        # 2. Получаем саму РОЛЬ (Entity)
+        role = await self.user_repository.get_role_by_name(self.db, role_name)
+
+        # ВОТ ЗДЕСЬ У ТЕБЯ ПАДАЛО
+        if not role:
+            # Вариант А: Упасть с ошибкой (как сейчас)
+            raise ValueError(f"Роль '{role_name}' не найдена в базе данных. Сначала создайте её!")
+
+        # 3. Делегируем логику Агрегату
+        user.add_role(role)
+
+        # 4. Коммит
+        await self.db.commit()
+
+    async def get_user_roles(
+        self,
+        user_id: int,
+    ) -> Sequence[str]:
+        """Получить все роли пользователя."""
+        return await self.user_repository.get_user_roles(self.db, user_id)
 
 
 async def get_user_by_id(db: AsyncSession, user_id: int) -> UserReadDTO | None:
@@ -167,7 +198,6 @@ async def create_user_profile(
         first_name=data.first_name,
         last_name=data.last_name,
         patronymic=data.patronymic,
-        # role=RoleEnum.STUDENT, # По умолчанию роль STUDENT
     )
 
     db.add(user)
