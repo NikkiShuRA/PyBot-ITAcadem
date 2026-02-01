@@ -18,5 +18,36 @@ class BotSettings(BaseSettings):
     log_level: str = Field("INFO", alias="LOG_LEVEL", description="Уровень логирования")
     debug: bool = Field(False, alias="DEBUG", description="Режим отладки")
 
+    # Rate-limiting settings
+    enable_rate_limit: bool = Field(True, alias="ENABLE_RATE_LIMIT")
+
+    # Лимиты (можно переопределить через .env)
+    rate_limit_cheap: int = Field(30, alias="RATE_LIMIT_CHEAP")
+    time_limit_cheap: int = Field(60, alias="TIME_LIMIT_CHEAP")
+
+    rate_limit_moderate: int = Field(10, alias="RATE_LIMIT_MODERATE")
+    time_limit_moderate: int = Field(60, alias="TIME_LIMIT_MODERATE")
+
+    rate_limit_expensive: int = Field(3, alias="RATE_LIMIT_EXPENSIVE")
+    time_limit_expensive: int = Field(300, alias="TIME_LIMIT_EXPENSIVE")
+
+    max_user_limiters: int = Field(
+        1000, alias="MAX_USER_LIMITERS", description="Максимальное количество лимитеров в кэше"
+    )
+
+    enable_logging_middleware: bool = Field(
+        True, alias="ENABLE_LOGGING_MIDDLEWARE", description="Включить логгирующий middleware"
+    )
+
+    enable_user_activity_middleware: bool = Field(
+        True,
+        alias="ENABLE_USER_ACTIVITY_MIDDLEWARE",
+        description="Включить middleware для отслеживания активности пользователей",
+    )
+
+    enable_role_middleware: bool = Field(
+        True, alias="ENABLE_ROLE_MIDDLEWARE", description="Включить middleware для проверки ролей пользователей"
+    )
+
 
 settings: BotSettings = BotSettings()
