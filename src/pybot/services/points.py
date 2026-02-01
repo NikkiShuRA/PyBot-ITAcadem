@@ -51,6 +51,7 @@ async def update_user_level(
     return current_level_entity
 
 
+# TODO Отрефакторить эту функцию, разбив её на более мелкие и понятные части и перенести их в сервисы
 async def adjust_user_points(
     db: AsyncSession,
     dto: AdjustUserPointsDTO,

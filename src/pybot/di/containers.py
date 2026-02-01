@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 from ..db.database import engine as global_engine
 from ..infrastructure.level_repository import LevelRepository
 from ..infrastructure.user_repository import UserRepository
+from ..infrastructure.valuation_repository import ValuationRepository
 from ..services.users import UserService
 
 
@@ -64,6 +65,16 @@ class RepositoryProvider(Provider):
         Репозиторий — это просто "конструктор запросов".
         """
         return LevelRepository()
+
+    @provide(scope=Scope.APP)
+    def valuation_reposiory(self) -> ValuationRepository:
+        """
+        ⚠️  ВАЖНО: репозиторий создается БЕЗ сессии!
+
+        Сессия будет внедрена позже в методы.
+        Репозиторий — это просто "конструктор запросов".
+        """
+        return ValuationRepository()
 
 
 class ServiceProvider(Provider):

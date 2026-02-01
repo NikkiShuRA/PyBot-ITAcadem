@@ -2,12 +2,14 @@ from aiogram.types import CallbackQuery, Contact, Message
 from aiogram_dialog import DialogManager
 from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.kbd import Button
+from dishka.integrations.aiogram import FromDishka
+from dishka.integrations.aiogram_dialog import inject
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ....core import logger
 from ....dto import UserCreateDTO
 from ....mappers.user_mappers import map_dialog_data_to_user_create_dto
-from ....services.users import create_user_profile, get_user_by_phone
+from ....services.users import UserService, create_user_profile
 
 
 async def on_other_messages(message: Message, message_input: MessageInput, manager: DialogManager) -> None:
@@ -25,7 +27,10 @@ async def on_other_messages(message: Message, message_input: MessageInput, manag
     await message.answer("Пожалуйста, введите корректное значение.")
 
 
-async def on_contact_input(message: Message, message_input: MessageInput, manager: DialogManager) -> None:
+@inject
+async def on_contact_input(
+    message: Message, message_input: MessageInput, manager: DialogManager, user_service: FromDishka[UserService]
+) -> None:
     """
     Handle a received contact message.
 
@@ -43,8 +48,7 @@ async def on_contact_input(message: Message, message_input: MessageInput, manage
         await message.answer("❌ Контакт не может быть пустым. Попробуйте снова.")
         return
     phone: str = contact.phone_number
-    db: AsyncSession = manager.middleware_data["db"]
-    user = await get_user_by_phone(db, phone)
+    user = await user_service.get_user_by_phone(phone)
     if user:
         await message.answer(f"Найден существующий профиль. Твой ID: {user.id}")
         return

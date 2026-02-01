@@ -39,5 +39,15 @@ class BotSettings(BaseSettings):
         True, alias="ENABLE_LOGGING_MIDDLEWARE", description="Включить логгирующий middleware"
     )
 
+    enable_user_activity_middleware: bool = Field(
+        True,
+        alias="ENABLE_USER_ACTIVITY_MIDDLEWARE",
+        description="Включить middleware для отслеживания активности пользователей",
+    )
+
+    enable_role_middleware: bool = Field(
+        True, alias="ENABLE_ROLE_MIDDLEWARE", description="Включить middleware для проверки ролей пользователей"
+    )
+
 
 settings: BotSettings = BotSettings()

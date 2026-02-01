@@ -15,7 +15,13 @@ from .handlers import (
     points_router,
     profile_router,  # !!! Костыль вывода профиля (Нужно перепроверить и улучшить)
 )
-from .middlewares import DbSessionMiddleware, LoggerMiddleware, RateLimitMiddleware, RoleMiddleware
+from .middlewares import (
+    DbSessionMiddleware,
+    LoggerMiddleware,
+    RateLimitMiddleware,
+    RoleMiddleware,
+    UserActivityMiddleware,
+)
 
 
 # TODO Разделить это на отдельные функции для инициализации разных частей бота (middlewares, роутеры и т.д.)
@@ -36,14 +42,31 @@ async def tg_bot_main() -> None:
         else:
             logger.info("⚠️ LoggerMiddleware отключён")
 
-        dp.update.middleware(RoleMiddleware())
-        dp.message.middleware(RoleMiddleware())
-        dp.callback_query.middleware(RoleMiddleware())
-        dp.inline_query.middleware(RoleMiddleware())
+        if settings.enable_user_activity_middleware:
+            dp.message.middleware(UserActivityMiddleware())
+            dp.callback_query.middleware(UserActivityMiddleware())
 
-        dp.update.middleware(RateLimitMiddleware())
-        dp.message.middleware(RateLimitMiddleware())
-        dp.callback_query.middleware(RateLimitMiddleware())
+            logger.info("✅ UserActivityMiddleware включён")
+        else:
+            logger.info("⚠️ UserActivityMiddleware отключён")
+
+        if settings.enable_role_middleware:
+            dp.message.middleware(RoleMiddleware())
+            dp.callback_query.middleware(RoleMiddleware())
+            dp.inline_query.middleware(RoleMiddleware())
+
+            logger.info("✅ RoleMiddleware включён")
+        else:
+            logger.info("⚠️ RoleMiddleware отключён")
+
+        if settings.enable_rate_limit:
+            dp.update.middleware(RateLimitMiddleware())
+            dp.message.middleware(RateLimitMiddleware())
+            dp.callback_query.middleware(RateLimitMiddleware())
+
+            logger.info("✅ RateLimitMiddleware включён")
+        else:
+            logger.info("⚠️ RateLimitMiddleware отключён")
 
         dp.update.middleware(DbSessionMiddleware(SessionLocal))
 

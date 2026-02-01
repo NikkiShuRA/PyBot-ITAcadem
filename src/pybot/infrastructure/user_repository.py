@@ -1,9 +1,13 @@
-from sqlalchemy import Sequence, and_, select
+from datetime import UTC, datetime, timedelta
+
+from sqlalchemy import Sequence, and_, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from ..db.models import Role, User, UserRole
 from ..dto import UserCreateDTO
+
+ACTIVITY_UPDATE_INTERVAL = timedelta(minutes=1)
 
 
 class UserRepository:
@@ -19,7 +23,7 @@ class UserRepository:
         db: AsyncSession,  # ← Сессия передается СЮДА
         id_: int,
     ) -> User | None:
-        stmt = select(User).where(User.id == id_)
+        stmt = select(User).options(selectinload(User.roles)).where(User.id == id_)
         result = await db.execute(stmt)
         return result.scalar_one_or_none()
 
@@ -46,6 +50,11 @@ class UserRepository:
         phone: str,
     ) -> User | None:
         stmt = select(User).where(User.phone_number == phone)
+        result = await db.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def get_user_by_telegram_id(self, db: AsyncSession, tg_id: int) -> User | None:
+        stmt = select(User).where(User.telegram_id == tg_id)
         result = await db.execute(stmt)
         return result.scalar_one_or_none()
 
@@ -101,3 +110,20 @@ class UserRepository:
         stmt = select(Role.name).select_from(UserRole).join(Role).where(UserRole.user_id == user_id)
         result = await db.execute(stmt)
         return result.scalars().all()
+
+    async def update_user_last_active(
+        self,
+        db: AsyncSession,
+        user_id: int,
+    ) -> None:
+        now = datetime.now(UTC)
+        threshold = now - ACTIVITY_UPDATE_INTERVAL
+
+        stmt = (
+            update(User)
+            .where(User.telegram_id == user_id)
+            .where(or_(User.last_active_at.is_(None), User.last_active_at < threshold))
+            .values(last_active_at=now)
+        )
+
+        await db.execute(stmt)

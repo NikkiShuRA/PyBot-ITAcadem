@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from datetime import date
+from datetime import UTC, date, datetime, timedelta
 from typing import TYPE_CHECKING
 
 from sqlalchemy import BigInteger, Date, ForeignKey, Integer, Text, func
@@ -9,6 +9,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ...base_class import Base
 from ..role_module.user_roles import UserRole
+
+UPDATE_INTERVAL = timedelta(minutes=1)
+
 
 if TYPE_CHECKING:
     from ..role_module import (
@@ -47,6 +50,7 @@ class User(Base):
         BigInteger,
         ForeignKey("user_activity_statuses.id"),
     )
+    last_active_at: Mapped[date | None] = mapped_column(Date)
     academic_points: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     reputation_points: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
@@ -120,3 +124,13 @@ class User(Base):
         # Создаем связь
         new_link = UserRole(user_id=self.id, role_id=role.id)
         self.roles.append(new_link)
+
+    def remove_role(self, role: Role) -> None:
+        """
+        Доменная логика: Пользователь теряет роль.
+        """
+        self.roles = [ur for ur in self.roles if ur.role_id != role.id]
+
+    def change_last_user_active(self) -> None:
+        """Обновить дату последней активности пользователя"""
+        self.last_active_at = datetime.now(UTC)

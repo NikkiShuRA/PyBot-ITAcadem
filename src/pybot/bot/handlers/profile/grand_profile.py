@@ -3,15 +3,15 @@ import textwrap
 from aiogram.filters import Command
 from aiogram.types import Message
 from aiogram_dialog import DialogManager
+from dishka.integrations.aiogram import FromDishka
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ....core.constants import PointsTypeEnum
 from ....dto import UserReadDTO
 from ....services.levels import get_next_level, get_user_current_level
-from ....services.users import get_user_by_telegram_id
+from ....services.users import UserService
 from ...dialogs.user_reg.states import CreateProfileSG
 from ...filters import create_chat_type_routers
-from ...keyboards.auth import request_contact_kb
 
 # !!! Сомнительный нейминг файла и функции, ты начисляешь пользователю профиль?
 grand_profile_private_router, grand_profile_group_router, grand_profile_global_router = create_chat_type_routers(
@@ -21,9 +21,14 @@ grand_profile_private_router, grand_profile_group_router, grand_profile_global_r
 
 # /profile - в личном чате
 @grand_profile_private_router.message(Command("profile"))
-async def cmd_profile_private(message: Message, dialog_manager: DialogManager, db: AsyncSession) -> None:
+async def cmd_profile_private(
+    message: Message,
+    dialog_manager: DialogManager,
+    user_service: FromDishka[UserService],
+    db: FromDishka[AsyncSession],
+) -> None:
     if message.from_user:
-        user = await get_user_by_telegram_id(db, message.from_user.id)
+        user = await user_service.get_user_by_telegram_id(message.from_user.id)
     else:
         await message.answer(
             "Произошла ошибка при обработке пользователя.",
@@ -34,8 +39,7 @@ async def cmd_profile_private(message: Message, dialog_manager: DialogManager, d
         return
     else:
         await message.answer(
-            "Для авторизации отправь свой номер телефона кнопкой ниже.",
-            reply_markup=request_contact_kb,
+            "Пожалуйста, отправьте свой контакт, используя кнопку ниже.",
         )
         await dialog_manager.start(CreateProfileSG.contact)
 
