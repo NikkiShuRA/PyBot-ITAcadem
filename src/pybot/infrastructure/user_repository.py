@@ -44,6 +44,29 @@ class UserRepository:
         result = await db.execute(stmt)
         return result.scalars().all()
 
+    async def get_all_users_with_role(
+        self,
+        db: AsyncSession,
+        role_name: str,
+    ) -> Sequence[User]:
+        stmt = select(User).where(User.roles.any(Role.name == role_name)).options(selectinload(User.roles))
+        result = await db.execute(stmt)
+        return result.scalars().all()
+
+    async def get_all_user_roles_by_pk(self, db: AsyncSession, user_id: int) -> Sequence[str]:
+        stmt = select(Role.name).select_from(UserRole).join(Role).where(UserRole.user_id == user_id)
+        result = await db.execute(stmt)
+        return result.scalars().all()
+
+    async def get_all_user_roles_by_tg_id(self, db: AsyncSession, tg_id: int) -> Sequence[str]:
+        stmt = (
+            select(Role.name)
+            .join(User.roles)  # SQLAlchemy сама знает путь через UserRole
+            .where(User.telegram_id == tg_id)
+        )
+        result = await db.execute(stmt)
+        return result.scalars().all()
+
     async def get_user_by_phone(
         self,
         db: AsyncSession,
