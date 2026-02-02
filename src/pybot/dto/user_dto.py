@@ -4,7 +4,7 @@ from typing import ClassVar
 
 from pydantic import Field, field_validator
 
-from ..domain import Points
+from ..dto.value_objects import Points
 from ..utils import normalize_phone
 from .base_dto import BaseDTO
 

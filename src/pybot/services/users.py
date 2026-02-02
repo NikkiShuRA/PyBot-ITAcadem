@@ -63,7 +63,6 @@ class UserService:
         if not user:
             raise ValueError(f"User {user_id} not found")
 
-        # 2. Получаем саму РОЛЬ (Entity)
         role = await self.user_repository.get_role_by_name(self.db, role_name)
 
         # ВОТ ЗДЕСЬ У ТЕБЯ ПАДАЛО
@@ -85,7 +84,6 @@ class UserService:
         if not user:
             raise ValueError(f"User {user_id} not found")
 
-        # 2. Получаем саму РОЛЬ (Entity)
         role = await self.user_repository.get_role_by_name(self.db, role_name)
 
         if not role:

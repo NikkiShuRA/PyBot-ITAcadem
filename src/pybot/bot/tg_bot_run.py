@@ -99,4 +99,8 @@ async def tg_bot_main() -> None:
         await bot.delete_webhook(drop_pending_updates=True)
         logger.info("Запуск бота")
         sp.ok("✅ Бот запущен!")
-    await dp.start_polling(bot)
+    try:
+        await dp.start_polling(bot)
+    finally:
+        await bot.session.close()
+        logger.complete()

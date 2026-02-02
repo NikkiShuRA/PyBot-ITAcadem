@@ -3,9 +3,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..core import logger
 from ..core.constants import PointsTypeEnum
-from ..db.models import User, Valuation
-from ..domain import LevelEntity, Points
+from ..db.models import Level, User, Valuation
 from ..dto import AdjustUserPointsDTO, UpdateUserLevelDTO, UserReadDTO
+from ..dto.value_objects import Points
 from ..mappers.user_mappers import map_orm_user_to_user_read_dto
 from .levels import get_next_level, get_previous_level, get_user_current_level
 
@@ -13,7 +13,7 @@ from .levels import get_next_level, get_previous_level, get_user_current_level
 async def update_user_level(
     db: AsyncSession,
     dto: UpdateUserLevelDTO,
-) -> LevelEntity:
+) -> Level:
     user = dto.user
     current_points_domain = dto.current_points
     inputed_points_domain = dto.inputed_points

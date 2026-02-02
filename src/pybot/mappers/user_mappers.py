@@ -4,21 +4,8 @@ from pydantic import ValidationError
 from ..core import logger
 from ..core.constants import PointsTypeEnum
 from ..db.models import User
-from ..domain import LevelEntity, Points
 from ..dto import UserCreateDTO, UserReadDTO
-from .level_mappers import map_user_levels_to_domain_levels
-
-
-async def map_orm_levels_to_domain(user: User) -> list[LevelEntity] | None:
-    """
-    Маппит список ORM Level объектов в список доменных LevelEntity.
-    Если пользователь не найден или не имеет связанных уровней, возвращает None.
-    """
-
-    if user and hasattr(user, "user_levels"):
-        return await map_user_levels_to_domain_levels(user.user_levels)
-    else:
-        return None
+from ..dto.value_objects import Points
 
 
 async def map_orm_user_to_user_read_dto(orm_user: User) -> UserReadDTO:
