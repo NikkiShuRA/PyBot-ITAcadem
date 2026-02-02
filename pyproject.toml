@@ -16,6 +16,9 @@ dependencies = [
     "yaspin>=3.4.0",
     "phonenumbers>=9.0.21",
     "aiosqlite>=0.22.1",
+    "aiolimiter>=1.2.1",
+    "aiocache>=0.12.3",
+    "dishka>=1.7.2",
 ]
 
 [dependency-groups]

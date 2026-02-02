@@ -122,11 +122,11 @@ async def _handle_points_command(
         await message.reply("❌ Ошибка при изменении баллов")
 
 
-@grand_points_global_router.message(Command("academic_points"))
+@grand_points_global_router.message(Command("academic_points"), flags={"role": "Admin"})
 async def handle_academic_points(message: Message, db: AsyncSession) -> None:
     await _handle_points_command(message, db, PointsTypeEnum.ACADEMIC)
 
 
-@grand_points_global_router.message(Command("reputation_points"))
+@grand_points_global_router.message(Command("reputation_points"), flags={"role": "Admin"})
 async def handle_reputation_points(message: Message, db: AsyncSession) -> None:
     await _handle_points_command(message, db, PointsTypeEnum.REPUTATION)

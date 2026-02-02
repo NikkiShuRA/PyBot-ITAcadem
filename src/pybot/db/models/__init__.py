@@ -9,8 +9,6 @@ from .user_module import (
     User,
     UserLevel,
     UserActivityStatus,
-    AdminRole,
-    AcademicRole,
     Level,
     Competence,
     UserCompetence,
@@ -24,6 +22,12 @@ from .task_module import (
     TaskSolutionStatus,
 )
 
+from .role_module import (
+    Role,
+    UserRole,
+    RoleEvent,
+)
+
 __all__ = [
     "Base",
     # shared
@@ -31,14 +35,16 @@ __all__ = [
     # user_module
     "User",
     "UserActivityStatus",
-    "AdminRole",
-    "AcademicRole",
     "Level",
     "UserLevel",
     "Competence",
     "UserCompetence",
     "UserAchievement",
     "Valuation",
+    # role_module
+    "Role",
+    "UserRole",
+    "RoleEvent",
     # task_module
     "Task",
     "TaskSolution",

@@ -17,7 +17,11 @@ from .states import CreateProfileSG
 profile_create_dialog = Dialog(
     Window(
         Const("👤 Твой контакт?"),
-        MessageInput(on_contact_input, content_types=ContentType.CONTACT, id="send_contact_info"),
+        MessageInput(
+            on_contact_input,  # ty:ignore[invalid-argument-type]
+            content_types=ContentType.CONTACT,
+            id="send_contact_info",
+        ),
         MessageInput(on_other_messages),
         Cancel(Const("❌ Отмена")),
         state=CreateProfileSG.contact,
