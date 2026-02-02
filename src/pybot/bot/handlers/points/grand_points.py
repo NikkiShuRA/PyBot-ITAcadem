@@ -7,8 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ....core import logger
 from ....core.constants import PointsTypeEnum
-from ....domain import Points
 from ....dto import AdjustUserPointsDTO, UserReadDTO
+from ....dto.value_objects import Points
 from ....services.points import adjust_user_points
 from ....services.users import get_user_by_telegram_id
 from ...filters import check_text_message_correction, create_chat_type_routers

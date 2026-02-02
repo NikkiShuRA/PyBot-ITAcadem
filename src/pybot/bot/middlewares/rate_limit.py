@@ -3,6 +3,7 @@ from typing import Any
 
 from aiocache import SimpleMemoryCache
 from aiogram import BaseMiddleware
+from aiogram.dispatcher.flags import get_flag
 from aiogram.types import Message, TelegramObject, User
 from aiolimiter import AsyncLimiter
 
@@ -47,70 +48,6 @@ class RateLimitMiddleware(BaseMiddleware):
 
         return limiter
 
-    def _extract_from_dict(self, handler: Any) -> str | None:
-        """Стратегия 1: Из __dict__"""
-        flags = handler.__dict__["flags"]
-        rate_limit = flags.get("rate_limit")
-        if rate_limit:
-            logger.info("🚩 Rate limit flag found in __dict__: {rate_limit}", rate_limit=rate_limit)
-            return rate_limit
-        return None
-
-    def _extract_from_wrapped(self, handler: Any) -> str | None:
-        """Стратегия 2: Из __wrapped__"""
-        wrapped = handler.__wrapped__
-        if hasattr(wrapped, "__dict__") and "flags" in wrapped.__dict__:
-            flags = wrapped.__dict__["flags"]
-            rate_limit = flags.get("rate_limit")
-            if rate_limit:
-                logger.info("🚩 Rate limit flag found in __wrapped__: {rate_limit}", rate_limit=rate_limit)
-                return rate_limit
-        return None
-
-    def _extract_from_callback(self, handler: Any) -> str | None:
-        """Стратегия 3: Из callback.flags"""
-        callback = handler.callback
-        if hasattr(callback, "flags"):
-            flags = callback.flags
-            rate_limit = flags.get("rate_limit") if isinstance(flags, dict) else None
-            if rate_limit:
-                logger.info("🚩 Rate limit flag found in callback.flags: {rate_limit}", rate_limit=rate_limit)
-                return rate_limit
-        return None
-
-    def _extract_rate_limit_type(self, data: dict[str, Any]) -> str | None:
-        """
-        ✅ Извлечение флага rate_limit из данных обработчика
-        """
-        try:
-            handler = data.get("handler")
-            if not handler:
-                logger.info("❌ No handler found in data")
-                return None
-
-            match handler:
-                case obj if hasattr(obj, "__dict__") and "flags" in obj.__dict__:
-                    rate_limit = self._extract_from_dict(handler)
-                    if rate_limit:
-                        return rate_limit
-                case obj if hasattr(obj, "__wrapped__"):
-                    rate_limit = self._extract_from_wrapped(handler)
-                    if rate_limit:
-                        return rate_limit
-                case obj if hasattr(obj, "callback"):
-                    rate_limit = self._extract_from_callback(handler)
-                    if rate_limit:
-                        return rate_limit
-
-        except Exception as e:
-            logger.warning(
-                "⚠️ Error extracting rate_limit flags: {error}",
-                error=str(e),
-            )
-
-        logger.info("❌ No rate_limit flag found in handler")
-        return None
-
     async def __call__(
         self,
         handler: Callable[[TelegramObject, dict[str, Any]], Awaitable[Any]],
@@ -132,7 +69,7 @@ class RateLimitMiddleware(BaseMiddleware):
 
         try:
             # ✅ ПРАВИЛЬНО: передаём data, а не handler!
-            command_limit = self._extract_rate_limit_type(data)
+            command_limit = get_flag(data, "rate_limit")
             logger.info(f"Extracted rate limit type: {command_limit}")
             if not command_limit:
                 logger.info(
