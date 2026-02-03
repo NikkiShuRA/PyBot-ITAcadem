@@ -106,15 +106,19 @@ mypy_path = ["src"]
 name = "cz_conventional_commits"
 tag_format = "v$version"
 version_scheme = "semver"
-version_provider = "pep621"  # <- ВОТ ГЛАВНОЕ ИЗМЕНЕНИЕ
+version_provider = "pep621"
 update_changelog_on_bump = true
 major_version_zero = true
 
 [tool.semantic_release]
 version_toml = [
-    "pyproject.toml:project.version"  # <- Указываем путь к переменной в TOML
+    "pyproject.toml:project.version"
 ]
 branch = "main"
 upload_to_pypi = false
 upload_to_release = true
 build_command = "uv build"
+
+commit_version_number = true  # Явно говорим: делай коммит!
+commit_message = "chore(release): {version} [skip ci]" # Сообщение коммита
+tag_commit = true # Вешать тег именно на этот новый коммит
