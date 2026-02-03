@@ -27,4 +27,5 @@ jobs:
             git config --global user.name "github-actions[bot]"
             git config --global user.email "github-actions[bot]@users.noreply.github.com"
             git checkout main || git checkout -b main
+            uv tool run python-semantic-release -vv version
             uv tool run python-semantic-release -vv publish
