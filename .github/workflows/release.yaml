@@ -27,8 +27,11 @@ jobs:
         uses: astral-sh/setup-uv@v2
 
       - name: Python Semantic Release
-        uses: python-semantic-release/python-semantic-release@master
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          root_options: "--config pyproject.toml"
-          extra_options: ${{ inputs.dry_run == 'true' && '--noop' || '' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+            git config global user.name "github-actions[bot]"
+            git config global user.email "github-actions[bot]@users.noreply.github.com"
+
+            # Он сам скачает python-semantic-release и запустит его
+            uv tool run python-semantic-release publish
