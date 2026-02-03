@@ -42,6 +42,7 @@ class UserActivityMiddleware(BaseMiddleware):
                 # Выполняем "слепой" апдейт
                 await repo.update_user_last_active(db=db, user_id=user.id)
                 data["user_id"] = user.id  # Добавляем user_id для отвязки логики в сервисах от telegram id
+                data["user_roles"] = set(await repo.get_user_roles(db=db, user_id=user.id))
                 # Коммитим. Если изменения были - они сохранятся.
                 # Если 5 минут не прошло - SQL вернет 0 rows, коммит будет пустым (быстро).
                 await db.commit()

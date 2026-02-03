@@ -62,15 +62,6 @@ class UserRepository:
         result = await db.execute(stmt)
         return result.scalars().all()
 
-    async def get_all_user_roles_by_tg_id(self, db: AsyncSession, tg_id: int) -> Sequence[str]:
-        stmt = (
-            select(Role.name)
-            .join(User.roles)  # SQLAlchemy сама знает путь через UserRole
-            .where(User.telegram_id == tg_id)
-        )
-        result = await db.execute(stmt)
-        return result.scalars().all()
-
     async def get_user_by_phone(
         self,
         db: AsyncSession,
@@ -148,7 +139,7 @@ class UserRepository:
 
         stmt = (
             update(User)
-            .where(User.telegram_id == user_id)
+            .where(User.id == user_id)
             .where(or_(User.last_active_at.is_(None), User.last_active_at < threshold))
             .values(last_active_at=now)
         )
