@@ -114,12 +114,6 @@ class UserRepository:
         result = await db.execute(stmt)
         return result.scalar_one_or_none() is not None
 
-    async def get_role_by_name(self, db: AsyncSession, name: str) -> Role | None:
-        """Находит определение роли в таблице roles"""
-        stmt = select(Role).where(Role.name == name)
-        result = await db.execute(stmt)
-        return result.scalar_one_or_none()
-
     async def get_user_roles(
         self,
         db: AsyncSession,
@@ -142,6 +136,6 @@ class UserRepository:
             .where(User.id == user_id)
             .where(or_(User.last_active_at.is_(None), User.last_active_at < threshold))
             .values(last_active_at=now)
-        )
+        ).execution_options(synchronize_session=False)  # Проверить это
 
         await db.execute(stmt)

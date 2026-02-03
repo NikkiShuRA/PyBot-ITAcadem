@@ -8,16 +8,24 @@ from ..db.models import User
 from ..db.models.user_module import UserLevel
 from ..dto import UserCreateDTO, UserReadDTO
 from ..infrastructure.level_repository import LevelRepository
+from ..infrastructure.role_repository import RoleRepository
 from ..infrastructure.user_repository import UserRepository
 from ..mappers.user_mappers import map_orm_user_to_user_read_dto
 from .levels import get_all_levels
 
 
 class UserService:
-    def __init__(self, db: AsyncSession, user_repository: UserRepository, level_repository: LevelRepository) -> None:
+    def __init__(
+        self,
+        db: AsyncSession,
+        user_repository: UserRepository,
+        level_repository: LevelRepository,
+        role_repository: RoleRepository,
+    ) -> None:
         self.db: AsyncSession = db
         self.user_repository: UserRepository = user_repository
         self.level_repository: LevelRepository = level_repository
+        self.role_repository: RoleRepository = role_repository
 
     async def register_student(self, dto: UserCreateDTO) -> UserReadDTO:
         initial_levels = await self.level_repository.get_initial_levels(self.db)
@@ -25,7 +33,7 @@ class UserService:
         if not initial_levels:
             raise ValueError("В системе не настроены начальные уровни!")
 
-        student_role = await self.user_repository.get_role_by_name(self.db, "Student")
+        student_role = await self.role_repository.get_role_by_name(self.db, "Student")
         if not student_role:
             raise ValueError("Роль 'Student' не найдена в базе данных. Сначала создайте её!")
 
@@ -62,23 +70,17 @@ class UserService:
     async def set_user_role(self, user_id: int, role_name: str) -> None:
         """Присвоить роль пользователю"""
 
-        # 1. Получаем пользователя (обязательно с подгруженными ролями!)
-        # Тебе нужно убедиться, что repo.get_by_id делает .options(selectinload(User.roles))
         user = await self.user_repository.get_by_id(self.db, user_id)
         if not user:
             raise ValueError(f"User {user_id} not found")
 
-        role = await self.user_repository.get_role_by_name(self.db, role_name)
+        role = await self.role_repository.get_role_by_name(self.db, role_name)
 
-        # ВОТ ЗДЕСЬ У ТЕБЯ ПАДАЛО
         if not role:
-            # Вариант А: Упасть с ошибкой (как сейчас)
             raise ValueError(f"Роль '{role_name}' не найдена в базе данных. Сначала создайте её!")
 
-        # 3. Делегируем логику Агрегату
         user.add_role(role)
 
-        # 4. Коммит
         await self.db.commit()
 
     async def remove_user_role(self, user_id: int, role_name: str) -> None:
@@ -89,7 +91,7 @@ class UserService:
         if not user:
             raise ValueError(f"User {user_id} not found")
 
-        role = await self.user_repository.get_role_by_name(self.db, role_name)
+        role = await self.role_repository.get_role_by_name(self.db, role_name)
 
         if not role:
             raise ValueError(f"Роль '{role_name}' не найдена в базе данных.")

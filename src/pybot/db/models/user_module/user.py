@@ -4,7 +4,7 @@ from collections.abc import Sequence
 from datetime import UTC, date, datetime, timedelta
 from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, Date, ForeignKey, Integer, Text, func
+from sqlalchemy import BigInteger, Date, DateTime, ForeignKey, Integer, Text, func
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -51,7 +51,7 @@ class User(Base):
         BigInteger,
         ForeignKey("user_activity_statuses.id"),
     )
-    last_active_at: Mapped[date | None] = mapped_column(Date)
+    last_active_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     academic_points: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     reputation_points: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 

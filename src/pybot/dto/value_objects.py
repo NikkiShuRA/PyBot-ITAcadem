@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -28,7 +30,7 @@ class Points(BaseValueModel):
     value: Annotated[int, Field(strict=True, ge=-(2**31), le=2**31 - 1)]
     point_type: PointsTypeEnum
 
-    def adjust(self, delta: int) -> "Points":
+    def adjust(self, delta: int) -> Points:
         """
         Меняет количество очков на заданное значение.
 
@@ -78,15 +80,15 @@ class Points(BaseValueModel):
     def __repr__(self) -> str:
         return f"Points(value={self.value}, point_type={self.point_type})"
 
-    def __ge__(self, other: "Points" | int) -> bool:
+    def __ge__(self, other: Points | int) -> bool:
         val = other.value if isinstance(other, Points) else other
         return self.value >= val
 
-    def __lt__(self, other: "Points" | int) -> bool:
+    def __lt__(self, other: Points | int) -> bool:
         val = other.value if isinstance(other, Points) else other
         return self.value < val
 
-    def __add__(self, other: "Points" | int) -> "Points":
+    def __add__(self, other: Points | int) -> Points:
         val = other.value if isinstance(other, Points) else other
         return Points(value=self.value + val, point_type=self.point_type)
 
@@ -100,7 +102,7 @@ class Points(BaseValueModel):
 
         raise NotImplementedError(f"Addition not supported between Points and {type(other)}")
 
-    def __sub__(self, other: "Points" | int) -> "Points":
+    def __sub__(self, other: Points | int) -> Points:
         if isinstance(other, int):
             return self.adjust(-other)
 
