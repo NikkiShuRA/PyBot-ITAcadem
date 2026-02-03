@@ -26,9 +26,6 @@ jobs:
           version: "latest"
           enable-cache: true
 
-      - name: Add uv to PATH
-        run: echo "$HOME/.cargo/bin" >> $GITHUB_PATH
-
       - name: Install dependencies (including dev-group)
         run: make install-dev
 
