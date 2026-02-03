@@ -40,13 +40,13 @@ profile_create_dialog = Dialog(
     ),
     Window(
         Const("🆔 Отчество?"),
-        MessageInput(on_patronymic_input, content_types=ContentType.TEXT),
+        MessageInput(on_patronymic_input, content_types=ContentType.TEXT),  # ty:ignore[invalid-argument-type]
         Back(Const("⬅️ Назад")),
-        Next(Const("➡️ Пропустить"), on_click=on_patronymic_skip),
+        Next(Const("➡️ Пропустить"), on_click=on_patronymic_skip),  # ty:ignore[invalid-argument-type]
         state=CreateProfileSG.patronymic,
     ),
     Window(
-        Format("✅ Профиль создан. Твой ID: {dialog_data[user_id]}"),
+        Format("✅ Профиль создан. Добро пожаловать, {dialog_data[first_name]}!"),
         state=CreateProfileSG.finish,
     ),
 )

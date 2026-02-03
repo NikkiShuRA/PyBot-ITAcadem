@@ -5,9 +5,11 @@ from dishka.integrations.aiogram import AiogramProvider
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from ..db.database import engine as global_engine
+from ..domain.services.level_calculator import LevelCalculator
 from ..infrastructure.level_repository import LevelRepository
 from ..infrastructure.user_repository import UserRepository
 from ..infrastructure.valuation_repository import ValuationRepository
+from ..services.points import PointsService
 from ..services.users import UserService
 
 
@@ -90,9 +92,32 @@ class ServiceProvider(Provider):
         """Сервис получает репозиторий один раз."""
         return UserService(db, user_repository, level_repository)
 
+    @provide(scope=Scope.REQUEST)
+    def points_service(
+        self,
+        db: AsyncSession,
+        level_calculator: LevelCalculator,
+        user_repository: UserRepository,
+        level_repository: LevelRepository,
+    ) -> "PointsService":
+        """Сервис получает репозиторий один раз."""
+        return PointsService(db, level_calculator, user_repository, level_repository)
+
+
+class DomainServiceProvider(Provider):
+    @provide(scope=Scope.APP)
+    def level_calculator(self) -> LevelCalculator:
+        """Domain Service для расчета уровней."""
+        return LevelCalculator()
+
 
 async def setup_container() -> AsyncContainer:
     """Собрать контейнер."""
     return make_async_container(
-        DatabaseProvider(), SessionProvider(), RepositoryProvider(), ServiceProvider(), AiogramProvider()
+        DatabaseProvider(),
+        SessionProvider(),
+        RepositoryProvider(),
+        ServiceProvider(),
+        AiogramProvider(),
+        DomainServiceProvider(),
     )

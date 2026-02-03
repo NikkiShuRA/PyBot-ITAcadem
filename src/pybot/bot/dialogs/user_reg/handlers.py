@@ -4,12 +4,11 @@ from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.kbd import Button
 from dishka.integrations.aiogram import FromDishka
 from dishka.integrations.aiogram_dialog import inject
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from ....core import logger
 from ....dto import UserCreateDTO
 from ....mappers.user_mappers import map_dialog_data_to_user_create_dto
-from ....services.users import UserService, create_user_profile
+from ....services.users import UserService
 
 
 async def on_other_messages(message: Message, message_input: MessageInput, manager: DialogManager) -> None:
@@ -133,10 +132,12 @@ async def on_last_name_input(
     await manager.next()
 
 
+@inject
 async def on_patronymic_input(
     message: Message,
     widget: MessageInput,
     manager: DialogManager,
+    user_service: FromDishka[UserService],
 ) -> None:
     """
     Обработка ввода отчества и создание профиля.
@@ -170,21 +171,21 @@ async def on_patronymic_input(
         await manager.done()
         return
 
-    db: AsyncSession = manager.middleware_data["db"]
+    user = await user_service.register_student(user_data)
 
-    user = await create_user_profile(db, data=user_data)
-
-    if not user_data:
+    if not user:
         await message.answer("Произошла внутренняя ошибка. Пожалуйста, начните заново.")
         await manager.done()
         return
 
     logger.info(f"Создан user: {user}")
-    manager.dialog_data["user_id"] = user.id
     await manager.next()
 
 
-async def on_patronymic_skip(callback: CallbackQuery, button: Button, manager: DialogManager) -> None:
+@inject
+async def on_patronymic_skip(
+    callback: CallbackQuery, button: Button, manager: DialogManager, user_service: FromDishka[UserService]
+) -> None:
     """
     Обработка нажатия кнопки "Пропустить" при вводе отчества.
 
@@ -203,8 +204,10 @@ async def on_patronymic_skip(callback: CallbackQuery, button: Button, manager: D
         await manager.done()
         return
 
-    db: AsyncSession = manager.middleware_data["db"]
+    user = await user_service.register_student(user_data)
+    if user is None:
+        await callback.answer("Произошла внутренняя ошибка. Пожалуйста, начните заново.")
+        await manager.done()
+        return
 
-    user = await create_user_profile(db, data=user_data)
     logger.info(f"Создан user: {user}")
-    manager.dialog_data["user_id"] = user.id

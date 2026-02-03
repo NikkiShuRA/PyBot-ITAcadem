@@ -13,7 +13,7 @@ class AdjustUserPointsDTO(BaseDTO):
     """Data transfer object for adjusting a user's points.
 
     This bundles the parameters previously passed as many separate
-    arguments to `adjust_user_points` into a single validated object.
+    arguments into a single validated object.
     """
 
     recipient_id: int
