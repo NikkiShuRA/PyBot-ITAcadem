@@ -5,9 +5,11 @@ from datetime import UTC, date, datetime, timedelta
 from typing import TYPE_CHECKING
 
 from sqlalchemy import BigInteger, Date, ForeignKey, Integer, Text, func
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ....core.constants import PointsTypeEnum
+from ....dto.value_objects import Points
 from ...base_class import Base
 
 UPDATE_INTERVAL = timedelta(minutes=1)
@@ -168,3 +170,47 @@ class User(Base):
         # Если уровень указанного типа не найден, добавляем новый уровень
         new_user_level = UserLevel(level_id=new_level_id)
         self.user_levels.append(new_user_level)
+
+    @hybrid_property
+    def academic_points_vo(self) -> Points:
+        """Python-side: возвращает Value Object"""
+        return Points(
+            value=self.academic_points,
+            point_type=PointsTypeEnum.ACADEMIC,
+        )
+
+    @academic_points_vo.expression  # ty:ignore[invalid-argument-type]
+    def academic_points_vo(cls) -> int:  # noqa: N805
+        """SQL-side: для использования в запросах"""
+        return cls.academic_points  # возвращаем базовое поле
+
+    @academic_points_vo.setter
+    def academic_points_vo(self, value: Points | int) -> None:
+        """Setter: позволяет присваивать Points или int"""
+        if isinstance(value, Points):
+            self.academic_points = value.value
+        elif isinstance(value, int):
+            self.academic_points = value
+        else:
+            raise TypeError("academic_points_vo must be Points or int")
+
+    # То же самое для reputation
+    @hybrid_property
+    def reputation_points_vo(self) -> Points:
+        return Points(
+            value=self.reputation_points,
+            point_type=PointsTypeEnum.REPUTATION,
+        )
+
+    @reputation_points_vo.expression  # ty:ignore[invalid-argument-type]
+    def reputation_points_vo(cls) -> int:  # noqa: N805
+        return cls.reputation_points
+
+    @reputation_points_vo.setter
+    def reputation_points_vo(self, value: Points | int) -> None:
+        if isinstance(value, Points):
+            self.reputation_points = value.value
+        elif isinstance(value, int):
+            self.reputation_points = value
+        else:
+            raise TypeError("reputation_points_vo must be Points or int")

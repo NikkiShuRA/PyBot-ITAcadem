@@ -3,9 +3,11 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 from sqlalchemy import BigInteger, DateTime, ForeignKey, Integer, String, Text, func
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ....core.constants import PointsTypeEnum
+from ....dto.value_objects import Points
 from ...base_class import Base
 from .user import User
 
@@ -90,3 +92,11 @@ class Valuation(Base):
             recipient=recipient,
             giver=giver,
         )
+
+    @hybrid_property
+    def points_vo(self) -> Points:
+        return Points(value=self.points, point_type=self.points_type)
+
+    @points_vo.expression  # ty:ignore[invalid-argument-type]
+    def points_vo(cls) -> int:  # noqa: N805
+        return cls.points
