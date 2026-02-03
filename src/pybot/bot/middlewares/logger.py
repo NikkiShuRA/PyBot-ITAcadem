@@ -33,7 +33,6 @@ class LoggerMiddleware(BaseMiddleware):
             "chat_type": "unknown",
             "content": "",
             "user_role": None,  # TODO: Извлекать из data, если нужно (пока None)
-            "can_access": None,  # TODO: Извлекать из data, если нужно (пока None)
         }
 
         # LBYL: Поддерживаемые типы (fail-fast для unknown)

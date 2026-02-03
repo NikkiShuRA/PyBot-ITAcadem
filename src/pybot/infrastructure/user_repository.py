@@ -23,7 +23,7 @@ class UserRepository:
         db: AsyncSession,  # ← Сессия передается СЮДА
         id_: int,
     ) -> User | None:
-        stmt = select(User).options(selectinload(User.roles)).where(User.id == id_)
+        stmt = select(User).options(selectinload(User.roles), selectinload(User.user_levels)).where(User.id == id_)
         result = await db.execute(stmt)
         return result.scalar_one_or_none()
 
@@ -32,7 +32,11 @@ class UserRepository:
         db: AsyncSession,
         tg_id: int,
     ) -> User | None:
-        stmt = select(User).where(User.telegram_id == tg_id).options(selectinload(User.roles))
+        stmt = (
+            select(User)
+            .where(User.telegram_id == tg_id)
+            .options(selectinload(User.roles), selectinload(User.user_levels))
+        )
         result = await db.execute(stmt)
         return result.scalar_one_or_none()
 
@@ -100,7 +104,7 @@ class UserRepository:
     async def has_role(
         self,
         db: AsyncSession,
-        telegram_id: int,  # <- Меняем аргумент, мы ищем по TG ID
+        user_id: int,  # <- Меняем аргумент, мы ищем по TG ID
         role_name: str,
     ) -> bool:
         stmt = (
@@ -110,7 +114,7 @@ class UserRepository:
             .join(User)  # <- Добавляем JOIN с User
             .where(
                 and_(
-                    User.telegram_id == telegram_id,  # <- Сравниваем с telegram_id
+                    User.id == user_id,  # <- Сравниваем с user_id
                     Role.name == role_name,
                 )
             )
