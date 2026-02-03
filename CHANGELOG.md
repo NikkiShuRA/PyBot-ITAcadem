@@ -2,6 +2,29 @@
 
 <!-- version list -->
 
+## v0.2.1 (2026-02-03)
+
+### Bug Fixes
+
+- Исправил привязку telegram id к internal id и выделил отдельный Репозиторий для работы с ролями
+  ([#54](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/54),
+  [`f60cb8c`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/f60cb8cac161eebac3f3e2351fd2b0eff33157cd))
+
+- Исправил привязку telegram id к internal id и его использования для проверки роли
+  ([#54](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/54),
+  [`f60cb8c`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/f60cb8cac161eebac3f3e2351fd2b0eff33157cd))
+
+- Решил проблему с учётом временных поясов
+  ([#54](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/54),
+  [`f60cb8c`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/f60cb8cac161eebac3f3e2351fd2b0eff33157cd))
+
+### Refactoring
+
+- Добавление нового репозитория и перемещение туда метода из UserRepository
+  ([#54](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/54),
+  [`f60cb8c`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/f60cb8cac161eebac3f3e2351fd2b0eff33157cd))
+
+
 ## v0.2.0 (2026-02-03)
 
 ### Bug Fixes
