@@ -36,3 +36,8 @@ repos:
           "--target-version", "3.12"
         ]
         additional_dependencies: [ty]
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: v3.13.0
+    hooks:
+      - id: commitizen
+        stages: [commit-msg]
