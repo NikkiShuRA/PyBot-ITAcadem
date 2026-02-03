@@ -25,9 +25,14 @@ class UserService:
         if not initial_levels:
             raise ValueError("В системе не настроены начальные уровни!")
 
+        student_role = await self.user_repository.get_role_by_name(self.db, "Student")
+        if not student_role:
+            raise ValueError("Роль 'Student' не найдена в базе данных. Сначала создайте её!")
+
         user = await self.user_repository.create_user_profile(self.db, data=dto)
 
         user.set_initial_levels(initial_levels)
+        user.add_role(student_role)
         self.db.add(user)
 
         await self.db.commit()
@@ -36,10 +41,10 @@ class UserService:
 
     async def get_user(
         self,
-        tg_id: int,
+        user_id: int,
     ) -> User | None:
         # Проверяем, есть ли пользователь
-        user = await self.user_repository.get_by_telegram_id(self.db, tg_id)
+        user = await self.user_repository.get_by_id(self.db, user_id)
 
         if user:
             return user
