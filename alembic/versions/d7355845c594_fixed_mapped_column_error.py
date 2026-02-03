@@ -1,8 +1,8 @@
-"""Initial db
+"""Fixed mapped_column error
 
-Revision ID: c59f18c62628
+Revision ID: d7355845c594
 Revises:
-Create Date: 2026-02-01 05:08:50.948941
+Create Date: 2026-02-04 03:28:19.855302
 
 """
 
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = "c59f18c62628"
+revision: str = "d7355845c594"
 down_revision: str | Sequence[str] | None = None
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
@@ -79,7 +79,7 @@ def upgrade() -> None:
         sa.Column("github_url", sa.Text(), nullable=True),
         sa.Column("join_date", sa.Date(), server_default=sa.text("(CURRENT_DATE)"), nullable=False),
         sa.Column("activity_status_id", sa.BigInteger(), nullable=True),
-        sa.Column("last_active_at", sa.Date(), nullable=True),
+        sa.Column("last_active_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("academic_points", sa.Integer(), nullable=False),
         sa.Column("reputation_points", sa.Integer(), nullable=False),
         sa.ForeignKeyConstraint(
