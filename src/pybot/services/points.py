@@ -1,8 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from pybot.domain.exceptions import UserNotFoundError, ZeroPointsAdjustmentError
-
 from ..db.models import Valuation
+from ..domain.exceptions import UserNotFoundError, ZeroPointsAdjustmentError
 from ..domain.services.level_calculator import LevelCalculator
 from ..dto import AdjustUserPointsDTO, UserReadDTO
 from ..infrastructure.level_repository import LevelRepository

@@ -135,6 +135,16 @@ class RoleAlreadyAssignedError(DomainError):
         )
 
 
+class InvalidRoleChangeError(DomainError):
+    """Ошибка при изменении роли."""
+
+    def __init__(self, user_id: int, role_name: str, reason: str) -> None:
+        super().__init__(
+            f"Невозможно изменить роль пользователя {user_id} на '{role_name}': {reason}",
+            details={"user_id": user_id, "role": role_name, "reason": reason},
+        )
+
+
 class UsersRolesNotFoundError(DomainError):
     """Роли пользователей не найдены в системе."""
 

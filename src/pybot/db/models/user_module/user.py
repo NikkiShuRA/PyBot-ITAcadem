@@ -8,9 +8,8 @@ from sqlalchemy import BigInteger, Date, DateTime, ForeignKey, Integer, Text, fu
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from pybot.domain.exceptions import ZeroPointsAdjustmentError
-
 from ....core.constants import PointsTypeEnum
+from ....domain.exceptions import ZeroPointsAdjustmentError
 from ....dto.value_objects import Points
 from ...base_class import Base
 
@@ -57,12 +56,12 @@ class User(Base):
     academic_points: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     reputation_points: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
-    roles: Mapped[list[UserRole]] = relationship("UserRole", back_populates="user")
+    roles: Mapped[list[UserRole]] = relationship("UserRole", back_populates="user", cascade="all, delete-orphan")
     role_events_to: Mapped[list[RoleEvent]] = relationship(
         "RoleEvent", foreign_keys="RoleEvent.to_user_id", back_populates="to_user"
     )
     role_events_from: Mapped[list[RoleEvent]] = relationship(
-        "RoleEvent", foreign_keys="RoleEvent.from_user_id", back_populates="from_user"
+        "RoleEvent", foreign_keys="RoleEvent.from_user_id", back_populates="from_user", cascade="all, delete-orphan"
     )
 
     activity_status: Mapped[UserActivityStatus | None] = relationship(
