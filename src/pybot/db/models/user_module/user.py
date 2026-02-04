@@ -51,7 +51,7 @@ class User(Base):
         BigInteger,
         ForeignKey("user_activity_statuses.id"),
     )
-    last_active_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_active_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=False), nullable=True)
     academic_points: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     reputation_points: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 

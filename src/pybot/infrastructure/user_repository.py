@@ -136,6 +136,6 @@ class UserRepository:
             .where(User.id == user_id)
             .where(or_(User.last_active_at.is_(None), User.last_active_at < threshold))
             .values(last_active_at=now)
-        ).execution_options(synchronize_session=False)  # Проверить это
+        )
 
         await db.execute(stmt)
