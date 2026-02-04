@@ -99,6 +99,16 @@ exclude = ['test_*', '__init__.py']
 "src/pybot/db/models/user_module/valuation.py" = ["PLR0913"]
 "src/pybot/di/containers.py" = ["PLR0913"]
 
+[tool.ruff.lint.isort]
+known-first-party = ["pybot"]
+section-order = [
+    "future",
+    "standard-library",
+    "third-party",
+    "first-party",
+    "local-folder"
+]
+
 [tool.mypy]
 explicit_package_bases = true
 namespace_packages = true
