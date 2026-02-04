@@ -171,4 +171,4 @@ async def handle_reputation_points(
         logger.exception("Domain error")
     except Exception:
         await message.reply("❌ Неожиданная ошибка. Попробуйте позже.")
-        logger.exception("Unexpected error in handle_academic_points")
+        logger.exception("Unexpected error in handle_reputation_points")
