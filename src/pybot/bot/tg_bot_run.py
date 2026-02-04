@@ -1,3 +1,5 @@
+import asyncio
+
 from aiogram import Bot, Dispatcher
 from aiogram_dialog import setup_dialogs
 from dishka import AsyncContainer
@@ -8,7 +10,6 @@ from yaspin import yaspin
 
 from ..core import logger
 from ..core.config import settings
-from ..db.database import SessionLocal
 from ..di.containers import setup_container
 from .dialogs import user_router
 from .handlers import (
@@ -17,7 +18,6 @@ from .handlers import (
     profile_router,  # !!! Костыль вывода профиля (Нужно перепроверить и улучшить)
 )
 from .middlewares import (
-    DbSessionMiddleware,
     LoggerMiddleware,
     RateLimitMiddleware,
     RoleMiddleware,
@@ -71,8 +71,6 @@ async def setup_middlewares(dp: Dispatcher) -> None:
     else:
         logger.info("⚠️ RateLimitMiddleware отключён")
 
-    dp.update.middleware(DbSessionMiddleware(SessionLocal))
-
 
 async def setup_di(dp: Dispatcher) -> AsyncContainer:
     container = await setup_container()
@@ -91,15 +89,44 @@ def setup_handlers(dp: Dispatcher) -> None:
 
 
 async def tg_bot_main() -> None:
+    container: AsyncContainer | None = None
+
     with yaspin(text="Инициализация бота...", color="cyan") as sp:
         bot, dp = await setup_bot()
-        await setup_di(dp)
+        container = await setup_di(dp)  # ← сохраняем ссылку
         await setup_middlewares(dp)
         setup_handlers(dp)
         await bot.delete_webhook(drop_pending_updates=True)
         logger.info("Запуск бота")
         sp.ok("✅ Бот запущен!")
+
     try:
         await dp.start_polling(bot)
+    except asyncio.CancelledError:
+        logger.info("⏹ Получен сигнал отмены (Ctrl+C)")
+        raise
+    except Exception:
+        logger.exception("Неожиданная ошибка")
+        raise
     finally:
+        logger.info("🔄 Начинаем graceful shutdown...")
+
         await bot.session.close()
+
+        if container is not None:
+            try:
+                await container.close()  # ← вызывает DatabaseProvider.close → engine.dispose()
+                logger.info("✅ Dishka container закрыт")
+            except Exception:
+                logger.exception("Ошибка при закрытии контейнера")
+
+        # Дополнительная защита
+        try:
+            from ..db.database import engine  # noqa: PLC0415
+
+            await engine.dispose()
+            logger.info("✅ SQLAlchemy engine dispose выполнен")
+        except Exception:
+            logger.exception("Ошибка при dispose engine")
+
+        logger.complete()

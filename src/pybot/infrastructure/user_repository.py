@@ -128,7 +128,7 @@ class UserRepository:
         db: AsyncSession,
         user_id: int,
     ) -> None:
-        now = datetime.now(UTC)
+        now = datetime.now(UTC).replace(tzinfo=None)
         threshold = now - ACTIVITY_UPDATE_INTERVAL
 
         stmt = (
