@@ -8,6 +8,8 @@ from sqlalchemy import BigInteger, Date, DateTime, ForeignKey, Integer, Text, fu
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from pybot.domain.exceptions import ZeroPointsAdjustmentError
+
 from ....core.constants import PointsTypeEnum
 from ....domain.exceptions import ZeroPointsAdjustmentError
 from ....dto.value_objects import Points
