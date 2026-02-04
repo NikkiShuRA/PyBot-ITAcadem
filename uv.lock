@@ -130,6 +130,15 @@ wheels = [
 ]
 
 [[package]]
+name = "aiorun"
+version = "2025.1.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/d4/b9/77d7ecc3c0738046b086498eca5f67669285b6bd10adf44b242daf02ecba/aiorun-2025.1.1.tar.gz", hash = "sha256:86d1075a034ce2671ab532db06e9204fe784cdd0c66ca7b8cc47a7527d0d50a3", size = 31451, upload-time = "2025-01-27T15:01:42.759Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/37/e2/48ff3d538f173fde54dc406b4718c63c73c7d215eba37f405b729cf4700b/aiorun-2025.1.1-py3-none-any.whl", hash = "sha256:46d6fa7ac4bfe93ff8385fa17941e4dbe0452d0353497196be25b000571fe3e1", size = 18053, upload-time = "2025-01-27T15:01:40.131Z" },
+]
+
+[[package]]
 name = "aiosignal"
 version = "1.4.0"
 source = { registry = "https://pypi.org/simple" }
@@ -932,6 +941,7 @@ dependencies = [
     { name = "aiogram" },
     { name = "aiogram-dialog" },
     { name = "aiolimiter" },
+    { name = "aiorun" },
     { name = "aiosqlite" },
     { name = "dishka" },
     { name = "loguru" },
@@ -965,6 +975,7 @@ requires-dist = [
     { name = "aiogram", specifier = ">=3.22.0" },
     { name = "aiogram-dialog", specifier = ">=2.4.0" },
     { name = "aiolimiter", specifier = ">=1.2.1" },
+    { name = "aiorun", specifier = ">=2025.1.1" },
     { name = "aiosqlite", specifier = ">=0.22.1" },
     { name = "dishka", specifier = ">=1.7.2" },
     { name = "loguru", specifier = ">=0.7.3" },

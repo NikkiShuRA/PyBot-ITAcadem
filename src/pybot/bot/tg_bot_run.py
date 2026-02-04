@@ -89,11 +89,12 @@ def setup_handlers(dp: Dispatcher) -> None:
 
 
 async def tg_bot_main() -> None:
+    """Основная функция бота с graceful shutdown"""
     container: AsyncContainer | None = None
 
     with yaspin(text="Инициализация бота...", color="cyan") as sp:
         bot, dp = await setup_bot()
-        container = await setup_di(dp)  # ← сохраняем ссылку
+        container = await setup_di(dp)
         await setup_middlewares(dp)
         setup_handlers(dp)
         await bot.delete_webhook(drop_pending_updates=True)
@@ -103,30 +104,24 @@ async def tg_bot_main() -> None:
     try:
         await dp.start_polling(bot)
     except asyncio.CancelledError:
-        logger.info("⏹ Получен сигнал отмены (Ctrl+C)")
+        logger.info("⏹️ Получен сигнал отмены")
         raise
     except Exception:
         logger.exception("Неожиданная ошибка")
         raise
     finally:
-        logger.info("🔄 Начинаем graceful shutdown...")
+        logger.info("🔄 Graceful shutdown...")
 
-        await bot.session.close()
+        # Закрытие бота
+        if bot:
+            await bot.session.close()
 
+        # Закрытие контейнера DI (включает закрытие БД)
         if container is not None:
             try:
-                await container.close()  # ← вызывает DatabaseProvider.close → engine.dispose()
-                logger.info("✅ Dishka container закрыт")
+                await container.close()
+                logger.info("✅ Dishka контейнер закрыт")
             except Exception:
                 logger.exception("Ошибка при закрытии контейнера")
-
-        # Дополнительная защита
-        try:
-            from ..db.database import engine  # noqa: PLC0415
-
-            await engine.dispose()
-            logger.info("✅ SQLAlchemy engine dispose выполнен")
-        except Exception:
-            logger.exception("Ошибка при dispose engine")
 
         logger.complete()
