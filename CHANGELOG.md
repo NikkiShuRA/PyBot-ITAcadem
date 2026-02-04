@@ -2,6 +2,27 @@
 
 <!-- version list -->
 
+## v0.3.0 (2026-02-04)
+
+### Bug Fixes
+
+- Убрал enqueue=True из логгера для исправления блокировки программы при её завершении
+  ([#55](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/55),
+  [`95b7928`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/95b7928d6fd6c13fbdca10ac13300f10baa58b42))
+
+### Features
+
+- Добавил фильтер для conditional UI в aiogram-dialog, с добавлением списка ролей пользователя в
+  данные из middleware ([#55](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/55),
+  [`95b7928`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/95b7928d6fd6c13fbdca10ac13300f10baa58b42))
+
+### Refactoring
+
+- Добавил VO в объекты кода, и инструменты в CI-pipeline
+  ([#55](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/55),
+  [`95b7928`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/95b7928d6fd6c13fbdca10ac13300f10baa58b42))
+
+
 ## v0.2.1 (2026-02-03)
 
 ### Bug Fixes
