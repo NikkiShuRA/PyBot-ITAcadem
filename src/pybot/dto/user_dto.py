@@ -7,6 +7,8 @@ from pydantic import Field, field_validator
 from ..dto.value_objects import Points
 from ..utils import normalize_phone
 from .base_dto import BaseDTO
+from .level_dto import LevelReadDTO, LevelSystemReadDTO
+from ..core.constants import LevelTypeEnum
 
 
 class AdjustUserPointsDTO(BaseDTO):
@@ -94,3 +96,22 @@ class UpdateUserLevelDTO(BaseDTO):
     user: UserReadDTO
     current_points: Points
     inputed_points: Points
+
+
+class UserLevelReadDTO(BaseDTO):
+    """
+    DTO для отображения прогресса уровня пользователя.
+    """
+    system: LevelTypeEnum
+    curret_level: LevelReadDTO
+    next_level: LevelReadDTO
+    
+    
+class UserProfileReadDTO(BaseDTO):
+    """
+    DTO для отображения расширенного списка данных пользователя.
+    """
+
+    user: UserReadDTO
+    level_info: list[UserLevelReadDTO]
+    
