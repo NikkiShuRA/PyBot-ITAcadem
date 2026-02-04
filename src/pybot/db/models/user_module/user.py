@@ -4,6 +4,7 @@ from collections.abc import Sequence
 from datetime import UTC, date, datetime, timedelta
 from typing import TYPE_CHECKING
 
+from pybot.domain.exceptions import ZeroPointsAdjustmentError
 from sqlalchemy import BigInteger, Date, DateTime, ForeignKey, Integer, Text, func
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -141,7 +142,7 @@ class User(Base):
 
     def change_user_points(self, points: int, point_type: PointsTypeEnum) -> int:
         if points == 0:
-            raise ValueError("Нельзя начислить 0 баллов")
+            raise ZeroPointsAdjustmentError()
         current = 0
         if point_type == PointsTypeEnum.ACADEMIC:
             current = self.academic_points
@@ -156,7 +157,9 @@ class User(Base):
             return self.reputation_points - current
 
         else:
-            raise ValueError(f"Неизвестный тип баллов: {point_type}")
+            raise ValueError(
+                f"Неизвестный тип баллов: {point_type}. Доступные типы: {[t.value for t in PointsTypeEnum]}"
+            )
 
     def change_user_level(self, new_level_id: int, points_type: PointsTypeEnum) -> None:
         """Изменяет уровень пользователя на новый уровень указанного типа."""

@@ -1,5 +1,6 @@
 from collections.abc import Sequence
 
+from pybot.domain.exceptions import InitialLevelsNotFoundError, RoleNotFoundError, UserNotFoundError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -31,11 +32,11 @@ class UserService:
         initial_levels = await self.level_repository.get_initial_levels(self.db)
 
         if not initial_levels:
-            raise ValueError("В системе не настроены начальные уровни!")
+            raise InitialLevelsNotFoundError()
 
         student_role = await self.role_repository.get_role_by_name(self.db, "Student")
         if not student_role:
-            raise ValueError("Роль 'Student' не найдена в базе данных. Сначала создайте её!")
+            raise RoleNotFoundError("Роль 'Student' не найдена в базе данных. Сначала создайте её!")
 
         user = await self.user_repository.create_user_profile(self.db, data=dto)
 
@@ -72,12 +73,12 @@ class UserService:
 
         user = await self.user_repository.get_by_id(self.db, user_id)
         if not user:
-            raise ValueError(f"User {user_id} not found")
+            raise UserNotFoundError(user_id=user_id)
 
         role = await self.role_repository.get_role_by_name(self.db, role_name)
 
         if not role:
-            raise ValueError(f"Роль '{role_name}' не найдена в базе данных. Сначала создайте её!")
+            raise RoleNotFoundError(f"Роль '{role_name}' не найдена в базе данных. Сначала создайте её!")
 
         user.add_role(role)
 
@@ -89,12 +90,12 @@ class UserService:
         # 1. Получаем пользователя (обязательно с подгруженными ролями!)
         user = await self.user_repository.get_by_id(self.db, user_id)
         if not user:
-            raise ValueError(f"User {user_id} not found")
+            raise UserNotFoundError(user_id=user_id)
 
         role = await self.role_repository.get_role_by_name(self.db, role_name)
 
         if not role:
-            raise ValueError(f"Роль '{role_name}' не найдена в базе данных.")
+            raise RoleNotFoundError(f"Роль '{role_name}' не найдена в базе данных.")
 
         # 3. Делегируем логику Агрегату
         user.remove_role(role)
