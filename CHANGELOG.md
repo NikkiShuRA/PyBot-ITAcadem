@@ -2,6 +2,35 @@
 
 <!-- version list -->
 
+## v0.4.0 (2026-02-04)
+
+### Bug Fixes
+
+- Исправил логику проверки ролей, добавив возможность эффективного обрабатывать множество ролей на
+  одном хэндлере, диалоге ([#56](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/56),
+  [`8c16d8a`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/8c16d8aaae571b437283c48b6602ad215d9837ec))
+
+- Исправил логику проверки ролей, добавив обрабатывать множество ролей на одном элементе
+  ([#56](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/56),
+  [`8c16d8a`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/8c16d8aaae571b437283c48b6602ad215d9837ec))
+
+- Убрал enqueue=True из логгера для исправления блокировки программы при её завершении
+  ([#56](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/56),
+  [`8c16d8a`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/8c16d8aaae571b437283c48b6602ad215d9837ec))
+
+### Features
+
+- Добавил фильтер для conditional UI в aiogram-dialog, с добавлением списка ролей пользователя в
+  данные из middleware ([#56](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/56),
+  [`8c16d8a`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/8c16d8aaae571b437283c48b6602ad215d9837ec))
+
+### Refactoring
+
+- Добавил VO в объекты кода, и инструменты в CI-pipeline
+  ([#56](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/56),
+  [`8c16d8a`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/8c16d8aaae571b437283c48b6602ad215d9837ec))
+
+
 ## v0.3.0 (2026-02-04)
 
 ### Bug Fixes
