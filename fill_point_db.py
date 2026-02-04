@@ -21,7 +21,7 @@ logger = setup_logger()
 fake = Faker("ru_RU")
 
 # --- Конфигурация скрипта ---
-NUM_FAKE_USERS = 5
+NUM_FAKE_USERS = 50
 NUM_LEVELS_PER_TYPE = 15
 MAX_POINTS_RANGE = 1050
 POINT_STEPS = [5, 10]
@@ -259,11 +259,11 @@ async def add_roles_data(session: AsyncSession) -> Sequence[Role]:
             name=f"{role_obj.value}",
         )
         roles_to_add.append(role)
+        logger.info(f"Добавлена роль: {role.name}")
 
     session.add_all(roles_to_add)
     await session.commit()
     logger.info(f"Добавлено {len(roles_to_add)} ролей в базу данных.")
-
     return roles_to_add
 
 

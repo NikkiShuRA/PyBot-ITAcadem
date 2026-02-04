@@ -1,15 +1,22 @@
 from __future__ import annotations
 
-from datetime import date
+from collections.abc import Sequence
+from datetime import UTC, date, datetime, timedelta
 from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, Date, ForeignKey, Integer, Text, func
+from sqlalchemy import BigInteger, Date, DateTime, ForeignKey, Integer, Text, func
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from ....core.constants import PointsTypeEnum
+from ....dto.value_objects import Points
 from ...base_class import Base
+
+UPDATE_INTERVAL = timedelta(minutes=1)
 
 if TYPE_CHECKING:
     from ..role_module import (
+        Role,
         RoleEvent,
         UserRole,
     )
@@ -18,9 +25,10 @@ if TYPE_CHECKING:
         UserAchievement,
         UserActivityStatus,
         UserCompetence,
-        UserLevel,
         Valuation,
     )
+    from .level import Level
+    from .user_level import UserLevel
 
 
 class User(Base):
@@ -43,6 +51,7 @@ class User(Base):
         BigInteger,
         ForeignKey("user_activity_statuses.id"),
     )
+    last_active_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     academic_points: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     reputation_points: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
@@ -97,3 +106,111 @@ class User(Base):
 
     def __repr__(self) -> str:
         return f"User(id={self.id!r}, first_name={self.first_name!r}, last_name={self.last_name!r}, telegram_id={self.telegram_id!r}, academic_points={self.academic_points!r}, computation_points={self.reputation_points!r}, join_date={self.join_date!r})"  # noqa: E501
+
+    def set_initial_levels(self, levels: Sequence[Level]) -> None:
+        from .user_level import UserLevel  # noqa: PLC0415
+
+        for level in levels:
+            new_link = UserLevel(level_id=level.id)
+            self.user_levels.append(new_link)
+
+    def add_role(self, role: Role) -> None:
+        """
+        Доменная логика: Пользователь получает роль.
+        Мы проверяем, нет ли её уже, чтобы не дублировать.
+        """
+        from ..role_module import UserRole  # noqa: PLC0415
+
+        # Проверяем по ID или имени, есть ли уже такая роль
+        for user_role in self.roles:
+            if user_role.role_id == role.id:
+                return  # Роль уже есть, ничего не делаем
+        # Создаем связь
+        new_link = UserRole(user_id=self.id, role_id=role.id)
+        self.roles.append(new_link)
+
+    def remove_role(self, role: Role) -> None:
+        """
+        Доменная логика: Пользователь теряет роль.
+        """
+        self.roles = [ur for ur in self.roles if ur.role_id != role.id]
+
+    def change_last_user_active(self) -> None:
+        """Обновить дату последней активности пользователя"""
+        self.last_active_at = datetime.now(UTC)
+
+    def change_user_points(self, points: int, point_type: PointsTypeEnum) -> int:
+        if points == 0:
+            raise ValueError("Нельзя начислить 0 баллов")
+        current = 0
+        if point_type == PointsTypeEnum.ACADEMIC:
+            current = self.academic_points
+            self.academic_points += points
+            self.academic_points = max(self.academic_points, 0)
+            return self.academic_points - current
+
+        elif point_type == PointsTypeEnum.REPUTATION:
+            current = self.reputation_points
+            self.reputation_points += points
+            self.reputation_points = max(self.reputation_points, 0)
+            return self.reputation_points - current
+
+        else:
+            raise ValueError(f"Неизвестный тип баллов: {point_type}")
+
+    def change_user_level(self, new_level_id: int, points_type: PointsTypeEnum) -> None:
+        """Изменяет уровень пользователя на новый уровень указанного типа."""
+        from .user_level import UserLevel  # noqa: PLC0415
+
+        for user_level in self.user_levels:
+            if user_level.level.level_type == points_type:
+                user_level.level_id = new_level_id
+                return
+
+        # Если уровень указанного типа не найден, добавляем новый уровень
+        new_user_level = UserLevel(level_id=new_level_id)
+        self.user_levels.append(new_user_level)
+
+    @hybrid_property
+    def academic_points_vo(self) -> Points:
+        """Python-side: возвращает Value Object"""
+        return Points(
+            value=self.academic_points,
+            point_type=PointsTypeEnum.ACADEMIC,
+        )
+
+    @academic_points_vo.expression  # ty:ignore[invalid-argument-type]
+    def academic_points_vo(cls) -> int:  # noqa: N805
+        """SQL-side: для использования в запросах"""
+        return cls.academic_points  # возвращаем базовое поле
+
+    @academic_points_vo.setter
+    def academic_points_vo(self, value: Points | int) -> None:
+        """Setter: позволяет присваивать Points или int"""
+        if isinstance(value, Points):
+            self.academic_points = value.value
+        elif isinstance(value, int):
+            self.academic_points = value
+        else:
+            raise TypeError("academic_points_vo must be Points or int")
+
+    # То же самое для reputation
+    @hybrid_property
+    def reputation_points_vo(self) -> Points:
+        return Points(
+            value=self.reputation_points,
+            point_type=PointsTypeEnum.REPUTATION,
+        )
+
+    @reputation_points_vo.expression  # ty:ignore[invalid-argument-type]
+    def reputation_points_vo(cls) -> int:  # noqa: N805
+        return cls.reputation_points
+
+    @reputation_points_vo.setter
+    def reputation_points_vo(self, value: Points | int) -> None:
+        if isinstance(value, Points):
+            self.reputation_points = value.value
+        elif isinstance(value, int):
+            self.reputation_points = value
+        else:
+            raise TypeError("reputation_points_vo must be Points or int")

@@ -3,9 +3,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from sqlalchemy import Integer, String, Text
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ....core.constants import PointsTypeEnum
+from ....dto.value_objects import Points
 from ...base_class import Base
 
 if TYPE_CHECKING:
@@ -27,3 +29,11 @@ class Level(Base):
     user_levels: Mapped[UserLevel | None] = relationship(
         "UserLevel", back_populates="level", cascade="all, delete-orphan", foreign_keys="UserLevel.level_id"
     )
+
+    @hybrid_property
+    def threshold_vo(self) -> Points:
+        return Points(value=self.required_points, point_type=self.level_type)
+
+    @threshold_vo.expression  # ty:ignore[invalid-argument-type]
+    def threshold_vo(cls) -> int:  # noqa: N805
+        return cls.required_points

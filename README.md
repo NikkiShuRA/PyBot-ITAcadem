@@ -7,46 +7,75 @@
 
 ## О чём этот бот 🤖
 
-Сейчас бот решает базовую, но важную задачу — идентификация и онбординг участника:
-
-- Авторизация через Telegram и номер телефона.
-- Привязка Telegram‑аккаунта к уже существующему пользователю по телефону.
-- Создание нового профиля через удобный диалог.
-- Несколько базовых команд для навигации и проверки, что бот жив.
-
-При этом под капотом уже лежит полноценная модель данных для пользователей, проектов, задач, комментариев и достижений — фундамент, на котором дальше можно строить геймификацию и управление учёбой через Telegram.
+Цель проекта — создать удобную точку входа в экосистему академии: авторизация через Telegram, управление профилем, геймификация через баллы и уровни, и в будущем — работа с задачами и проектами.
 
 ---
 
 ## Что умеет бот сейчас ✅
 
-- `/start` в личке:
-  - если пользователь уже известен по Telegram ID — показывает подсказку и готов к работе;
-  - если нет — просит отправить контакт, проверяет, что это его номер, и:
-    - либо привязывет к существующему пользователю по телефону;
-    - либо запускает диалог создания профиля (имя → фамилия → отчество) и сохранет в БД.
-- `/start` в группе — просто приветствие без авторизации.
-- `/help` — краткая справка по основным командам.
-- `/info` — информация об ITAcadem StartUP и ссылке на репозиторий.
-- `/ping` — health‑check (отвечает `pong`).
+### Авторизация и профиль
+
+/start в личке:
+Если пользователь уже зарегистрирован — показывает профиль с прогресс-баром уровней
+Если нет — запускает диалог регистрации через номер телефона
+
+- /profile — детальный просмотр профиля с:
+  - Академическим и репутационным уровнями
+  - Прогресс-баром до следующего уровня
+  - Текущим количеством баллов
+
+### Геймификация (админ-команды)
+
+- /academic_points @user 100 "за решение задачи" — начисление академических баллов
+- /reputation_points @user 50 "за помощь коллегам" — начисление репутационных баллов
+Автоматическое повышение/понижение уровня при изменении баллов
+
+### Система ролей
+
+Поддержка ролей: Student, Mentor, Admin
+/admin — выдача прав администратора (временно открыта для тестирования)
+Проверка прав через middleware (флаг role="Admin" на хендлерах)
+
+### Инфраструктурные фичи
+
+/ping — health-check с проверкой роли
+/info — информация о проекте и ссылка на репозиторий
+/help — справка по доступным командам
 
 ---
 
 ## Стек технологий 🛠
 
-- Python 3.11+
-- aiogram — работа с Telegram Bot API
-- aiogram_dialog — диалоговые сценарии
-- SQLAlchemy (async) — ORM и работа с БД в асинхронном режиме
-- Alembic — миграции схемы БД
-- SQLite / PostgreSQL — поддерживаемые СУБД (в зависимости от строки подключения)
-- asyncpg — драйвер для PostgreSQL
-- aiosqlite — драйвер для SQLite
-- Pydantic + pydantic-settings — модели данных и конфигурация через .env
-- loguru — логирование
-- Faker — генерация тестовых данных (наполнение БД)
-- phonenumbers — нормализация и валидация телефонных номеров
+## Ядро
 
+- Python 3.12+ с асинхронным программированием (asyncio)
+- aiogram 3.22+ — современный фреймворк для Telegram-ботов
+- aiogram-dialog 2.4+ — управление многошаговыми диалогами
+- База данных
+- SQLite (основная БД для разработки и продакшена)
+- SQLAlchemy 2.0 Async — ORM с поддержкой асинхронных операций
+- Alembic — миграции схемы БД
+- Rich ORM Models — бизнес-логика инкапсулирована в моделях (User.add_role(), User.set_initial_levels())
+
+## Архитектура
+
+- Dishka — внедрение зависимостей (DI-контейнер)
+- Repository Pattern — слой абстракции над БД (UserRepository, LevelRepository)
+- Middleware — кросс-катинговые задачи:
+  - RoleMiddleware — проверка прав доступа
+  - RateLimitMiddleware — защита от спама (3 уровня: cheap/moderate/expensive)
+  - UserActivityMiddleware — отслеживание активности пользователей
+  - LoggerMiddleware — структурированное логирование событий
+- Value Objects — семантические типы (Points для баллов)
+- DTO — валидация и сериализация данных на границах слоёв
+
+### Вспомогательные инструменты
+
+- loguru — логирование с поддержкой структурированных логов
+- tyro — CLI для скриптов (в разработке для fill_point_db.py)
+- Faker — генерация тестовых данных
+- phonenumbers — валидация и нормализация телефонных номеров
+- uv — современный менеджер пакетов и зависимостей
 
 ---
 
@@ -55,108 +84,56 @@
 Ниже упрощённое дерево, чтобы было понятно, где что лежит:
 
 ```plain text
-PyBot-ITAcadem/
-├── alembic/
-│   ├── env.py
-│   └── versions/
-│       └── ...
+PyBot_ITAcadem/
 ├── src/
-│   ├── __init__.py
 │   └── pybot/
-│       ├── __init__.py
-│       ├── bot/
-│       │   ├── tg_bot_run.py
-│       │   ├── dialogs/
-│       │   │   ├── __init__.py
-│       │   │   └── user/
-│       │   │       ├── __init__.py
-│       │   │       ├── getters.py
-│       │   │       ├── handlers.py
-│       │   │       ├── states.py
-│       │   │       └── windows.py
-│       │   ├── filters/
-│       │   │   ├── __init__.py
-│       │   │   ├── chat_filters.py
-│       │   │   ├── message_value_filters.py
-│       │   │   └── router_factories.py
-│       │   ├── handlers/
-│       │   │   ├── __init__.py
-│       │   │   ├── common/
-│       │   │   │   ├── __init__.py
-│       │   │   │   ├── misc.py
-│       │   │   │   └── start.py
-│       │   │   └── points/
-│       │   │       ├── __init__.py
-│       │   │       └── grand_points.py
-│       │   ├── keyboards/
-│       │   │   ├── __init__.py
-│       │   │   └── auth.py
-│       │   └── utils/
-│       │       ├── __init__.py
-│       │       └── text_id_searches.py
-│       ├── core/
-│       │   ├── __init__.py
-│       │   ├── config.py
-│       │   ├── constants.py
-│       │   └── logger.py
-│       ├── db/
-│       │   ├── __init__.py
-│       │   ├── base_class.py
-│       │   ├── database.py
-│       │   └── models/
-│       │       ├── __init__.py
-│       │       ├── achievement.py
-│       │       ├── level_module/
-│       │       │   └── __init__.py
-│       │       ├── task_module/
-│       │       │   ├── __init__.py
-│       │       │   ├── task_solution_statuses.py
-│       │       │   ├── task_solutions.py
-│       │       │   └── tasks.py
-│       │       └── user_module/
-│       │           ├── __init__.py
-│       │           ├── academic_role.py
-│       │           ├── admin_role.py
-│       │           ├── competence.py
-│       │           ├── level.py
-│       │           ├── user.py
-│       │           ├── user_achievement.py
-│       │           ├── user_activity_status.py
-│       │           ├── user_competence.py
-│       │           ├── user_level.py
-│       │           └── valuation.py
-│       ├── domain/
-│       │   ├── __init__.py
-│       │   ├── achievement.py
-│       │   ├── base.py
-│       │   ├── competence.py
-│       │   ├── factories.py
-│       │   ├── level.py
-│       │   ├── role.py
-│       │   ├── task.py
-│       │   ├── user.py
-│       │   ├── valuation.py
-│       │   └── value_objects.py
-│       ├── dto/
-│       │   ├── __init__.py
-│       │   ├── base_dto.py
-│       │   └── user_dto.py
-│       ├── mappers/
-│       │   ├── __init__.py
-│       │   ├── level_mappers.py
-│       │   ├── points_mappers.py
-│       │   └── user_mappers.py
-│       ├── services/
-│       │   ├── __init__.py
-│       │   ├── levels.py
-│       │   ├── points.py
-│       │   └── users.py
-│       └── utils/
-│           ├── __init__.py
+│       ├── bot/                     # Presentation Layer
+│       │   ├── dialogs/            # aiogram-dialog сценарии
+│       │   ├── handlers/           # Thin handlers (без бизнес-логики)
+│       │   ├── keyboards/          # Кастомные клавиатуры
+│       │   ├── middlewares/        # Кросс-катинговые мидлвари
+│       │   │   ├── db.py           # Сессия БД
+│       │   │   ├── logger.py       # Логирование событий
+│       │   │   ├── rate_limit.py   # Rate limiting
+│       │   │   ├── role.py         # Проверка ролей
+│       │   │   └── user_activity.py # Трекинг активности
+│       │   ├── filters/            # Фильтры для роутеров
+│       │   ├── utils/              # Вспомогательные функции
+│       │   └── tg_bot_run.py       # Точка входа бота
+│       ├── core/                   # Конфигурация и константы
+│       │   ├── config.py           # Pydantic Settings (.env)
+│       │   ├── constants.py        # Enum'ы (PointsTypeEnum, RoleEnum)
+│       │   └── logger.py           # Настройка loguru
+│       ├── db/                     # Data Layer
+│       │   ├── models/             # Rich ORM Models (бизнес-логика здесь!)
+│       │   │   ├── user_module/
+│       │   │   │   ├── user.py     # User.add_role(), User.set_initial_levels()
+│       │   │   │   ├── level.py
+│       │   │   │   └── user_level.py
+│       │   │   ├── role_module/
+│       │   │   │   ├── roles.py
+│       │   │   │   └── user_roles.py
+│       │   │   └── task_module/
+│       │   └── database.py          # Async engine и сессия
+│       ├── di/                     # DI-контейнер Dishka
+│       │   └── containers.py       # Провайдеры (Database, Session, Repository, Service)
+│       ├── infrastructure/         # Repository Layer
+│       │   ├── user_repository.py  # CRUD + бизнес-запросы
+│       │   ├── level_repository.py
+│       │   └── valuation_repository.py
+│       ├── services/               # Application Layer
+│       │   ├── users.py            # UserService (оркестрация)
+│       │   ├── points.py           # adjust_user_points(), update_user_level()
+│       │   └── levels.py
+│       ├── dto/                    # Data Transfer Objects
+│       │   ├── user_dto.py         # UserCreateDTO, UserReadDTO, AdjustUserPointsDTO
+│       │   └── value_objects.py    # Points (Value Object для баллов)
+│       └── utils/                  # Утилиты
 │           └── phonenumber_normalization.py
-├── __init__.py
-├── fill_point_db.py
-└── run.py
+├── fill_point_db.py                # CLI-скрипт для наполнения БД тестовыми данными
+├── db_reset_start.py               # Сброс БД + миграции + заполнение + запуск бота
+├── run.py                          # Запуск бота
+└── alembic/                        # Миграции БД
 
 ```
 
@@ -172,24 +149,28 @@ PyBot-ITAcadem/
    ```
 
 2. Создать и активировать виртуальное окружение:
-   
+
    Создание:
+
    ```bash
    python -m venv .venv
    ```
+
    Активация:
+
    ```bash
    # bash
    source .venv/bin/activate
    ```
-
 
 3. Установить зависимости:
 
    ```bash
    uv sync
    ```
+
    Если хотите без dev-зависимостей:
+
    ```bash
    uv sync --no-dev
    ```
@@ -221,6 +202,21 @@ PyBot-ITAcadem/
    ```bash
    python run.py
    ```
+
+---
+
+## 📚 Документация
+
+ARCHITECTURE.md — принципы проектирования и архитектурные ограничения
+ADR (Architecture Decision Records) — решения по ключевым архитектурным вопросам:
+
+- 001 — Введение DTO и доменных сущностей
+- 002 — Иммутабельность DTO
+- 003 — Value Objects (паттерн Points)
+- 004 — Миграция с PostgreSQL на SQLite
+- 005 — Middleware + Dishka DI
+- 006 — Внедрение репозиториев и сервисов
+- 007 - Замена Domain entities на Rich ORM Models
 
 ---
 

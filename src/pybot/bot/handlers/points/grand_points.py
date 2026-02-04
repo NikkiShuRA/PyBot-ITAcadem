@@ -2,15 +2,16 @@ import re
 
 from aiogram.filters.command import Command
 from aiogram.types import Message
+from dishka import FromDishka
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ....core import logger
 from ....core.constants import PointsTypeEnum
-from ....domain import Points
 from ....dto import AdjustUserPointsDTO, UserReadDTO
-from ....services.points import adjust_user_points
-from ....services.users import get_user_by_telegram_id
+from ....dto.value_objects import Points
+from ....services.points import PointsService
+from ....services.users import UserService
 from ...filters import check_text_message_correction, create_chat_type_routers
 from ...utils import (
     _get_target_user_id_from_mention,
@@ -69,6 +70,8 @@ async def _handle_points_command(
     message: Message,
     db: AsyncSession,
     points_type: PointsTypeEnum,
+    points_service: PointsService,
+    user_service: UserService,
 ) -> None:
     """Общий обработчик для выдачи баллов"""
     if not check_text_message_correction(message):
@@ -97,16 +100,15 @@ async def _handle_points_command(
         await message.reply(f"❌ {e}")
         return
 
-    recipient_user: UserReadDTO | None = await get_user_by_telegram_id(db, target_user_id)
-    giver_user: UserReadDTO | None = await get_user_by_telegram_id(db, message.from_user.id)
+    recipient_user: UserReadDTO | None = await user_service.get_user_by_telegram_id(target_user_id)
+    giver_user: UserReadDTO | None = await user_service.get_user_by_telegram_id(message.from_user.id)
 
     if recipient_user is None or giver_user is None:
         logger.warning("Не удалось определить пользователей для операции")
         return
 
     try:
-        await adjust_user_points(
-            db,
+        await points_service.change_points(
             AdjustUserPointsDTO(
                 recipient_id=recipient_user.id,
                 giver_id=giver_user.id,
@@ -122,11 +124,15 @@ async def _handle_points_command(
         await message.reply("❌ Ошибка при изменении баллов")
 
 
-@grand_points_global_router.message(Command("academic_points"))
-async def handle_academic_points(message: Message, db: AsyncSession) -> None:
-    await _handle_points_command(message, db, PointsTypeEnum.ACADEMIC)
+@grand_points_global_router.message(Command("academic_points"), flags={"role": "Admin"})
+async def handle_academic_points(
+    message: Message, db: AsyncSession, user_service: FromDishka[UserService], points_service: FromDishka[PointsService]
+) -> None:
+    await _handle_points_command(message, db, PointsTypeEnum.ACADEMIC, points_service, user_service)
 
 
-@grand_points_global_router.message(Command("reputation_points"))
-async def handle_reputation_points(message: Message, db: AsyncSession) -> None:
-    await _handle_points_command(message, db, PointsTypeEnum.REPUTATION)
+@grand_points_global_router.message(Command("reputation_points"), flags={"role": "Admin"})
+async def handle_reputation_points(
+    message: Message, db: AsyncSession, user_service: FromDishka[UserService], points_service: FromDishka[PointsService]
+) -> None:
+    await _handle_points_command(message, db, PointsTypeEnum.REPUTATION, points_service, user_service)

@@ -4,7 +4,7 @@ from typing import ClassVar
 
 from pydantic import Field, field_validator
 
-from ..domain import Points
+from ..dto.value_objects import Points
 from ..utils import normalize_phone
 from .base_dto import BaseDTO
 
@@ -13,7 +13,7 @@ class AdjustUserPointsDTO(BaseDTO):
     """Data transfer object for adjusting a user's points.
 
     This bundles the parameters previously passed as many separate
-    arguments to `adjust_user_points` into a single validated object.
+    arguments into a single validated object.
     """
 
     recipient_id: int
