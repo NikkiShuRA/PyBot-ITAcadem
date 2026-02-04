@@ -79,7 +79,7 @@ def upgrade() -> None:
         sa.Column("github_url", sa.Text(), nullable=True),
         sa.Column("join_date", sa.Date(), server_default=sa.text("(CURRENT_DATE)"), nullable=False),
         sa.Column("activity_status_id", sa.BigInteger(), nullable=True),
-        sa.Column("last_active_at", sa.DateTime(timezone=True), nullable=True),
+        sa.Column("last_active_at", sa.DateTime(timezone=False), nullable=True),
         sa.Column("academic_points", sa.Integer(), nullable=False),
         sa.Column("reputation_points", sa.Integer(), nullable=False),
         sa.ForeignKeyConstraint(
