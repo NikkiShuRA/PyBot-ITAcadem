@@ -3,11 +3,10 @@ from collections.abc import Sequence
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from pybot.domain.exceptions import InitialLevelsNotFoundError, RoleNotFoundError, UserNotFoundError
-
-from ..core.constants import PointsTypeEnum
+from ..core.constants import PointsTypeEnum, RoleEnum
 from ..db.models import User
 from ..db.models.user_module import UserLevel
+from ..domain.exceptions import InitialLevelsNotFoundError, RoleNotFoundError, UserNotFoundError
 from ..dto import UserCreateDTO, UserReadDTO
 from ..infrastructure.level_repository import LevelRepository
 from ..infrastructure.role_repository import RoleRepository
@@ -85,13 +84,13 @@ class UserService:
 
         await self.db.commit()
 
-    async def remove_user_role(self, user_id: int, role_name: str) -> None:
+    async def remove_user_role(self, tg_id: int, role_name: str) -> UserReadDTO | None:
         """Удалить роль у пользователя"""
 
         # 1. Получаем пользователя (обязательно с подгруженными ролями!)
-        user = await self.user_repository.get_by_id(self.db, user_id)
+        user = await self.user_repository.get_by_telegram_id(self.db, tg_id)
         if not user:
-            raise UserNotFoundError(user_id=user_id)
+            raise UserNotFoundError(telegram_id=tg_id)
 
         role = await self.role_repository.get_role_by_name(self.db, role_name)
 
@@ -103,6 +102,8 @@ class UserService:
 
         # 4. Коммит
         await self.db.commit()
+
+        return await map_orm_user_to_user_read_dto(user)
 
     async def get_user_roles(
         self,
@@ -123,6 +124,45 @@ class UserService:
             return await map_orm_user_to_user_read_dto(user)
         else:
             return None
+
+    async def add_user_role(
+        self,
+        telegram_id: int,
+        new_role: RoleEnum,
+    ) -> UserReadDTO:
+        """
+        Изменить роль пользователя.
+
+        Args:
+            telegram_id: ID пользователя в Telegram
+            new_role: Новая роль (Student, Mentor, Admin)
+            reason: Причина изменения (опционально)
+
+        Returns:
+            Обновленные данные пользователя
+
+        Raises:
+            UserNotFoundError: Если пользователь не найден
+            RoleNotFoundError: Если роль не существует
+            InvalidRoleChangeError: Если изменение роли невозможно
+        """
+        # Получаем пользователя
+        user = await self.user_repository.get_by_telegram_id(self.db, telegram_id)
+        if not user:
+            raise UserNotFoundError(telegram_id=telegram_id)
+
+        role = await self.role_repository.get_role_by_name(self.db, new_role.value)
+
+        if not role:
+            raise RoleNotFoundError(new_role.value)
+
+        user.add_role(role)
+
+        self.db.add(user)
+
+        await self.db.commit()
+
+        return await map_orm_user_to_user_read_dto(user)
 
 
 async def get_user_by_telegram_id(db: AsyncSession, tg_id: int) -> UserReadDTO | None:

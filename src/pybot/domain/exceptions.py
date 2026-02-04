@@ -126,6 +126,12 @@ class RoleNotFoundError(DomainError):
         super().__init__(f"Роль '{role_name}' не найдена в системе", details={"role": role_name})
 
 
+class InvalidRoleChangeError(DomainError):
+    """Недопустимое изменение роли."""
+
+    pass
+
+
 class RoleAlreadyAssignedError(DomainError):
     """Роль уже назначена пользователю."""
 

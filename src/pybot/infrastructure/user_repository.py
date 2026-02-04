@@ -93,18 +93,12 @@ class UserRepository:
         result = await db.execute(stmt)
         user = result.scalar_one_or_none()
 
-        if not user:
-            raise UserNotFoundError(phone=phone)
-
         return user
 
     async def get_user_by_telegram_id(self, db: AsyncSession, tg_id: int) -> User | None:
         stmt = select(User).where(User.telegram_id == tg_id)
         result = await db.execute(stmt)
         user = result.scalar_one_or_none()
-
-        if not user:
-            raise UserNotFoundError(telegram_id=tg_id)
 
         return user
 
