@@ -2,6 +2,38 @@
 
 <!-- version list -->
 
+## v0.5.0 (2026-02-04)
+
+### Bug Fixes
+
+- Remove desync session ([#57](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/57),
+  [`d4fdb63`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/d4fdb63381fa7c1bda8f55461aa749dea165b858))
+
+- Исправил логику проверки ролей, добавив возможность эффективного обрабатывать множество ролей на
+  одном хэндлере, диалоге ([#57](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/57),
+  [`d4fdb63`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/d4fdb63381fa7c1bda8f55461aa749dea165b858))
+
+- Исправил ошибку сравнения временных значений при обновления last active status, и убрал ранее
+  сделанный хак ([#57](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/57),
+  [`d4fdb63`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/d4fdb63381fa7c1bda8f55461aa749dea165b858))
+
+- Убрал enqueue=True из логгера для исправления блокировки программы при её завершении
+  ([#57](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/57),
+  [`d4fdb63`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/d4fdb63381fa7c1bda8f55461aa749dea165b858))
+
+### Features
+
+- Добавил фильтер для conditional UI в aiogram-dialog, с добавлением списка ролей пользователя в
+  данные из middleware ([#57](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/57),
+  [`d4fdb63`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/d4fdb63381fa7c1bda8f55461aa749dea165b858))
+
+### Refactoring
+
+- Добавил VO в объекты кода, и инструменты в CI-pipeline
+  ([#57](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/57),
+  [`d4fdb63`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/d4fdb63381fa7c1bda8f55461aa749dea165b858))
+
+
 ## v0.4.0 (2026-02-04)
 
 ### Bug Fixes
