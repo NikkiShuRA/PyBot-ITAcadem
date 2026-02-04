@@ -4,10 +4,11 @@ from collections.abc import Sequence
 from datetime import UTC, date, datetime, timedelta
 from typing import TYPE_CHECKING
 
-from pybot.domain.exceptions import ZeroPointsAdjustmentError
 from sqlalchemy import BigInteger, Date, DateTime, ForeignKey, Integer, Text, func
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from pybot.domain.exceptions import ZeroPointsAdjustmentError
 
 from ....core.constants import PointsTypeEnum
 from ....dto.value_objects import Points

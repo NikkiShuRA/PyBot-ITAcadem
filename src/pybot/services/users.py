@@ -1,8 +1,9 @@
 from collections.abc import Sequence
 
-from pybot.domain.exceptions import InitialLevelsNotFoundError, RoleNotFoundError, UserNotFoundError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from pybot.domain.exceptions import InitialLevelsNotFoundError, RoleNotFoundError, UserNotFoundError
 
 from ..core.constants import PointsTypeEnum
 from ..db.models import User
