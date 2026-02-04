@@ -18,9 +18,22 @@ class RoleMiddleware(BaseMiddleware):
         event: TelegramObject,
         data: dict[str, Any],
     ) -> Any:
+        required_role = get_flag(data, "role")
+
+        if not required_role:
+            return await handler(event, data)
+
         user = data.get("event_from_user")
         if not user:
             return await handler(event, data)
+
+        user_db_id = data.get("user_id")
+
+        if not user_db_id:
+            logger.warning("⛔️ Role check failed: User not found in DB")
+            if isinstance(event, Message):
+                await event.answer("Ошибка авторизации. Попробуйте /start")
+            return
 
         container = data.get(CONTAINER_NAME)
 
@@ -32,14 +45,9 @@ class RoleMiddleware(BaseMiddleware):
             db = await request_container.get(AsyncSession)
             repo: UserRepository = await request_container.get(UserRepository)
 
-            required_role = get_flag(data, "role")
-
-            if not required_role:
-                return await handler(event, data)
-
             has_permission = await repo.has_role(
                 db=db,
-                user_id=user.id,
+                user_id=user_db_id,
                 role_name=required_role,  # У тебя в репо аргумент role_name
             )
 
