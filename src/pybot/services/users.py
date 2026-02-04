@@ -90,7 +90,7 @@ class UserService:
         # 1. Получаем пользователя (обязательно с подгруженными ролями!)
         user = await self.user_repository.get_by_telegram_id(self.db, tg_id)
         if not user:
-            raise UserNotFoundError(user_id=user_id)
+            raise UserNotFoundError(user_id=tg_id)
 
         role = await self.role_repository.get_role_by_name(self.db, role_name)
 
