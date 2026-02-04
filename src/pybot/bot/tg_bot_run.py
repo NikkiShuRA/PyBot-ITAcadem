@@ -103,4 +103,3 @@ async def tg_bot_main() -> None:
         await dp.start_polling(bot)
     finally:
         await bot.session.close()
-        logger.complete()

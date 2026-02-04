@@ -57,10 +57,10 @@ class UserRepository:
         result = await db.execute(stmt)
         return result.scalars().all()
 
-    async def get_all_user_roles_by_pk(self, db: AsyncSession, user_id: int) -> Sequence[str]:
+    async def get_all_user_roles_by_pk(self, db: AsyncSession, user_id: int) -> set[str]:
         stmt = select(Role.name).select_from(UserRole).join(Role).where(UserRole.user_id == user_id)
         result = await db.execute(stmt)
-        return result.scalars().all()
+        return set(result.scalars().all())
 
     async def get_user_by_phone(
         self,

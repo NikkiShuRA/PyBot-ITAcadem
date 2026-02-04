@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...core import logger
 from ...infrastructure.user_repository import UserRepository
+from ...utils import has_any_role
 
 
 class RoleMiddleware(BaseMiddleware):
@@ -45,15 +46,14 @@ class RoleMiddleware(BaseMiddleware):
             db = await request_container.get(AsyncSession)
             repo: UserRepository = await request_container.get(UserRepository)
 
-            has_permission = await repo.has_role(
+            has_permission = await repo.get_all_user_roles_by_pk(
                 db=db,
                 user_id=user_db_id,
-                role_name=required_role,  # У тебя в репо аргумент role_name
             )
 
         logger.info(f"🔒 Checking role '{required_role}' for user {user.id}")
 
-        if has_permission:
+        if has_any_role(has_permission, required_role):
             return await handler(event, data)
 
         logger.warning(f"⛔️ Access denied for user {user.id}. Required: {required_role}")
