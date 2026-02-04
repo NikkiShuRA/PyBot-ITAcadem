@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v0.5.1 (2026-02-04)
+
+### Bug Fixes
+
+- Оканчательно ввёл gracefull shutdown при завершении работы программы.
+  ([`87c5965`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/87c59650c81d1a2821a5723e43dbbe03db9dcd4c))
+
+
 ## v0.5.0 (2026-02-04)
 
 ### Bug Fixes
