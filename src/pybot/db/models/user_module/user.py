@@ -8,7 +8,7 @@ from sqlalchemy import BigInteger, Date, DateTime, ForeignKey, Integer, Text, fu
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from ....core.constants import PointsTypeEnum
+from ....core.constants import LevelTypeEnum
 from ....dto.value_objects import Points
 from ...base_class import Base
 
@@ -139,17 +139,17 @@ class User(Base):
         """Обновить дату последней активности пользователя"""
         self.last_active_at = datetime.now(UTC)
 
-    def change_user_points(self, points: int, point_type: PointsTypeEnum) -> int:
+    def change_user_points(self, points: int, point_type: LevelTypeEnum) -> int:
         if points == 0:
             raise ValueError("Нельзя начислить 0 баллов")
         current = 0
-        if point_type == PointsTypeEnum.ACADEMIC:
+        if point_type == LevelTypeEnum.ACADEMIC:
             current = self.academic_points
             self.academic_points += points
             self.academic_points = max(self.academic_points, 0)
             return self.academic_points - current
 
-        elif point_type == PointsTypeEnum.REPUTATION:
+        elif point_type == LevelTypeEnum.REPUTATION:
             current = self.reputation_points
             self.reputation_points += points
             self.reputation_points = max(self.reputation_points, 0)
@@ -158,7 +158,7 @@ class User(Base):
         else:
             raise ValueError(f"Неизвестный тип баллов: {point_type}")
 
-    def change_user_level(self, new_level_id: int, points_type: PointsTypeEnum) -> None:
+    def change_user_level(self, new_level_id: int, points_type: LevelTypeEnum) -> None:
         """Изменяет уровень пользователя на новый уровень указанного типа."""
         from .user_level import UserLevel  # noqa: PLC0415
 
@@ -176,7 +176,7 @@ class User(Base):
         """Python-side: возвращает Value Object"""
         return Points(
             value=self.academic_points,
-            point_type=PointsTypeEnum.ACADEMIC,
+            point_type=LevelTypeEnum.ACADEMIC,
         )
 
     @academic_points_vo.expression  # ty:ignore[invalid-argument-type]
@@ -199,7 +199,7 @@ class User(Base):
     def reputation_points_vo(self) -> Points:
         return Points(
             value=self.reputation_points,
-            point_type=PointsTypeEnum.REPUTATION,
+            point_type=LevelTypeEnum.REPUTATION,
         )
 
     @reputation_points_vo.expression  # ty:ignore[invalid-argument-type]

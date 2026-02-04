@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
-from ..core.constants import PointsTypeEnum
+from ..core.constants import LevelTypeEnum
 from ..db.models.user_module import Level, UserLevel
 
 # from ..domain import Level
@@ -27,7 +27,7 @@ async def level_exists(db: AsyncSession) -> bool:
 async def get_user_current_level(  # TODO Разбить это всё таки на две функции
     db: AsyncSession,
     user_id: int,
-    points_type: PointsTypeEnum,
+    points_type: LevelTypeEnum,
 ) -> tuple[UserLevel, Level] | None:
     """
     Возвращает кортеж (ORM-объект UserLevel, доменная Level)
@@ -56,7 +56,7 @@ async def get_user_current_level(  # TODO Разбить это всё таки 
 async def get_next_level(
     db: AsyncSession,
     current_level: Level,
-    points_type: PointsTypeEnum,
+    points_type: LevelTypeEnum,
 ) -> Level | None:
     """Получить следующий уровень для повышения"""
     stmt = (
@@ -77,7 +77,7 @@ async def get_next_level(
     return next_level_orm
 
 
-async def get_previous_level(db: AsyncSession, current_level: Level, points_type: PointsTypeEnum) -> Level | None:
+async def get_previous_level(db: AsyncSession, current_level: Level, points_type: LevelTypeEnum) -> Level | None:
     """
     Находит предыдущий уровень для заданного типа баллов.
     Предполагается, что уровни можно отсортировать по 'required_points'.

@@ -6,7 +6,7 @@ from aiogram_dialog import DialogManager
 from dishka.integrations.aiogram import FromDishka
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ....core.constants import PointsTypeEnum
+from ....core.constants import LevelTypeEnum
 from ....dto import UserReadDTO
 from ....services.levels import get_next_level, get_user_current_level
 from ....services.users import UserService

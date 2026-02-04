@@ -1,7 +1,7 @@
 from enum import StrEnum
 
 
-class PointsTypeEnum(StrEnum):
+class LevelTypeEnum(StrEnum):
     ACADEMIC = "academic"
     REPUTATION = "reputation"
 

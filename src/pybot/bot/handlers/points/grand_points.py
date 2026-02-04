@@ -7,7 +7,7 @@ from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ....core import logger
-from ....core.constants import PointsTypeEnum
+from ....core.constants import LevelTypeEnum
 from ....dto import AdjustUserPointsDTO, UserReadDTO
 from ....dto.value_objects import Points
 from ....services.points import PointsService
@@ -69,7 +69,7 @@ async def _extract_points_and_reason(
 async def _handle_points_command(
     message: Message,
     db: AsyncSession,
-    points_type: PointsTypeEnum,
+    points_type: LevelTypeEnum,
     points_service: PointsService,
     user_service: UserService,
 ) -> None:
@@ -128,11 +128,11 @@ async def _handle_points_command(
 async def handle_academic_points(
     message: Message, db: AsyncSession, user_service: FromDishka[UserService], points_service: FromDishka[PointsService]
 ) -> None:
-    await _handle_points_command(message, db, PointsTypeEnum.ACADEMIC, points_service, user_service)
+    await _handle_points_command(message, db, LevelTypeEnum.ACADEMIC, points_service, user_service)
 
 
 @grand_points_global_router.message(Command("reputation_points"), flags={"role": "Admin"})
 async def handle_reputation_points(
     message: Message, db: AsyncSession, user_service: FromDishka[UserService], points_service: FromDishka[PointsService]
 ) -> None:
-    await _handle_points_command(message, db, PointsTypeEnum.REPUTATION, points_service, user_service)
+    await _handle_points_command(message, db, LevelTypeEnum.REPUTATION, points_service, user_service)

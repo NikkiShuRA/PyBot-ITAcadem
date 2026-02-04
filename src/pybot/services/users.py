@@ -3,7 +3,7 @@ from collections.abc import Sequence
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..core.constants import PointsTypeEnum
+from ..core.constants import LevelTypeEnum
 from ..db.models import User
 from ..db.models.user_module import UserLevel
 from ..dto import UserCreateDTO, UserReadDTO
@@ -179,7 +179,7 @@ async def update_user_points_by_id(
     db: AsyncSession,
     user_id: int,
     points_value: int,
-    points_type: PointsTypeEnum,
+    points_type: LevelTypeEnum,
 ) -> UserReadDTO:
     """Обновить баллы пользователя"""
     result = await db.execute(select(User).where(User.id == user_id))
@@ -187,10 +187,10 @@ async def update_user_points_by_id(
     if user is None:
         raise ValueError(f"Пользователь с ID {user_id} не найден.")
 
-    if points_type == PointsTypeEnum.ACADEMIC:
+    if points_type == LevelTypeEnum.ACADEMIC:
         user.academic_points += points_value
         user.academic_points = max(user.academic_points, 0)
-    elif points_type == PointsTypeEnum.REPUTATION:
+    elif points_type == LevelTypeEnum.REPUTATION:
         user.reputation_points += points_value
         user.reputation_points = max(user.reputation_points, 0)
     else:
