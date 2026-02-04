@@ -8,8 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ....core.constants import LevelTypeEnum
 from ....dto import UserReadDTO
-from ....services.levels import get_next_level, get_user_current_level
-from ....services.users import UserService
+from ....services.users import UserService, collect_user_profile
 from ...dialogs.user_reg.states import CreateProfileSG
 from ...filters import create_chat_type_routers
 from ...utils.text_ui import progress_bar
@@ -45,64 +44,27 @@ async def cmd_profile_private(
         await dialog_manager.start(CreateProfileSG.contact)
 
 
+# !!!   НУЖНО ДОРАБОТАТЬ
 # Показ профиля
-async def show_profile(message: Message, db: AsyncSession, user: UserReadDTO) -> None:
-    # !!! Выделить весь этот блок запросов в отдельную функцию на уровне бизнес-логики для получения данных для профиля
-    academ_res = await get_user_current_level(db, user.id, PointsTypeEnum.ACADEMIC)
-    if academ_res is None:
-        await message.answer("Ошибочка вышла с поиском academ данных.")  # !!! Более официальное сообщение
-        return
-
-    user_academ_level, academ_level_entity = academ_res
-
-    next_academ_level = await get_next_level(db, academ_level_entity, PointsTypeEnum.ACADEMIC)
-    if next_academ_level is None:
-        await message.answer("Ошибочка: не найден следующий academ уровень (возможно, это максимальный уровень).")
-        return
-
-    rep_res = await get_user_current_level(db, user.id, PointsTypeEnum.REPUTATION)
-    if rep_res is None:
-        await message.answer("Ошибочка вышла с поиском rep данных.")
-        return
-
-    user_rep_level, rep_level_entity = rep_res
-
-    next_rep_level = await get_next_level(db, rep_level_entity, PointsTypeEnum.REPUTATION)
-    # !!! Учитывая работу логики, такой вариант не является ошибочным
-    if next_rep_level is None:
-        await message.answer("Ошибочка: не найден следующий rep уровень (возможно, это максимальный уровень).")
-        return
-
-    academ_req = next_academ_level.required_points
-    rep_req = next_rep_level.required_points
-
-    # !!! Объединить в одно условие с тернарым оператором в message.answer
-    if academ_req <= 0:
-        await message.answer("Ошибочка: некорректный required_points для academ уровня.")
-        return
-    if rep_req <= 0:
-        await message.answer("Ошибочка: некорректный required_points для rep уровня.")
-        return
-
-    # !!! Вывод профиля также вывести в отдельную функцию на уровне приложения,
-    # !!! для источнее логики хэндлера, превратив её в функцию высшего порядка, используя композицию функций
-    academ_bar = progress_bar(user.academic_points.value, academ_req)
-    rep_bar = progress_bar(user.reputation_points.value, rep_req)
+async def show_profile(message: Message, db: AsyncSession, user_read: UserReadDTO) -> None:
+    user_profile = await collect_user_profile(db, user_read)
+    academ_bar = await progress_bar(user_profile.user.academic_points.value, user_profile.level_info[0].next_level.required_points)
+    rep_bar = await progress_bar(user_profile.user.reputation_points.value, user_profile.level_info[1].next_level.required_points)
 
     await message.answer(
         textwrap.dedent(
             f"""
-                👋 Доброго времени суток, {user.first_name}!
+                👋 Доброго времени суток, {user_profile.user.first_name}!
 
                 📚 Академический уровень
-                {user_academ_level.level.name}
+                {user_profile.level_info[0].curret_level.name}
                 {academ_bar}
-                {user.academic_points.value} / {academ_req}
+                {user_profile.user.academic_points.value} / {user_profile.level_info[0].next_level.required_points}
 
                 🤌 Репутационный уровень
-                {user_rep_level.level.name}
+                {user_profile.level_info[1].curret_level.name}
                 {rep_bar}
-                {user.reputation_points.value} / {rep_req}
+                {user_profile.user.reputation_points.value} / {user_profile.level_info[1].next_level.required_points}
 
                 👇 Обновить профиль — /profile
                 """

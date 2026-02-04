@@ -6,12 +6,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..core.constants import LevelTypeEnum
 from ..db.models import User
 from ..db.models.user_module import UserLevel
-from ..dto import UserCreateDTO, UserReadDTO
+from ..dto import UserCreateDTO, UserReadDTO, UserProfileReadDTO, UserLevelReadDTO
 from ..infrastructure.level_repository import LevelRepository
 from ..infrastructure.role_repository import RoleRepository
 from ..infrastructure.user_repository import UserRepository
 from ..mappers.user_mappers import map_orm_user_to_user_read_dto
-from .levels import get_all_levels
+from ..mappers.level_mappers import map_orm_level_to_level_read_dto
+from .levels import get_user_current_level, get_all_levels, get_next_level
 
 
 class UserService:
@@ -202,34 +203,31 @@ async def update_user_points_by_id(
 
 
 #   !!!   Нужно доработать
-# async def collect_user_profile(db: AsyncSession, user: UserReadDTO) -> UserProfileDTO:
-#     """Собирает профиль пользователя"""
+async def collect_user_profile(db: AsyncSession, user_read_dto: UserReadDTO) -> UserProfileReadDTO:
+    """Собирает профиль пользователя"""
+    levels_data  = []
+    for level_system in LevelTypeEnum:        
+        orm_level_res = await get_user_current_level(db, user_read_dto.id, level_system)
+        if orm_level_res is None:
+            return
 
-#     academ_res = await get_user_current_level(db, user.id, PointsTypeEnum.ACADEMIC)
-#     if academ_res is None:
-#         raise ValueError("Academ данные не найдены!")
-#         return
-#     user_academ_level, academ_level_entity = academ_res
+        _ , orm_level = orm_level_res
 
-#     next_academ_level = await get_next_level(db, academ_level_entity, PointsTypeEnum.ACADEMIC)
-#     if next_academ_level is None:
-#         raise ValueError("Academ данные не найдены!")
-#         return
-
-#     rep_res = await get_user_current_level(db, user.id, PointsTypeEnum.REPUTATION)
-#     if rep_res is None:
-#         return
-#     user_rep_level, rep_level_entity = rep_res
-
-#     next_rep_level = await get_next_level(db, rep_level_entity, PointsTypeEnum.REPUTATION)
-#     if next_rep_level is None:
-#         return
-
-#     academ_req = next_academ_level.required_points
-#     rep_req = next_rep_level.required_points
-
-#     # !!! Объединить в одно условие с тернарым оператором в message.answer
-#     if academ_req <= 0:
-#         return
-#     if rep_req <= 0:
-#         return
+        orm_next_level = await get_next_level(db, orm_level, level_system)
+        if orm_next_level is None:
+            return
+        
+        level = map_orm_level_to_level_read_dto(orm_level)
+        nt_level = map_orm_level_to_level_read_dto(orm_next_level)
+        
+        user_level = UserLevelReadDTO(
+            system=level_system,
+            curret_level=level,
+            next_level=nt_level,
+        )
+        levels_data.append(user_level)
+    
+    return UserProfileReadDTO(
+        user=user_read_dto,
+        level_info=levels_data
+    )
