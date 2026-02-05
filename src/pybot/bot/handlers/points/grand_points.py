@@ -4,7 +4,6 @@ from aiogram.filters.command import Command
 from aiogram.types import Message
 from dishka import FromDishka
 from pydantic import ValidationError
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from ....core import logger
 from ....core.constants import PointsTypeEnum
@@ -74,7 +73,6 @@ async def _extract_points_and_reason(
 
 async def _handle_points_command(
     message: Message,
-    db: AsyncSession,
     points_type: PointsTypeEnum,
     points_service: PointsService,
     user_service: UserService,
@@ -88,8 +86,8 @@ async def _handle_points_command(
 
     target_user_id: int | None = (
         await _get_target_user_id_from_reply(message)
-        or await _get_target_user_id_from_mention(message, db)
-        or await _get_target_user_id_from_text(message, db)
+        or await _get_target_user_id_from_mention(message, user_service)
+        or await _get_target_user_id_from_text(message, user_service)
     )
 
     if target_user_id is None:
@@ -132,10 +130,10 @@ async def _handle_points_command(
 
 @grand_points_global_router.message(Command("academic_points"), flags={"role": "Admin"})
 async def handle_academic_points(
-    message: Message, db: AsyncSession, user_service: FromDishka[UserService], points_service: FromDishka[PointsService]
+    message: Message, user_service: FromDishka[UserService], points_service: FromDishka[PointsService]
 ) -> None:
     try:
-        await _handle_points_command(message, db, PointsTypeEnum.ACADEMIC, points_service, user_service)
+        await _handle_points_command(message, PointsTypeEnum.ACADEMIC, points_service, user_service)
     except UserNotFoundError as e:
         await message.reply(f"❌ {e.message}")
         logger.warning(f"User not found: {e.details}")
@@ -154,10 +152,12 @@ async def handle_academic_points(
 
 @grand_points_global_router.message(Command("reputation_points"), flags={"role": "Admin"})
 async def handle_reputation_points(
-    message: Message, db: AsyncSession, user_service: FromDishka[UserService], points_service: FromDishka[PointsService]
+    message: Message,
+    user_service: FromDishka[UserService],
+    points_service: FromDishka[PointsService],
 ) -> None:
     try:
-        await _handle_points_command(message, db, PointsTypeEnum.REPUTATION, points_service, user_service)
+        await _handle_points_command(message, PointsTypeEnum.REPUTATION, points_service, user_service)
     except UserNotFoundError as e:
         await message.reply(f"❌ {e.message}")
         logger.warning(f"User not found: {e.details}")

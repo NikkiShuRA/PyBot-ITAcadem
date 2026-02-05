@@ -130,4 +130,7 @@ async def tg_bot_main() -> None:
             except Exception:
                 logger.exception("Ошибка при закрытии контейнера")
 
-        logger.complete()
+        # logger.complete()
+        from ..db.database import engine  # noqa: PLC0415
+
+        await engine.dispose()

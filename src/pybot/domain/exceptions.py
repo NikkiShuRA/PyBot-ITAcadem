@@ -49,7 +49,7 @@ class UsersNotFoundError(DomainError):
     """Пользователи не найдены в системе."""
 
     def __init__(self) -> None:
-        super().__init__("Пользователи не найдены в системе")
+        super().__init__("Пользователи не найдены в системе")
 
 
 class UserAlreadyExistsError(DomainError):
