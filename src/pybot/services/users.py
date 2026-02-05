@@ -51,12 +51,12 @@ class UserService:
     async def get_user(
         self,
         user_id: int,
-    ) -> User | None:
+    ) -> UserReadDTO | None:
         # Проверяем, есть ли пользователь
         user = await self.user_repository.get_by_id(self.db, user_id)
 
         if user:
-            return user
+            return await map_orm_user_to_user_read_dto(user)
 
         return None
 

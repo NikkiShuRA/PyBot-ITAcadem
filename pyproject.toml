@@ -19,7 +19,7 @@ dependencies = [
     "aiolimiter>=1.2.1",
     "aiocache>=0.12.3",
     "dishka>=1.7.2",
-    "aiorun>=2025.1.1",
+    "pytest-coverage>=0.0",
 ]
 
 [dependency-groups]
@@ -35,6 +35,7 @@ dev = [
     "icecream>=2.1.8",
     "ruff>=0.14.11",
     "ty>=0.0.12",
+    "polyfactory>=3.2.0",
 ]
 
 [tool.ruff]
@@ -147,3 +148,8 @@ exclude_commit_patterns = [
 match = "(main|master)"
 prerelease_token = "rc"
 prerelease = false
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = "-q --strict-markers"

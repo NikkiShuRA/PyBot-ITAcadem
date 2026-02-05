@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..db.models import Valuation
-from ..domain.exceptions import UserNotFoundError, ZeroPointsAdjustmentError
+from ..domain.exceptions import UserNotFoundError
 from ..domain.services.level_calculator import LevelCalculator
 from ..dto import AdjustUserPointsDTO, UserReadDTO
 from ..infrastructure.level_repository import LevelRepository
@@ -26,9 +26,6 @@ class PointsService:
         user = await self.user_repository.get_by_id(self.db, dto.recipient_id)
         if not user:
             raise UserNotFoundError()
-
-        if dto.points.value < 0:
-            raise ZeroPointsAdjustmentError()
 
         all_levels = await self.level_repository.get_all_by_type(self.db, dto.points.point_type)
 
