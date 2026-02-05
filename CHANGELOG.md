@@ -2,6 +2,29 @@
 
 <!-- version list -->
 
+## v0.7.0 (2026-02-05)
+
+### Bug Fixes
+
+- Full gracefull shutdown ([#60](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/60),
+  [`7e3a138`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/7e3a138db9e6dd5e0a9bab46a1dc663ef7d25943))
+
+### Features
+
+- Добавил функции для ручного изменения ролей
+  ([#60](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/60),
+  [`7e3a138`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/7e3a138db9e6dd5e0a9bab46a1dc663ef7d25943))
+
+### Refactoring
+
+- Добавил пользовательские ошибки для доменной логики, бизнес-логики и Репозиториев для повышения
+  качетсва обработки ошибок ([#60](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/60),
+  [`7e3a138`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/7e3a138db9e6dd5e0a9bab46a1dc663ef7d25943))
+
+- Организация импортов ([#60](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/60),
+  [`7e3a138`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/7e3a138db9e6dd5e0a9bab46a1dc663ef7d25943))
+
+
 ## v0.6.0 (2026-02-04)
 
 ### Features
