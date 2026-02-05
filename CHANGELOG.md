@@ -2,6 +2,61 @@
 
 <!-- version list -->
 
+## v0.7.0 (2026-02-05)
+
+### Bug Fixes
+
+- Full gracefull shutdown ([#60](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/60),
+  [`7e3a138`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/7e3a138db9e6dd5e0a9bab46a1dc663ef7d25943))
+
+### Features
+
+- Добавил функции для ручного изменения ролей
+  ([#60](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/60),
+  [`7e3a138`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/7e3a138db9e6dd5e0a9bab46a1dc663ef7d25943))
+
+### Refactoring
+
+- Добавил пользовательские ошибки для доменной логики, бизнес-логики и Репозиториев для повышения
+  качетсва обработки ошибок ([#60](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/60),
+  [`7e3a138`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/7e3a138db9e6dd5e0a9bab46a1dc663ef7d25943))
+
+- Организация импортов ([#60](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/60),
+  [`7e3a138`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/7e3a138db9e6dd5e0a9bab46a1dc663ef7d25943))
+
+
+## v0.6.0 (2026-02-04)
+
+### Features
+
+- Добавил команды для изменения ролей пользователей для админов
+  ([#59](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/59),
+  [`8655920`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/8655920c24e6b819c566aa5850aee0a2a27c9cbe))
+
+- Добавил функции для ручного изменения ролей
+  ([#59](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/59),
+  [`8655920`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/8655920c24e6b819c566aa5850aee0a2a27c9cbe))
+
+### Refactoring
+
+- Добавил пользовательские ошибки для доменной логики, бизнес-логики и Репозиториев для повышения
+  качетсва обработки ошибок ([#59](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/59),
+  [`8655920`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/8655920c24e6b819c566aa5850aee0a2a27c9cbe))
+
+- Добавил пользовательские ошибки для доменной логики, бизнес-логики и Репозиториев для повышения
+  качетсва обработки ошибок ([#58](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/58),
+  [`2b203fa`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/2b203faf4b0240cfbbc3c042c2f761a290073e5f))
+
+- Организация импортов ([#59](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/59),
+  [`8655920`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/8655920c24e6b819c566aa5850aee0a2a27c9cbe))
+
+- Организация импортов ([#58](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/58),
+  [`2b203fa`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/2b203faf4b0240cfbbc3c042c2f761a290073e5f))
+
+- **exceptions**: Domain errors ([#58](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/58),
+  [`2b203fa`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/2b203faf4b0240cfbbc3c042c2f761a290073e5f))
+
+
 ## v0.5.1 (2026-02-04)
 
 ### Bug Fixes
