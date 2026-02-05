@@ -3,54 +3,66 @@ import re
 import phonenumbers
 from phonenumbers import PhoneNumberFormat
 
+NUMBER_LENGTH = 11
+PHONE_CODE = 7
+MIN_PHONE_LENGTH = 10
+MAX_PHONE_LENGTH = 15
 
-def normalize_phone(
-    phone: str,
-    region: str | None = "RU",
-    *,
-    strict: bool = True,
-) -> str:
+
+def normalize_phone(phone: str, strict: bool = True) -> str:
     """
-    Нормализует телефон в E.164.
+    Нормализует телефон РФ в E.164 (+79XXXXXXXXX).
 
-    Принимает:
-      - phone: строка с телефоном в любом виде (с пробелами/скобками/дефисами),
-        может быть:
-          * международный: "+442083661177"
-          * локальный/национальный: "020 8366 1177" (тогда нужен region) [web:71]
-      - region: регион по умолчанию (например "RU", "GB").
-        Если None, то номер обязан быть международным (начинаться с '+'). [web:71]
-      - strict: если True — проверка is_valid_number (строгая),
-                если False — is_possible_number (мягче, чаще подходит для тестовых данных). [web:123]
+    Args:
+        phone: Номер в любом формате (+7..., 8..., с пробелами, скобками)
+        strict: True - полная валидация, False - проверка только структуры
 
-    Возвращает:
-      - строку в формате E.164 (например "+79124130102"). [web:71]
+    Returns:
+        str: Номер в формате +79XXXXXXXXX
 
-    Исключения:
-      - ValueError("Некорректный номер телефона") если номер не парсится/не проходит проверку.
+    Raises:
+        ValueError: Если номер не валиден или не из РФ
+
+    Примеры:
+        >>> normalize_phone("+79876543210")
+        '+79876543210'
+        >>> normalize_phone("89876543210")
+        '+79876543210'
+        >>> normalize_phone("+7 (987) 654-32-10")
+        '+79876543210'
     """
-    if not phone:
+    if not phone or not phone.strip():
         raise ValueError("Некорректный номер телефона")
 
     s = phone.strip()
 
-    # Если пользователь ввёл "00..." как международный префикс — приводим к "+"
-    # (часто встречается в Европе)
-    if s.startswith("00"):
-        s = "+" + s[2:]
-
-    # Удаляем всё, кроме цифр и '+', чтобы не мешали пробелы/скобки/дефисы
+    # Удаляем всё, кроме цифр и '+'
     s = re.sub(r"[^\d+]", "", s)
 
-    # Если номер не начинается с '+', парсим как "локальный" относительно региона
-    # (без региона такой номер может быть непарсибельным). [web:71]
+    if not s:
+        raise ValueError("Некорректный номер телефона")
+
+    # Валидация длины
+    if len(s) < MIN_PHONE_LENGTH or len(s) > MAX_PHONE_LENGTH:
+        raise ValueError("Некорректный номер телефона")
+
+    # Если номер начинается с 8 (локальный РФ) -> конвертируем в +7
+    if s.startswith("8") and len(s) == NUMBER_LENGTH:
+        s = "+7" + s[1:]
+
     try:
-        parsed = phonenumbers.parse(s, None if s.startswith("+") else region)
+        parsed = phonenumbers.parse(s, "RU")
     except phonenumbers.NumberParseException as err:
         raise ValueError("Некорректный номер телефона") from err
 
-    # ok = phonenumbers.is_valid_number(parsed) if strict else phonenumbers.is_possible_number(parsed)
-    # if not ok:
-    #     raise ValueError("Некорректный номер телефона")
+    # Выбираем режим валидации
+    is_valid = phonenumbers.is_valid_number(parsed) if strict else phonenumbers.is_possible_number(parsed)
+
+    if not is_valid:
+        raise ValueError("Некорректный номер телефона")
+
+    # ✅ ТОЛЬКО проверяем что это РФ номер
+    if parsed.country_code != PHONE_CODE:
+        raise ValueError("Некорректный номер телефона")
 
     return phonenumbers.format_number(parsed, PhoneNumberFormat.E164)

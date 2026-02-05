@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from ..db.models import Role, User, UserRole
+from ..domain.exceptions import UserNotFoundError, UsersNotFoundError
 from ..dto import UserCreateDTO
 
 ACTIVITY_UPDATE_INTERVAL = timedelta(minutes=1)
@@ -25,7 +26,12 @@ class UserRepository:
     ) -> User | None:
         stmt = select(User).options(selectinload(User.roles), selectinload(User.user_levels)).where(User.id == id_)
         result = await db.execute(stmt)
-        return result.scalar_one_or_none()
+        user = result.scalar_one_or_none()
+
+        if not user:
+            raise UserNotFoundError(user_id=id_)
+
+        return user
 
     async def get_by_telegram_id(
         self,
@@ -38,7 +44,12 @@ class UserRepository:
             .options(selectinload(User.roles), selectinload(User.user_levels))
         )
         result = await db.execute(stmt)
-        return result.scalar_one_or_none()
+        user = result.scalar_one_or_none()
+
+        if not user:
+            raise UserNotFoundError(telegram_id=tg_id)
+
+        return user
 
     async def get_all_users(
         self,
@@ -46,7 +57,12 @@ class UserRepository:
     ) -> Sequence[User]:
         stmt = select(User)
         result = await db.execute(stmt)
-        return result.scalars().all()
+        users = result.scalars().all()
+
+        if not users:
+            raise UsersNotFoundError()
+
+        return users
 
     async def get_all_users_with_role(
         self,
@@ -55,7 +71,13 @@ class UserRepository:
     ) -> Sequence[User]:
         stmt = select(User).where(User.roles.any(Role.name == role_name)).options(selectinload(User.roles))
         result = await db.execute(stmt)
-        return result.scalars().all()
+
+        users = result.scalars().all()
+
+        if not users:
+            raise UsersNotFoundError()
+
+        return users
 
     async def get_all_user_roles_by_pk(self, db: AsyncSession, user_id: int) -> set[str]:
         stmt = select(Role.name).select_from(UserRole).join(Role).where(UserRole.user_id == user_id)
@@ -69,12 +91,16 @@ class UserRepository:
     ) -> User | None:
         stmt = select(User).where(User.phone_number == phone)
         result = await db.execute(stmt)
-        return result.scalar_one_or_none()
+        user = result.scalar_one_or_none()
+
+        return user
 
     async def get_user_by_telegram_id(self, db: AsyncSession, tg_id: int) -> User | None:
         stmt = select(User).where(User.telegram_id == tg_id)
         result = await db.execute(stmt)
-        return result.scalar_one_or_none()
+        user = result.scalar_one_or_none()
+
+        return user
 
     async def create_user_profile(
         self,
@@ -128,7 +154,7 @@ class UserRepository:
         db: AsyncSession,
         user_id: int,
     ) -> None:
-        now = datetime.now(UTC)
+        now = datetime.now(UTC).replace(tzinfo=None)
         threshold = now - ACTIVITY_UPDATE_INTERVAL
 
         stmt = (

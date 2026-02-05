@@ -1,3 +1,5 @@
+import asyncio
+
 from aiogram import Bot, Dispatcher
 from aiogram_dialog import setup_dialogs
 from dishka import AsyncContainer
@@ -15,6 +17,7 @@ from .handlers import (
     common_router,
     points_router,
     profile_router,  # !!! Костыль вывода профиля (Нужно перепроверить и улучшить)
+    roles_router,
 )
 from .middlewares import (
     DbSessionMiddleware,
@@ -87,19 +90,47 @@ def setup_handlers(dp: Dispatcher) -> None:
     dp.include_router(points_router)
     dp.include_router(profile_router)  # !!! Костыль вывода профиля (Нужно перепроверить и улучшить)
     dp.include_router(user_router)
+    dp.include_router(roles_router)
     setup_dialogs(dp)
 
 
 async def tg_bot_main() -> None:
+    """Основная функция бота с graceful shutdown"""
+    container: AsyncContainer | None = None
+
     with yaspin(text="Инициализация бота...", color="cyan") as sp:
         bot, dp = await setup_bot()
-        await setup_di(dp)
+        container = await setup_di(dp)
         await setup_middlewares(dp)
         setup_handlers(dp)
         await bot.delete_webhook(drop_pending_updates=True)
         logger.info("Запуск бота")
         sp.ok("✅ Бот запущен!")
+
     try:
         await dp.start_polling(bot)
+    except asyncio.CancelledError:
+        logger.info("⏹️ Получен сигнал отмены")
+        raise
+    except Exception:
+        logger.exception("Неожиданная ошибка")
+        raise
     finally:
-        await bot.session.close()
+        logger.info("🔄 Graceful shutdown...")
+
+        # Закрытие бота
+        if bot:
+            await bot.session.close()
+
+        # Закрытие контейнера DI (включает закрытие БД)
+        if container is not None:
+            try:
+                await container.close()
+                logger.info("✅ Dishka контейнер закрыт")
+            except Exception:
+                logger.exception("Ошибка при закрытии контейнера")
+
+        # logger.complete()
+        from ..db.database import engine  # noqa: PLC0415
+
+        await engine.dispose()

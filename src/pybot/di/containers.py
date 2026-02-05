@@ -4,6 +4,7 @@ from dishka import AsyncContainer, Provider, Scope, make_async_container, provid
 from dishka.integrations.aiogram import AiogramProvider
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
+from ..core import logger
 from ..db.database import engine as global_engine
 from ..domain.services.level_calculator import LevelCalculator
 from ..infrastructure.level_repository import LevelRepository
@@ -21,6 +22,11 @@ class DatabaseProvider(Provider):
     async def engine(self) -> AsyncEngine:
         """Создать Engine ОДИН раз."""
         return global_engine
+
+    async def close(self, engine: AsyncEngine) -> None:
+        """Закрыть engine при shutdown контейнера."""
+        await engine.dispose()
+        logger.info("✅ Database engine disposed")
 
 
 class SessionProvider(Provider):
