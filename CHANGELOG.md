@@ -2,6 +2,33 @@
 
 <!-- version list -->
 
+## v0.8.0 (2026-02-05)
+
+### Features
+
+- Добавил функции для ручного изменения ролей
+  ([#61](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/61),
+  [`7c78738`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/7c7873847e9b45b389ea76fbc51ac03b876090d2))
+
+### Refactoring
+
+- Добавил пользовательские ошибки для доменной логики, бизнес-логики и Репозиториев для повышения
+  качетсва обработки ошибок ([#61](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/61),
+  [`7c78738`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/7c7873847e9b45b389ea76fbc51ac03b876090d2))
+
+- Организация импортов ([#61](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/61),
+  [`7c78738`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/7c7873847e9b45b389ea76fbc51ac03b876090d2))
+
+### Testing
+
+- Добавил базовые unit-тесты для кода ([#61](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/61),
+  [`7c78738`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/7c7873847e9b45b389ea76fbc51ac03b876090d2))
+
+- Добавил базовые unit-тесты для проекта
+  ([#61](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/61),
+  [`7c78738`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/7c7873847e9b45b389ea76fbc51ac03b876090d2))
+
+
 ## v0.7.0 (2026-02-05)
 
 ### Bug Fixes
