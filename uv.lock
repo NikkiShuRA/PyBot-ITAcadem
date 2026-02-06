@@ -1302,6 +1302,9 @@ docs = [
     { name = "mkdocs-autorefs" },
     { name = "mkdocs-material" },
     { name = "mkdocstrings", extra = ["python"] },
+    { name = "mkdocstrings-python" },
+    { name = "pygments" },
+    { name = "pymdown-extensions" },
 ]
 
 [package.metadata]
@@ -1343,6 +1346,9 @@ docs = [
     { name = "mkdocs-autorefs", specifier = ">=0.5.0" },
     { name = "mkdocs-material", specifier = ">=9.5.0" },
     { name = "mkdocstrings", extras = ["python"], specifier = ">=0.24.0" },
+    { name = "mkdocstrings-python", specifier = ">=0.10.0" },
+    { name = "pygments", specifier = ">=2.17.0" },
+    { name = "pymdown-extensions", specifier = ">=10.5" },
 ]
 
 [[package]]
