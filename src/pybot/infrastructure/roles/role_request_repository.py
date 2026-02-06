@@ -3,13 +3,25 @@ from collections.abc import Sequence
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from pybot.dto.role_dto import CreateRoleRequestDTO
-
 from ...core.constants import RequestStatus
 from ...db.models import RoleRequest
 
 
 class RoleRequestRepository:
+    """
+    Репозиторий для работы с RoleRequest.
+
+    Attributes:
+        _session_factory (Session): Фабрика для создания сессии БД
+
+    Methods:
+        get_all_role_requests (db: AsyncSession) -> Sequence[RoleRequest]: Получает все RoleRequest
+        get_recent_active_request (db: AsyncSession, user_id: int) -> RoleRequest | None: Получает последнюю активную
+        RoleRequest для пользователя
+        get_last_rejected_request (db: AsyncSession, user_id: int) -> RoleRequest | None: Получает последнюю отклонённую
+        RoleRequest для пользователя
+    """
+
     async def get_all_role_requests(self, db: AsyncSession) -> Sequence[RoleRequest]:
         stmt = select(RoleRequest)
         result = await db.execute(stmt)
@@ -33,7 +45,3 @@ class RoleRequestRepository:
         )
         result = await db.execute(stmt)
         return result.scalar_one_or_none()
-
-    async def create_role_request(self, db: AsyncSession, request_data: CreateRoleRequestDTO) -> RoleRequest:
-        role_request = RoleRequest(**request_data.model_dump())
-        return role_request
