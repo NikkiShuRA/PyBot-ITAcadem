@@ -37,3 +37,6 @@ class RoleRequest(Base):
     )
     user: Mapped[User] = relationship("User", back_populates="role_requests")
     role: Mapped[Role] = relationship("Role", back_populates="role_requests")
+
+    def change_status(self, status: RequestStatus) -> None:
+        self.status = status
