@@ -14,11 +14,9 @@ def get_admin_decision_kb(user_id: int, role: str) -> InlineKeyboardMarkup:
 
     builder.button(
         text="✅ Одобрить",
-        # Используем нашу фабрику
         callback_data=RoleRequestCB(action="approve", user_id=user_id, role_key=role),
     )
     builder.button(text="❌ Отклонить", callback_data=RoleRequestCB(action="reject", user_id=user_id, role_key=role))
 
-    # Сетка кнопок (по 2 в ряд)
     builder.adjust(2)
     return builder.as_markup()
