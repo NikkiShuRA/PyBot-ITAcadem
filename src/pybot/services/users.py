@@ -6,13 +6,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..core.constants import LevelTypeEnum
 from ..db.models import User
 from ..db.models.user_module import UserLevel
-from ..dto import UserCreateDTO, UserReadDTO, UserProfileReadDTO, UserLevelReadDTO
+from ..dto import UserCreateDTO, UserLevelReadDTO, UserProfileReadDTO, UserReadDTO
 from ..infrastructure.level_repository import LevelRepository
 from ..infrastructure.role_repository import RoleRepository
 from ..infrastructure.user_repository import UserRepository
-from ..mappers.user_mappers import map_orm_user_to_user_read_dto
 from ..mappers.level_mappers import map_orm_level_to_level_read_dto
-from .levels import get_user_current_level, get_all_levels, get_next_level
+from ..mappers.user_mappers import map_orm_user_to_user_read_dto
+from .levels import get_all_levels, get_next_level, get_user_current_level
 
 
 class UserService:
@@ -205,29 +205,27 @@ async def update_user_points_by_id(
 #   !!!   Нужно доработать
 async def collect_user_profile(db: AsyncSession, user_read_dto: UserReadDTO) -> UserProfileReadDTO:
     """Собирает профиль пользователя"""
-    levels_data  = []
-    for level_system in LevelTypeEnum:        
-        orm_level_res = await get_user_current_level(db, user_read_dto.id, level_system)
-        if orm_level_res is None:
-            return
+    levels_data = dict()
+    for level_system in LevelTypeEnum:
+        orm_current_level_res = await get_user_current_level(db, user_read_dto.id, level_system)
+        if orm_current_level_res is None:
+            raise ValueError(f"Уровень пользователя (id:{user_read_dto.id}) не был найден ")
 
-        _ , orm_level = orm_level_res
+        _, orm_current_level = orm_current_level_res
 
-        orm_next_level = await get_next_level(db, orm_level, level_system)
+        dto_current_level = await map_orm_level_to_level_read_dto(orm_current_level)
+
+        orm_next_level = await get_next_level(db, orm_current_level, level_system)
         if orm_next_level is None:
-            return
-        
-        level = map_orm_level_to_level_read_dto(orm_level)
-        nt_level = map_orm_level_to_level_read_dto(orm_next_level)
-        
+            dto_next_level = dto_current_level
+        else:
+            dto_next_level = await map_orm_level_to_level_read_dto(orm_next_level)
+
         user_level = UserLevelReadDTO(
             system=level_system,
-            curret_level=level,
-            next_level=nt_level,
+            current_level=dto_current_level,
+            next_level=dto_next_level,
         )
-        levels_data.append(user_level)
-    
-    return UserProfileReadDTO(
-        user=user_read_dto,
-        level_info=levels_data
-    )
+        levels_data[level_system] = user_level
+
+    return UserProfileReadDTO(user=user_read_dto, level_info=levels_data)

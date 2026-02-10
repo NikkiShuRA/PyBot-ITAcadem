@@ -44,12 +44,18 @@ async def cmd_profile_private(
         await dialog_manager.start(CreateProfileSG.contact)
 
 
-# !!!   НУЖНО ДОРАБОТАТЬ
 # Показ профиля
 async def show_profile(message: Message, db: AsyncSession, user_read: UserReadDTO) -> None:
     user_profile = await collect_user_profile(db, user_read)
-    academ_bar = await progress_bar(user_profile.user.academic_points.value, user_profile.level_info[0].next_level.required_points)
-    rep_bar = await progress_bar(user_profile.user.reputation_points.value, user_profile.level_info[1].next_level.required_points)
+
+    academic_progress = user_profile.user.academic_points
+    academic_level = user_profile.level_info[LevelTypeEnum.ACADEMIC]
+
+    reputation_progress = user_profile.user.reputation_points
+    reputation_level = user_profile.level_info[LevelTypeEnum.REPUTATION]
+
+    academic_bar = await progress_bar(academic_progress.value, academic_level.next_level.required_points.value)
+    reputation_bar = await progress_bar(reputation_progress.value, reputation_level.next_level.required_points.value)
 
     await message.answer(
         textwrap.dedent(
@@ -57,16 +63,16 @@ async def show_profile(message: Message, db: AsyncSession, user_read: UserReadDT
                 👋 Доброго времени суток, {user_profile.user.first_name}!
 
                 📚 Академический уровень
-                {user_profile.level_info[0].curret_level.name}
-                {academ_bar}
-                {user_profile.user.academic_points.value} / {user_profile.level_info[0].next_level.required_points}
+                {academic_level.current_level.name}
+                {academic_bar}
+                {academic_progress.value} / {academic_level.next_level.required_points.value}
 
                 🤌 Репутационный уровень
-                {user_profile.level_info[1].curret_level.name}
-                {rep_bar}
-                {user_profile.user.reputation_points.value} / {user_profile.level_info[1].next_level.required_points}
+                {reputation_level.current_level.name}
+                {reputation_bar}
+                {reputation_progress.value} / {reputation_level.next_level.required_points.value}
 
-                👇 Обновить профиль — /profile
+                🔄️ Обновить профиль — /profile
                 """
         ),
     )
