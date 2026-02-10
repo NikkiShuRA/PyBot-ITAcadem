@@ -2,9 +2,8 @@ from datetime import datetime, timedelta
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from pybot.db.models import RoleRequest
-
 from ..core.constants import RequestStatus
+from ..db.models.role_module import RoleRequest
 from ..domain.exceptions import (
     RoleAlreadyAssignedError,
     RoleNotFoundError,
