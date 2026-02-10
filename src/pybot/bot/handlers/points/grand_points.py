@@ -4,10 +4,15 @@ from aiogram.filters.command import Command
 from aiogram.types import Message
 from dishka import FromDishka
 from pydantic import ValidationError
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from ....core import logger
 from ....core.constants import LevelTypeEnum
+from ....domain.exceptions import (
+    DomainError,
+    InvalidPointsValueError,
+    UserNotFoundError,
+    ZeroPointsAdjustmentError,
+)
 from ....dto import AdjustUserPointsDTO, UserReadDTO
 from ....dto.value_objects import Points
 from ....services.points import PointsService
@@ -68,7 +73,6 @@ async def _extract_points_and_reason(
 
 async def _handle_points_command(
     message: Message,
-    db: AsyncSession,
     points_type: LevelTypeEnum,
     points_service: PointsService,
     user_service: UserService,
@@ -82,8 +86,8 @@ async def _handle_points_command(
 
     target_user_id: int | None = (
         await _get_target_user_id_from_reply(message)
-        or await _get_target_user_id_from_mention(message, db)
-        or await _get_target_user_id_from_text(message, db)
+        or await _get_target_user_id_from_mention(message, user_service)
+        or await _get_target_user_id_from_text(message, user_service)
     )
 
     if target_user_id is None:
@@ -126,13 +130,45 @@ async def _handle_points_command(
 
 @grand_points_global_router.message(Command("academic_points"), flags={"role": "Admin"})
 async def handle_academic_points(
-    message: Message, db: AsyncSession, user_service: FromDishka[UserService], points_service: FromDishka[PointsService]
+    message: Message, user_service: FromDishka[UserService], points_service: FromDishka[PointsService]
 ) -> None:
-    await _handle_points_command(message, db, LevelTypeEnum.ACADEMIC, points_service, user_service)
+    try:
+        await _handle_points_command(message, LevelTypeEnum.ACADEMIC, points_service, user_service)
+    except UserNotFoundError as e:
+        await message.reply(f"❌ {e.message}")
+        logger.warning(f"User not found: {e.details}")
+    except ZeroPointsAdjustmentError as e:
+        await message.reply(f"⚠️ {e.message}")
+    except InvalidPointsValueError as e:
+        await message.reply(f"❌ Некорректное значение баллов: {e.details['value']}")
+        logger.exception("Invalid points")
+    except DomainError as e:
+        await message.reply(f"❌ Ошибка: {e.message}")
+        logger.error(f"Domain error: {e}", exc_info=True)
+    except Exception:
+        await message.reply("❌ Неожиданная ошибка. Попробуйте позже.")
+        logger.exception("Unexpected error in handle_academic_points")
 
 
 @grand_points_global_router.message(Command("reputation_points"), flags={"role": "Admin"})
 async def handle_reputation_points(
-    message: Message, db: AsyncSession, user_service: FromDishka[UserService], points_service: FromDishka[PointsService]
+    message: Message,
+    user_service: FromDishka[UserService],
+    points_service: FromDishka[PointsService],
 ) -> None:
-    await _handle_points_command(message, db, LevelTypeEnum.REPUTATION, points_service, user_service)
+    try:
+        await _handle_points_command(message, LevelTypeEnum.REPUTATION, points_service, user_service)
+    except UserNotFoundError as e:
+        await message.reply(f"❌ {e.message}")
+        logger.warning(f"User not found: {e.details}")
+    except ZeroPointsAdjustmentError as e:
+        await message.reply(f"⚠️ {e.message}")
+    except InvalidPointsValueError as e:
+        await message.reply(f"❌ Некорректное значение баллов: {e.details['value']}")
+        logger.exception("Invalid points")
+    except DomainError as e:
+        await message.reply(f"❌ Ошибка: {e.message}")
+        logger.exception("Domain error")
+    except Exception:
+        await message.reply("❌ Неожиданная ошибка. Попробуйте позже.")
+        logger.exception("Unexpected error in handle_reputation_points")

@@ -27,7 +27,6 @@ def setup_logger() -> Logger:
             "<level>{message}</level>"
         ),
         colorize=True,
-        enqueue=True,
     )
 
     # Продакшен-логи (сериализованные ошибки)

@@ -5,6 +5,7 @@ from typing import ClassVar
 from pydantic import Field, field_validator
 
 from ..core.constants import LevelTypeEnum
+from ..domain.exceptions import InvalidPhoneNumberError
 from ..dto.value_objects import Points
 from ..utils import normalize_phone
 from .base_dto import BaseDTO
@@ -58,7 +59,10 @@ class UserCreateDTO(BaseDTO):
     @field_validator("phone")
     @classmethod
     def normalize_phone(cls, v: str) -> str:
-        return normalize_phone(v)
+        try:
+            return normalize_phone(v)
+        except ValueError as e:
+            raise InvalidPhoneNumberError(v, str(e)) from e
 
 
 class UserReadDTO(BaseDTO):

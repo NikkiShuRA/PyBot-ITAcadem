@@ -1,6 +1,6 @@
 [project]
 name = "pybot-itacadem"
-version = "0.2.1"
+version = "0.8.0"
 description = "PyBot — an asynchronous Telegram bot written in Python"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -19,6 +19,7 @@ dependencies = [
     "aiolimiter>=1.2.1",
     "aiocache>=0.12.3",
     "dishka>=1.7.2",
+    "pytest-coverage>=0.0",
 ]
 
 [dependency-groups]
@@ -34,6 +35,7 @@ dev = [
     "icecream>=2.1.8",
     "ruff>=0.14.11",
     "ty>=0.0.12",
+    "polyfactory>=3.2.0",
 ]
 
 [tool.ruff]
@@ -98,6 +100,16 @@ exclude = ['test_*', '__init__.py']
 "src/pybot/db/models/user_module/valuation.py" = ["PLR0913"]
 "src/pybot/di/containers.py" = ["PLR0913"]
 
+[tool.ruff.lint.isort]
+known-first-party = ["pybot"]
+section-order = [
+    "future",
+    "standard-library",
+    "third-party",
+    "first-party",
+    "local-folder"
+]
+
 [tool.mypy]
 explicit_package_bases = true
 namespace_packages = true
@@ -136,3 +148,8 @@ exclude_commit_patterns = [
 match = "(main|master)"
 prerelease_token = "rc"
 prerelease = false
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = "-q --strict-markers"

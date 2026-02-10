@@ -89,9 +89,6 @@ class Points(BaseValueModel):
         return self.value < val
 
     def __add__(self, other: Points | int) -> Points:
-        val = other.value if isinstance(other, Points) else other
-        return Points(value=self.value + val, point_type=self.point_type)
-
         if isinstance(other, int):
             return self.adjust(other)
 

@@ -9,6 +9,7 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ....core.constants import LevelTypeEnum
+from ....domain.exceptions import ZeroPointsAdjustmentError
 from ....dto.value_objects import Points
 from ...base_class import Base
 
@@ -51,16 +52,16 @@ class User(Base):
         BigInteger,
         ForeignKey("user_activity_statuses.id"),
     )
-    last_active_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_active_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=False), nullable=True)
     academic_points: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     reputation_points: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
-    roles: Mapped[list[UserRole]] = relationship("UserRole", back_populates="user")
+    roles: Mapped[list[UserRole]] = relationship("UserRole", back_populates="user", cascade="all, delete-orphan")
     role_events_to: Mapped[list[RoleEvent]] = relationship(
         "RoleEvent", foreign_keys="RoleEvent.to_user_id", back_populates="to_user"
     )
     role_events_from: Mapped[list[RoleEvent]] = relationship(
-        "RoleEvent", foreign_keys="RoleEvent.from_user_id", back_populates="from_user"
+        "RoleEvent", foreign_keys="RoleEvent.from_user_id", back_populates="from_user", cascade="all, delete-orphan"
     )
 
     activity_status: Mapped[UserActivityStatus | None] = relationship(
@@ -141,7 +142,7 @@ class User(Base):
 
     def change_user_points(self, points: int, point_type: LevelTypeEnum) -> int:
         if points == 0:
-            raise ValueError("Нельзя начислить 0 баллов")
+            raise ZeroPointsAdjustmentError()
         current = 0
         if point_type == LevelTypeEnum.ACADEMIC:
             current = self.academic_points
@@ -156,7 +157,9 @@ class User(Base):
             return self.reputation_points - current
 
         else:
-            raise ValueError(f"Неизвестный тип баллов: {point_type}")
+            raise ValueError(
+                f"Неизвестный тип баллов: {point_type}. Доступные типы: {[t.value for t in LevelTypeEnum]}"
+            )
 
     def change_user_level(self, new_level_id: int, points_type: LevelTypeEnum) -> None:
         """Изменяет уровень пользователя на новый уровень указанного типа."""
