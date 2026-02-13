@@ -140,7 +140,11 @@ class User(Base):
         """Обновить дату последней активности пользователя"""
         self.last_active_at = datetime.now(UTC)
 
-    def change_user_points(self, points: int, point_type: LevelTypeEnum) -> int:
+    def change_user_points(self, points: int, point_type: LevelTypeEnum) -> tuple[int, int]:
+        """
+        Изменяет очки пользователя указанного типа.
+        Возвращает кортеж (int)Изменение, (int)Новое значение
+        """
         if points == 0:
             raise ZeroPointsAdjustmentError()
         current = 0
@@ -148,13 +152,13 @@ class User(Base):
             current = self.academic_points
             self.academic_points += points
             self.academic_points = max(self.academic_points, 0)
-            return self.academic_points - current
+            return self.academic_points - current, self.academic_points
 
         elif point_type == LevelTypeEnum.REPUTATION:
             current = self.reputation_points
             self.reputation_points += points
             self.reputation_points = max(self.reputation_points, 0)
-            return self.reputation_points - current
+            return self.reputation_points - current, self.reputation_points
 
         else:
             raise ValueError(

@@ -29,7 +29,7 @@ class PointsService:
 
         all_levels = await self.level_repository.get_all_by_type(self.db, dto.points.point_type)
 
-        new_score = user.change_user_points(dto.points.value, dto.points.point_type)
+        _, new_score = user.change_user_points(dto.points.value, dto.points.point_type)
 
         new_level = self.level_calculator.calculate_level(new_score, all_levels)
 
