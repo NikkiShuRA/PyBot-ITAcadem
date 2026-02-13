@@ -6,7 +6,7 @@ from dishka import FromDishka
 from pydantic import ValidationError
 
 from ....core import logger
-from ....core.constants import PointsTypeEnum
+from ....core.constants import LevelTypeEnum
 from ....domain.exceptions import (
     DomainError,
     InvalidPointsValueError,
@@ -73,7 +73,7 @@ async def _extract_points_and_reason(
 
 async def _handle_points_command(
     message: Message,
-    points_type: PointsTypeEnum,
+    points_type: LevelTypeEnum,
     points_service: PointsService,
     user_service: UserService,
 ) -> None:
@@ -133,7 +133,7 @@ async def handle_academic_points(
     message: Message, user_service: FromDishka[UserService], points_service: FromDishka[PointsService]
 ) -> None:
     try:
-        await _handle_points_command(message, PointsTypeEnum.ACADEMIC, points_service, user_service)
+        await _handle_points_command(message, LevelTypeEnum.ACADEMIC, points_service, user_service)
     except UserNotFoundError as e:
         await message.reply(f"❌ {e.message}")
         logger.warning(f"User not found: {e.details}")
@@ -157,7 +157,7 @@ async def handle_reputation_points(
     points_service: FromDishka[PointsService],
 ) -> None:
     try:
-        await _handle_points_command(message, PointsTypeEnum.REPUTATION, points_service, user_service)
+        await _handle_points_command(message, LevelTypeEnum.REPUTATION, points_service, user_service)
     except UserNotFoundError as e:
         await message.reply(f"❌ {e.message}")
         logger.warning(f"User not found: {e.details}")
