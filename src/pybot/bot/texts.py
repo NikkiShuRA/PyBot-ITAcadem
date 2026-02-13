@@ -5,6 +5,8 @@ HELP_PRIVATE = textwrap.dedent("""
     /help — список команд
     /info — информация о боте
     /profile — просмотр профиля
+    /reputation_points - работа с системой репутации
+    /academic_points - работа с академической системой
     """).strip()
 
 HELP_GROUP = textwrap.dedent("""
