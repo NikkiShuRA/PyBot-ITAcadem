@@ -3,6 +3,7 @@ from ...base_class import Base
 from .roles import Role
 from .user_roles import UserRole
 from .role_events import RoleEvent
+from .role_request import RoleRequest
 
 __all__ = [
     "Base",
