@@ -4,7 +4,7 @@ from sqlalchemy import Sequence, and_, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from ..db.models import Role, User, UserRole
+from ..db.models import Role, User, UserLevel, UserRole
 from ..domain.exceptions import UserNotFoundError, UsersNotFoundError
 from ..dto import UserCreateDTO
 
@@ -24,7 +24,11 @@ class UserRepository:
         db: AsyncSession,  # ← Сессия передается СЮДА
         id_: int,
     ) -> User | None:
-        stmt = select(User).options(selectinload(User.roles), selectinload(User.user_levels)).where(User.id == id_)
+        stmt = (
+            select(User)
+            .options(selectinload(User.roles), selectinload(User.user_levels).joinedload(UserLevel.level))
+            .where(User.id == id_)
+        )
         result = await db.execute(stmt)
         user = result.scalar_one_or_none()
 

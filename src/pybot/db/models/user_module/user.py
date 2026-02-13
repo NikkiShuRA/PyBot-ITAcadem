@@ -19,6 +19,7 @@ if TYPE_CHECKING:
     from ..role_module import (
         Role,
         RoleEvent,
+        RoleRequest,
         UserRole,
     )
     from ..task_module import Task, TaskSolution
@@ -63,6 +64,7 @@ class User(Base):
     role_events_from: Mapped[list[RoleEvent]] = relationship(
         "RoleEvent", foreign_keys="RoleEvent.from_user_id", back_populates="from_user", cascade="all, delete-orphan"
     )
+    role_requests: Mapped[list[RoleRequest]] = relationship("RoleRequest", back_populates="user")
 
     activity_status: Mapped[UserActivityStatus | None] = relationship(
         "UserActivityStatus",

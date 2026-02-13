@@ -16,3 +16,10 @@ class RoleEnum(StrEnum):
     STUDENT = "Student"
     MENTOR = "Mentor"
     ADMIN = "Admin"
+
+
+class RequestStatus(StrEnum):
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    CANCELED = "canceled"

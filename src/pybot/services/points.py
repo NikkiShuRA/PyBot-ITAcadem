@@ -1,5 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ..core import logger
 from ..db.models import Valuation
 from ..domain.exceptions import UserNotFoundError
 from ..domain.services.level_calculator import LevelCalculator
@@ -35,6 +36,8 @@ class PointsService:
 
         if new_level:
             user.change_user_level(new_level.id, dto.points.point_type)
+        else:
+            logger.info("Пользователь достиг максимального уровня")
 
         giver_orm = await self.user_repository.get_by_id(self.db, dto.giver_id)
         if not giver_orm:
@@ -50,7 +53,6 @@ class PointsService:
 
         self.db.add(valuation)
         self.db.add(user)
-
         await self.db.commit()
 
         return await map_orm_user_to_user_read_dto(user)

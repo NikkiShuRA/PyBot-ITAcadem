@@ -145,6 +145,24 @@ class InvalidRoleChangeError(DomainError):
         )
 
 
+class RoleRequestAlreadyExistsError(DomainError):
+    """Запрос на роль уже существует."""
+
+    def __init__(self, user_id: int, role_name: str) -> None:
+        super().__init__(
+            f"Запрос на роль '{role_name}' уже существует для пользователя {user_id}",
+            details={"user_id": user_id, "role": role_name},
+        )
+
+
+class RoleRequestNotFoundError(DomainError):
+    def __init__(self, user_id: int) -> None:
+        super().__init__(
+            f"Запрос на роль для пользователя {user_id} не найден",
+            details={"user_id": user_id},
+        )
+
+
 class UsersRolesNotFoundError(DomainError):
     """Роли пользователей не найдены в системе."""
 

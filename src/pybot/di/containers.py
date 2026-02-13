@@ -7,11 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 from ..core import logger
 from ..db.database import engine as global_engine
 from ..domain.services.level_calculator import LevelCalculator
-from ..infrastructure.level_repository import LevelRepository
-from ..infrastructure.role_repository import RoleRepository
-from ..infrastructure.user_repository import UserRepository
-from ..infrastructure.valuation_repository import ValuationRepository
+from ..infrastructure import LevelRepository, RoleRepository, RoleRequestRepository, UserRepository, ValuationRepository
 from ..services.points import PointsService
+from ..services.role_request import RoleRequestService
 from ..services.users import UserService
 
 
@@ -95,6 +93,10 @@ class RepositoryProvider(Provider):
         """
         return RoleRepository()
 
+    @provide(scope=Scope.APP)
+    def role_request_repository(self) -> RoleRequestRepository:
+        return RoleRequestRepository()
+
 
 class ServiceProvider(Provider):
     """Сервисы — бизнес-логика."""
@@ -121,6 +123,16 @@ class ServiceProvider(Provider):
     ) -> "PointsService":
         """Сервис получает репозиторий один раз."""
         return PointsService(db, level_calculator, user_repository, level_repository)
+
+    @provide(scope=Scope.REQUEST)
+    def role_request_service(
+        self,
+        db: AsyncSession,
+        role_repository: RoleRepository,
+        user_repository: UserRepository,
+        role_request_repository: RoleRequestRepository,
+    ) -> RoleRequestService:
+        return RoleRequestService(db, role_repository, user_repository, role_request_repository)
 
 
 class DomainServiceProvider(Provider):

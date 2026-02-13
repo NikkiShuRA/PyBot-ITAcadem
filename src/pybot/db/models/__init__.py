@@ -26,6 +26,7 @@ from .role_module import (
     Role,
     UserRole,
     RoleEvent,
+    RoleRequest,
 )
 
 __all__ = [

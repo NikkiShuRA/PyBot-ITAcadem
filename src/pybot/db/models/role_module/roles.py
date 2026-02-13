@@ -8,7 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from ...base_class import Base
 
 if TYPE_CHECKING:
-    from ..role_module import RoleEvent, UserRole
+    from ..role_module import RoleEvent, RoleRequest, UserRole
 
 
 class Role(Base):
@@ -25,3 +25,4 @@ class Role(Base):
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
+    role_requests: Mapped[list[RoleRequest]] = relationship("RoleRequest", back_populates="role")
