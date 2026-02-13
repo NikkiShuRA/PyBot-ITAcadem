@@ -1,5 +1,3 @@
-import textwrap
-
 from aiogram import flags
 from aiogram.filters import Command, CommandStart
 from aiogram.types import Message
@@ -11,8 +9,8 @@ from ....bot.dialogs.user_reg.states import CreateProfileSG
 from ....services.users import UserService
 from ...filters import create_chat_type_routers
 from ...keyboards.auth import request_contact_kb
+from ...texts import HELP_GROUP, HELP_PRIVATE, INFO_GLOBAL
 from ..profile.grand_profile import show_profile
-from ...texts import INFO_GLOBAL, HELP_GROUP, HELP_PRIVATE
 
 start_private_router, start_group_router, start_global_router = create_chat_type_routers("start")
 

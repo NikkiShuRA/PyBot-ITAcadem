@@ -1,8 +1,6 @@
-import re
-
+from ..core.constants import LevelTypeEnum
 from ..dto.value_objects import Points
 from .base_dto import BaseDTO
-from ..core.constants import LevelTypeEnum
 
 
 class LevelReadDTO(BaseDTO):
