@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from ..core.constants import PointsTypeEnum
+from ..core.constants import LevelTypeEnum
 from ..db.models import Valuation
 
 
@@ -17,7 +17,7 @@ class ValuationRepository:
         self,
         db: AsyncSession,
         recipient_id: int,
-        points_type: PointsTypeEnum,
+        points_type: LevelTypeEnum,
         limit: int = 10,
     ) -> Sequence[Valuation]:
         """

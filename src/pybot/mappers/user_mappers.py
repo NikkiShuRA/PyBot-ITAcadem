@@ -2,7 +2,7 @@ from aiogram_dialog import DialogManager
 from pydantic import ValidationError
 
 from ..core import logger
-from ..core.constants import PointsTypeEnum
+from ..core.constants import LevelTypeEnum
 from ..db.models import User
 from ..dto import UserCreateDTO, UserReadDTO
 from ..dto.value_objects import Points
@@ -19,8 +19,8 @@ async def map_orm_user_to_user_read_dto(orm_user: User) -> UserReadDTO:
         last_name=orm_user.last_name,
         patronymic=orm_user.patronymic,
         telegram_id=orm_user.telegram_id,
-        academic_points=Points(value=orm_user.academic_points, point_type=PointsTypeEnum.ACADEMIC),
-        reputation_points=Points(value=orm_user.reputation_points, point_type=PointsTypeEnum.REPUTATION),
+        academic_points=Points(value=orm_user.academic_points, point_type=LevelTypeEnum.ACADEMIC),
+        reputation_points=Points(value=orm_user.reputation_points, point_type=LevelTypeEnum.REPUTATION),
         join_date=orm_user.join_date,
     )
 

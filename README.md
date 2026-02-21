@@ -102,7 +102,7 @@ PyBot_ITAcadem/
 │       │   └── tg_bot_run.py       # Точка входа бота
 │       ├── core/                   # Конфигурация и константы
 │       │   ├── config.py           # Pydantic Settings (.env)
-│       │   ├── constants.py        # Enum'ы (PointsTypeEnum, RoleEnum)
+│       │   ├── constants.py        # Enum'ы (LevelTypeEnum, RoleEnum)
 │       │   └── logger.py           # Настройка loguru
 │       ├── db/                     # Data Layer
 │       │   ├── models/             # Rich ORM Models (бизнес-логика здесь!)

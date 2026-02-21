@@ -4,7 +4,7 @@ from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from ..core.constants import PointsTypeEnum
+from ..core.constants import LevelTypeEnum
 
 
 class BaseValueModel(BaseModel):
@@ -28,7 +28,7 @@ class Points(BaseValueModel):
     """
 
     value: Annotated[int, Field(strict=True, ge=-(2**31), le=2**31 - 1)]
-    point_type: PointsTypeEnum
+    point_type: LevelTypeEnum
 
     def adjust(self, delta: int) -> Points:
         """
