@@ -211,18 +211,6 @@ wheels = [
 ]
 
 [[package]]
-name = "click"
-version = "8.3.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "colorama", marker = "sys_platform == 'win32'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/3d/fa/656b739db8587d7b5dfa22e22ed02566950fbfbcdc20311993483657a5c0/click-8.3.1.tar.gz", hash = "sha256:12ff4785d337a1bb490bb7e9c2b1ee5da3112e94a8622f26a6c77f5d2fc6842a", size = 295065, upload-time = "2025-11-15T20:45:42.706Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/98/78/01c019cdb5d6498122777c1a43056ebb3ebfeef2076d9d026bfe15583b2b/click-8.3.1-py3-none-any.whl", hash = "sha256:981153a64e25f12d547d3426c367a4857371575ee7ad18df2a6183ab0545b2a6", size = 108274, upload-time = "2025-11-15T20:45:41.139Z" },
-]
-
-[[package]]
 name = "colorama"
 version = "0.4.6"
 source = { registry = "https://pypi.org/simple" }
@@ -470,15 +458,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/57/b9/f8025d71a6085c441a7eaff0fd928bbb275a6633773667023d19179fe815/greenlet-3.3.0-cp314-cp314t-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:3c6e9b9c1527a78520357de498b0e709fb9e2f49c3a513afd5a249007261911b", size = 653783, upload-time = "2025-12-04T14:26:06.225Z" },
     { url = "https://files.pythonhosted.org/packages/f6/c7/876a8c7a7485d5d6b5c6821201d542ef28be645aa024cfe1145b35c120c1/greenlet-3.3.0-cp314-cp314t-musllinux_1_2_aarch64.whl", hash = "sha256:286d093f95ec98fdd92fcb955003b8a3d054b4e2cab3e2707a5039e7b50520fd", size = 1614857, upload-time = "2025-12-04T15:04:28.484Z" },
     { url = "https://files.pythonhosted.org/packages/4f/dc/041be1dff9f23dac5f48a43323cd0789cb798342011c19a248d9c9335536/greenlet-3.3.0-cp314-cp314t-musllinux_1_2_x86_64.whl", hash = "sha256:6c10513330af5b8ae16f023e8ddbfb486ab355d04467c4679c5cfe4659975dd9", size = 1676034, upload-time = "2025-12-04T14:27:33.531Z" },
-]
-
-[[package]]
-name = "h11"
-version = "0.16.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/01/ee/02a2c011bdab74c6fb3c75474d40b3052059d95df7e73351460c8588d963/h11-0.16.0.tar.gz", hash = "sha256:4e35b956cf45792e4caa5885e69fba00bdbc6ffafbfa020300e549b208ee5ff1", size = 101250, upload-time = "2025-04-24T03:35:25.427Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/04/4b/29cac41a4d98d144bf5f6d33995617b185d14b22401f75ca86f384e87ff1/h11-0.16.0-py3-none-any.whl", hash = "sha256:63cf8bbe7522de3bf65932fda1d9c2772064ffb3dae62d55932da54b31cb6c86", size = 37515, upload-time = "2025-04-24T03:35:24.344Z" },
 ]
 
 [[package]]
@@ -992,10 +971,8 @@ dependencies = [
     { name = "phonenumbers" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
-    { name = "pytest-coverage" },
     { name = "python-dotenv" },
     { name = "sqlalchemy", extra = ["asyncio"] },
-    { name = "uvicorn" },
     { name = "yaspin" },
 ]
 
@@ -1009,6 +986,7 @@ dev = [
     { name = "pre-commit" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
+    { name = "pytest-coverage" },
     { name = "ruff" },
     { name = "ty" },
     { name = "uv" },
@@ -1026,10 +1004,8 @@ requires-dist = [
     { name = "phonenumbers", specifier = ">=9.0.21" },
     { name = "pydantic", specifier = ">=2.11.10" },
     { name = "pydantic-settings", specifier = ">=2.12.0" },
-    { name = "pytest-coverage", specifier = ">=0.0" },
     { name = "python-dotenv", specifier = ">=1.2.1" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0.44" },
-    { name = "uvicorn", specifier = ">=0.38.0" },
     { name = "yaspin", specifier = ">=3.4.0" },
 ]
 
@@ -1043,6 +1019,7 @@ dev = [
     { name = "pre-commit", specifier = ">=4.5.0" },
     { name = "pytest", specifier = ">=9.0.1" },
     { name = "pytest-asyncio", specifier = ">=1.3.0" },
+    { name = "pytest-coverage", specifier = ">=0.0" },
     { name = "ruff", specifier = ">=0.14.11" },
     { name = "ty", specifier = ">=0.0.12" },
     { name = "uv", specifier = ">=0.9.13" },
@@ -1398,19 +1375,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/a7/7a/c4e8bc5b759d5da4fcabe0b1fc876f67913da4880d0cec34e9e6418ff93c/uv-0.9.16-py3-none-win32.whl", hash = "sha256:0229a4dfd0ff7e257bcd791f2d78cf1d682b01856d52d95602c56bb5ed97cc72", size = 19908839, upload-time = "2025-12-06T14:18:46.032Z" },
     { url = "https://files.pythonhosted.org/packages/3b/21/6ecf7db074235552d7b0be84c48d934e9916809d7dafb96d9a1019dd2ded/uv-0.9.16-py3-none-win_amd64.whl", hash = "sha256:e3e9a69a463607b9886afa34ce68dadf9a378eb6d191c878156fd8864e604c1e", size = 22033348, upload-time = "2025-12-06T14:19:48.091Z" },
     { url = "https://files.pythonhosted.org/packages/db/a1/4c44988817b72b17f09010983fd40b05f76ce54988fbdd707a8a33cfd498/uv-0.9.16-py3-none-win_arm64.whl", hash = "sha256:18d430980e7f4915a42854bc98a76f87f30da8859469a864fcf33e0a31fafdd1", size = 20396419, upload-time = "2025-12-06T14:19:32.586Z" },
-]
-
-[[package]]
-name = "uvicorn"
-version = "0.38.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "click" },
-    { name = "h11" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/cb/ce/f06b84e2697fef4688ca63bdb2fdf113ca0a3be33f94488f2cadb690b0cf/uvicorn-0.38.0.tar.gz", hash = "sha256:fd97093bdd120a2609fc0d3afe931d4d4ad688b6e75f0f929fde1bc36fe0e91d", size = 80605, upload-time = "2025-10-18T13:46:44.63Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/ee/d9/d88e73ca598f4f6ff671fb5fde8a32925c2e08a637303a1d12883c7305fa/uvicorn-0.38.0-py3-none-any.whl", hash = "sha256:48c0afd214ceb59340075b4a052ea1ee91c16fbc2a9b1469cca0e54566977b02", size = 68109, upload-time = "2025-10-18T13:46:42.958Z" },
 ]
 
 [[package]]
