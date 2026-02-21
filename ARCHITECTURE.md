@@ -130,7 +130,7 @@
 handler_data = AdjustUserPointsDTO(
     recipient_id=123,
     giver_id=456,
-    points=Points(value=100, point_type=PointsTypeEnum.ACADEMIC),
+    points=Points(value=100, point_type=LevelTypeEnum.ACADEMIC),
     reason="За решение задачи"
 )
 service.adjust_user_points(handler_data)  # ← Передаём целиком DTO
@@ -202,7 +202,7 @@ def add_role(self, role: Role) -> None:  # ← Нет параметра db!
 DTO иммутабельны:
 
 ```python
-points = Points(value=100, point_type=PointsTypeEnum.ACADEMIC)
+points = Points(value=100, point_type=LevelTypeEnum.ACADEMIC)
 points.value = 200  # ← Вызовет ошибку! Используем points.adjust(100)
 ```
 

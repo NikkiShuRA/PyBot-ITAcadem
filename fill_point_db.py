@@ -11,7 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.pybot import create_user_profile, update_user_points_by_id
-from src.pybot.core.constants import PointsTypeEnum, RoleEnum
+from src.pybot.core.constants import LevelTypeEnum, RoleEnum
 from src.pybot.core.logger import setup_logger
 from src.pybot.db.database import SessionLocal, engine
 from src.pybot.db.models import Level, Role
@@ -83,7 +83,7 @@ async def generate_levels_data(session: AsyncSession) -> Sequence[Level]:
             name=f"Уровень {level_num}",
             description=f"Требуется {required_xp} академических баллов для достижения этого уровня.",
             required_points=required_xp,
-            level_type=PointsTypeEnum.ACADEMIC,
+            level_type=LevelTypeEnum.ACADEMIC,
         )
         levels_to_add.append(academic_level)
 
@@ -91,7 +91,7 @@ async def generate_levels_data(session: AsyncSession) -> Sequence[Level]:
             name=f"Уровень {level_num}",
             description=f"Требуется {required_xp} репутационных баллов для достижения этого уровня.",
             required_points=required_xp,
-            level_type=PointsTypeEnum.REPUTATION,
+            level_type=LevelTypeEnum.REPUTATION,
         )
         levels_to_add.append(reputation_level)
 
@@ -205,14 +205,14 @@ async def generate_users_data(session: AsyncSession, num_users: int) -> None:
                 db=session,
                 user_id=user.id,
                 points_value=user_data["academic_points"],
-                points_type=PointsTypeEnum.ACADEMIC,
+                points_type=LevelTypeEnum.ACADEMIC,
             )
 
             await update_user_points_by_id(
                 db=session,
                 user_id=user.id,
                 points_value=user_data["reputation_points"],
-                points_type=PointsTypeEnum.REPUTATION,
+                points_type=LevelTypeEnum.REPUTATION,
             )
 
             successfully_created += 1

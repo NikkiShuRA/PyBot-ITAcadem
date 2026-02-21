@@ -2,6 +2,230 @@
 
 <!-- version list -->
 
+## v0.11.0 (2026-02-21)
+
+### Bug Fixes
+
+- Исправил импорт в сервисе запроса ролей
+  ([#69](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/69),
+  [`b4d95cc`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/b4d95cc9a69fe282956d9bb02c23eb8200408a75))
+
+- Исправил логику проверки ролей, добавив возможность эффективного обрабатывать множество ролей на
+  одном хэндлере, диалоге ([#69](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/69),
+  [`b4d95cc`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/b4d95cc9a69fe282956d9bb02c23eb8200408a75))
+
+- Исправил ошибку с Missing greenlet при обновлении данных
+  ([#69](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/69),
+  [`b4d95cc`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/b4d95cc9a69fe282956d9bb02c23eb8200408a75))
+
+- Убрал enqueue=True из логгера для исправления блокировки программы при её завершении
+  ([#69](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/69),
+  [`b4d95cc`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/b4d95cc9a69fe282956d9bb02c23eb8200408a75))
+
+### Chores
+
+- **dependency**: Перенёс зависимость pytest-coverage в dev
+  ([#69](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/69),
+  [`b4d95cc`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/b4d95cc9a69fe282956d9bb02c23eb8200408a75))
+
+- **dependency**: Убрал неиспользуемую зависимость uvicorn
+  ([#69](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/69),
+  [`b4d95cc`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/b4d95cc9a69fe282956d9bb02c23eb8200408a75))
+
+- **dx**: Добавить justfile для кроссплатформенного task runner-а для аналога make
+  ([#69](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/69),
+  [`b4d95cc`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/b4d95cc9a69fe282956d9bb02c23eb8200408a75))
+
+- **test**: Добавление тестов на сборку бота, а также на корректность работы DI-контейнера
+  ([#69](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/69),
+  [`b4d95cc`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/b4d95cc9a69fe282956d9bb02c23eb8200408a75))
+
+### Features
+
+- Добавил justfile для дальнейшей замены makefile-а
+  ([#69](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/69),
+  [`b4d95cc`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/b4d95cc9a69fe282956d9bb02c23eb8200408a75))
+
+- Добавил метод для Rich ORM Model RoleRequest
+  ([#69](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/69),
+  [`b4d95cc`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/b4d95cc9a69fe282956d9bb02c23eb8200408a75))
+
+- Добавил модель для запросов ролей и Enums для статуса запроса
+  ([#69](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/69),
+  [`b4d95cc`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/b4d95cc9a69fe282956d9bb02c23eb8200408a75))
+
+- Добавил фильтер для conditional UI в aiogram-dialog, с добавлением списка ролей пользователя в
+  данные из middleware ([#69](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/69),
+  [`b4d95cc`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/b4d95cc9a69fe282956d9bb02c23eb8200408a75))
+
+- Создал полноценный репозиторий для RoleRequest для создания flow отправки запроса роли
+  ([#69](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/69),
+  [`b4d95cc`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/b4d95cc9a69fe282956d9bb02c23eb8200408a75))
+
+- Создал фабрику для создания клавиатуры и функцию для её использования, добавил заготовку для
+  сервиса запросов ролей ([#69](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/69),
+  [`b4d95cc`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/b4d95cc9a69fe282956d9bb02c23eb8200408a75))
+
+- Создание dto, и репозитория запросов ролей для функциональности
+  ([#69](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/69),
+  [`b4d95cc`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/b4d95cc9a69fe282956d9bb02c23eb8200408a75))
+
+### Refactoring
+
+- Добавил VO в объекты кода, и инструменты в CI-pipeline
+  ([#69](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/69),
+  [`b4d95cc`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/b4d95cc9a69fe282956d9bb02c23eb8200408a75))
+
+- Добавил поддержку изменения bot token-а через .env для повышения универсальности кода, без
+  вмешательство в него, для будущей интеграции Docker-а
+  ([#69](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/69),
+  [`b4d95cc`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/b4d95cc9a69fe282956d9bb02c23eb8200408a75))
+
+- Изменения оповещений на английские, удаление лишних комментариев, замена создания instance-а bot-а
+  на использование DI-контейнера ([#69](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/69),
+  [`b4d95cc`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/b4d95cc9a69fe282956d9bb02c23eb8200408a75))
+
+- Исправил обработку ошибок в tg_bot_main за счёт того, улучшив gracefull shutdown
+  ([#69](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/69),
+  [`b4d95cc`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/b4d95cc9a69fe282956d9bb02c23eb8200408a75))
+
+- Перенос создания instances bot-а из aiogram в DI-контейнер
+  ([#69](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/69),
+  [`b4d95cc`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/b4d95cc9a69fe282956d9bb02c23eb8200408a75))
+
+
+## v0.10.0 (2026-02-21)
+
+### Bug Fixes
+
+- Исправил импорт в сервисе запроса ролей
+  ([#68](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/68),
+  [`1a2f456`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/1a2f4567866e69abcbcd2edaada3bd6fd8c6b192))
+
+- Исправил логику проверки ролей, добавив возможность эффективного обрабатывать множество ролей на
+  одном хэндлере, диалоге ([#68](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/68),
+  [`1a2f456`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/1a2f4567866e69abcbcd2edaada3bd6fd8c6b192))
+
+- Исправил ошибку с Missing greenlet при обновлении данных
+  ([#68](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/68),
+  [`1a2f456`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/1a2f4567866e69abcbcd2edaada3bd6fd8c6b192))
+
+- Убрал enqueue=True из логгера для исправления блокировки программы при её завершении
+  ([#68](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/68),
+  [`1a2f456`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/1a2f4567866e69abcbcd2edaada3bd6fd8c6b192))
+
+### Chores
+
+- **dependency**: Перенёс зависимость pytest-coverage в dev
+  ([#68](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/68),
+  [`1a2f456`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/1a2f4567866e69abcbcd2edaada3bd6fd8c6b192))
+
+- **dependency**: Убрал неиспользуемую зависимость uvicorn
+  ([#68](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/68),
+  [`1a2f456`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/1a2f4567866e69abcbcd2edaada3bd6fd8c6b192))
+
+- **test**: Добавление тестов на сборку бота, а также на корректность работы DI-контейнера
+  ([#68](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/68),
+  [`1a2f456`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/1a2f4567866e69abcbcd2edaada3bd6fd8c6b192))
+
+### Features
+
+- Добавил метод для Rich ORM Model RoleRequest
+  ([#68](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/68),
+  [`1a2f456`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/1a2f4567866e69abcbcd2edaada3bd6fd8c6b192))
+
+- Добавил модель для запросов ролей и Enums для статуса запроса
+  ([#68](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/68),
+  [`1a2f456`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/1a2f4567866e69abcbcd2edaada3bd6fd8c6b192))
+
+- Добавил фильтер для conditional UI в aiogram-dialog, с добавлением списка ролей пользователя в
+  данные из middleware ([#68](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/68),
+  [`1a2f456`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/1a2f4567866e69abcbcd2edaada3bd6fd8c6b192))
+
+- Создал полноценный репозиторий для RoleRequest для создания flow отправки запроса роли
+  ([#68](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/68),
+  [`1a2f456`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/1a2f4567866e69abcbcd2edaada3bd6fd8c6b192))
+
+- Создал фабрику для создания клавиатуры и функцию для её использования, добавил заготовку для
+  сервиса запросов ролей ([#68](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/68),
+  [`1a2f456`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/1a2f4567866e69abcbcd2edaada3bd6fd8c6b192))
+
+- Создание dto, и репозитория запросов ролей для функциональности
+  ([#68](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/68),
+  [`1a2f456`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/1a2f4567866e69abcbcd2edaada3bd6fd8c6b192))
+
+### Refactoring
+
+- Добавил VO в объекты кода, и инструменты в CI-pipeline
+  ([#68](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/68),
+  [`1a2f456`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/1a2f4567866e69abcbcd2edaada3bd6fd8c6b192))
+
+- Изменения оповещений на английские, удаление лишних комментариев, замена создания instance-а bot-а
+  на использование DI-контейнера ([#68](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/68),
+  [`1a2f456`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/1a2f4567866e69abcbcd2edaada3bd6fd8c6b192))
+
+- Перенос создания instances bot-а из aiogram в DI-контейнер
+  ([#68](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/68),
+  [`1a2f456`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/1a2f4567866e69abcbcd2edaada3bd6fd8c6b192))
+
+
+## v0.9.0 (2026-02-13)
+
+### Bug Fixes
+
+- Исправил импорт в сервисе запроса ролей
+  ([#62](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/62),
+  [`a7af223`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/a7af223347fbc0a3aa990e1bf264bdaa519e9664))
+
+- Исправил логику проверки ролей, добавив возможность эффективного обрабатывать множество ролей на
+  одном хэндлере, диалоге ([#62](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/62),
+  [`a7af223`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/a7af223347fbc0a3aa990e1bf264bdaa519e9664))
+
+- Исправил ошибку Missing greenlet при обновлении баллов с изменением уровня
+  ([#62](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/62),
+  [`a7af223`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/a7af223347fbc0a3aa990e1bf264bdaa519e9664))
+
+- Исправил ошибку с Missing greenlet при обновлении данных
+  ([#62](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/62),
+  [`a7af223`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/a7af223347fbc0a3aa990e1bf264bdaa519e9664))
+
+- Убрал enqueue=True из логгера для исправления блокировки программы при её завершении
+  ([#62](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/62),
+  [`a7af223`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/a7af223347fbc0a3aa990e1bf264bdaa519e9664))
+
+### Features
+
+- Добавил метод для Rich ORM Model RoleRequest
+  ([#62](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/62),
+  [`a7af223`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/a7af223347fbc0a3aa990e1bf264bdaa519e9664))
+
+- Добавил модель для запросов ролей и Enums для статуса запроса
+  ([#62](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/62),
+  [`a7af223`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/a7af223347fbc0a3aa990e1bf264bdaa519e9664))
+
+- Добавил фильтер для conditional UI в aiogram-dialog, с добавлением списка ролей пользователя в
+  данные из middleware ([#62](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/62),
+  [`a7af223`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/a7af223347fbc0a3aa990e1bf264bdaa519e9664))
+
+- Создал полноценный репозиторий для RoleRequest для создания flow отправки запроса роли
+  ([#62](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/62),
+  [`a7af223`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/a7af223347fbc0a3aa990e1bf264bdaa519e9664))
+
+- Создал фабрику для создания клавиатуры и функцию для её использования, добавил заготовку для
+  сервиса запросов ролей ([#62](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/62),
+  [`a7af223`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/a7af223347fbc0a3aa990e1bf264bdaa519e9664))
+
+- Создание dto, и репозитория запросов ролей для функциональности
+  ([#62](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/62),
+  [`a7af223`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/a7af223347fbc0a3aa990e1bf264bdaa519e9664))
+
+### Refactoring
+
+- Добавил VO в объекты кода, и инструменты в CI-pipeline
+  ([#62](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/62),
+  [`a7af223`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/a7af223347fbc0a3aa990e1bf264bdaa519e9664))
+
+
 ## v0.8.0 (2026-02-05)
 
 ### Features
