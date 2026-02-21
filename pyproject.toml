@@ -19,11 +19,11 @@ dependencies = [
     "aiolimiter>=1.2.1",
     "aiocache>=0.12.3",
     "dishka>=1.7.2",
-    "pytest-coverage>=0.0",
 ]
 
 [dependency-groups]
 dev = [
+    "pytest-coverage>=0.0",
     "aiogram-tests>=1.0.3",
     "alembic>=1.17.2",
     "pre-commit>=4.5.0",
