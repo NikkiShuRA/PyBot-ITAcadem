@@ -16,83 +16,51 @@ from ..services.users import UserService
 
 
 class DatabaseProvider(Provider):
-    """Провайдеры для БД."""
+    """Providers for database resources."""
 
     @provide(scope=Scope.APP)
-    async def engine(self) -> AsyncEngine:
-        """Создать Engine ОДИН раз."""
-        return global_engine
-
-    async def close(self, engine: AsyncEngine) -> None:
-        """Закрыть engine при shutdown контейнера."""
-        await engine.dispose()
-        logger.info("✅ Database engine disposed")
+    async def engine(self) -> AsyncGenerator[AsyncEngine, None]:
+        """Provide one SQLAlchemy engine for the whole app lifecycle."""
+        engine = global_engine
+        try:
+            yield engine
+        finally:
+            await engine.dispose()
+            logger.info("Database engine disposed")
 
 
 class SessionProvider(Provider):
-    """Провайдер для сессий — НОВАЯ сессия на каждый запрос!"""
+    """Provide one DB session per request/update."""
 
     @provide(scope=Scope.REQUEST)
     async def session(self, engine: AsyncEngine) -> AsyncGenerator[AsyncSession, None]:
-        """
-        Создать НОВУЮ сессию для КАЖДОГО update'а.
-
-        1️⃣  Dishka видит: "нужна AsyncEngine"
-        2️⃣  Dishka берет его из APP scope
-        3️⃣  Создает новую сессию
-        4️⃣  Передает в хэндлер/callback
-        5️⃣  После хэндлера → автоматически закрывается
-        """
-        async_session_maker = async_sessionmaker(
+        """Create request-scoped async SQLAlchemy session."""
+        session_maker = async_sessionmaker(
             bind=engine,
             class_=AsyncSession,
             expire_on_commit=False,
         )
-        async with async_session_maker() as session:
+        async with session_maker() as session:
             yield session
 
 
 class RepositoryProvider(Provider):
-    """Репозитории — stateless, живут всю программу."""
+    """Stateless repositories with APP scope."""
 
     @provide(scope=Scope.APP)
     def user_repository(self) -> UserRepository:
-        """
-        ⚠️  ВАЖНО: репозиторий создается БЕЗ сессии!
-
-        Сессия будет внедрена позже в методы.
-        Репозиторий — это просто "конструктор запросов".
-        """
         return UserRepository()
 
     @provide(scope=Scope.APP)
     def level_repository(self) -> LevelRepository:
-        """
-        ⚠️  ВАЖНО: репозиторий создается БЕЗ сессии!
-
-        Сессия будет внедрена позже в методы.
-        Репозиторий — это просто "конструктор запросов".
-        """
         return LevelRepository()
 
     @provide(scope=Scope.APP)
     def valuation_reposiory(self) -> ValuationRepository:
-        """
-        ⚠️  ВАЖНО: репозиторий создается БЕЗ сессии!
-
-        Сессия будет внедрена позже в методы.
-        Репозиторий — это просто "конструктор запросов".
-        """
         return ValuationRepository()
 
     @provide(scope=Scope.APP)
     def role_repository(self) -> RoleRepository:
-        """
-        ⚠️  ВАЖНО: репозиторий создается БЕЗ сессии!
-
-        Сессия будет внедрена позже в методы.
-        Репозиторий — это просто "конструктор запросов".
-        """
         return RoleRepository()
 
     @provide(scope=Scope.APP)
@@ -101,17 +69,16 @@ class RepositoryProvider(Provider):
 
 
 class ServiceProvider(Provider):
-    """Сервисы — бизнес-логика."""
+    """Application services."""
 
     @provide(scope=Scope.REQUEST)
     def user_service(
         self,
-        db: AsyncSession,  # ← Новая сессия на каждый запрос
-        user_repository: UserRepository,  # ← Берется из APP scope
-        level_repository: LevelRepository,  # ← Берется из APP scope
-        role_repository: RoleRepository,  # ← Берется из APP scope
+        db: AsyncSession,
+        user_repository: UserRepository,
+        level_repository: LevelRepository,
+        role_repository: RoleRepository,
     ) -> UserService:
-        """Сервис получает репозиторий один раз."""
         return UserService(db, user_repository, level_repository, role_repository)
 
     @provide(scope=Scope.REQUEST)
@@ -122,8 +89,7 @@ class ServiceProvider(Provider):
         user_repository: UserRepository,
         level_repository: LevelRepository,
         role_repository: RoleRepository,
-    ) -> "PointsService":
-        """Сервис получает репозиторий один раз."""
+    ) -> PointsService:
         return PointsService(db, level_calculator, user_repository, level_repository)
 
     @provide(scope=Scope.REQUEST)
@@ -138,16 +104,19 @@ class ServiceProvider(Provider):
 
 
 class DomainServiceProvider(Provider):
+    """Domain services."""
+
     @provide(scope=Scope.APP)
     def level_calculator(self) -> LevelCalculator:
-        """Domain Service для расчета уровней."""
         return LevelCalculator()
 
 
 class BotProvider(Provider):
+    """Telegram Bot provider with APP scope."""
+
     @provide(scope=Scope.APP)
     async def bot(self) -> AsyncGenerator[Bot, None]:
-        bot = Bot(settings.bot_token_test)
+        bot = Bot(settings.active_bot_token)
         try:
             yield bot
         finally:
@@ -156,7 +125,7 @@ class BotProvider(Provider):
 
 
 async def setup_container() -> AsyncContainer:
-    """Собрать контейнер."""
+    """Build the app DI container."""
     return make_async_container(
         DatabaseProvider(),
         SessionProvider(),

@@ -1,0 +1,100 @@
+from types import SimpleNamespace
+
+import pytest
+from aiogram import Bot
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
+
+from pybot.di import containers as di_containers
+from pybot.services.users import UserService
+
+
+@pytest.mark.asyncio
+async def test_setup_container_smoke_resolves_key_dependencies(
+    monkeypatch: pytest.MonkeyPatch,
+    mocker,
+) -> None:
+    """Smoke test for DI assembly via public container API."""
+
+    class FakeBot:
+        def __init__(self, token: str) -> None:
+            self.token = token
+            self.session = SimpleNamespace(close=mocker.AsyncMock())
+
+    monkeypatch.setattr(di_containers, "Bot", FakeBot)
+    monkeypatch.setattr(di_containers.settings, "bot_token_test", "123456:SMOKE_TOKEN")
+
+    container = await di_containers.setup_container()
+    try:
+        bot = await container.get(Bot)
+        engine = await container.get(AsyncEngine)
+
+        async with container() as request_container:
+            session = await request_container.get(AsyncSession)
+            user_service = await request_container.get(UserService)
+
+        assert isinstance(bot, FakeBot)
+        assert bot.token == "123456:SMOKE_TOKEN"
+        assert engine is not None
+        assert session is not None
+        assert isinstance(user_service, UserService)
+    finally:
+        await container.close()
+
+
+@pytest.mark.asyncio
+async def test_container_lifecycle_closes_session_and_disposes_engine(
+    monkeypatch: pytest.MonkeyPatch,
+    mocker,
+) -> None:
+    """Verify graceful shutdown closes request session and disposes DB engine."""
+
+    class FakeBot:
+        def __init__(self, token: str) -> None:
+            self.token = token
+            self.session = SimpleNamespace(close=mocker.AsyncMock())
+
+    class FakeEngine:
+        def __init__(self) -> None:
+            self.dispose = mocker.AsyncMock()
+
+    class FakeSession:
+        def __init__(self) -> None:
+            self.close = mocker.AsyncMock()
+
+    class FakeSessionContext:
+        def __init__(self, session: FakeSession) -> None:
+            self._session = session
+
+        async def __aenter__(self) -> FakeSession:
+            return self._session
+
+        async def __aexit__(self, exc_type, exc, tb) -> None:
+            await self._session.close()
+
+    class FakeSessionMaker:
+        def __init__(self, session: FakeSession) -> None:
+            self._session = session
+
+        def __call__(self) -> FakeSessionContext:
+            return FakeSessionContext(self._session)
+
+    fake_engine = FakeEngine()
+    fake_session = FakeSession()
+
+    def fake_async_sessionmaker(*args, **kwargs) -> FakeSessionMaker:
+        return FakeSessionMaker(fake_session)
+
+    monkeypatch.setattr(di_containers, "Bot", FakeBot)
+    monkeypatch.setattr(di_containers.settings, "bot_token_test", "123456:LIFECYCLE_TOKEN")
+    monkeypatch.setattr(di_containers, "global_engine", fake_engine)
+    monkeypatch.setattr(di_containers, "async_sessionmaker", fake_async_sessionmaker)
+
+    container = await di_containers.setup_container()
+    async with container() as request_container:
+        session = await request_container.get(AsyncSession)
+        assert session is fake_session
+
+    fake_session.close.assert_awaited_once()
+
+    await container.close()
+    fake_engine.dispose.assert_awaited_once()

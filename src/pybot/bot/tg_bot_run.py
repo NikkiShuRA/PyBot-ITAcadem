@@ -8,7 +8,6 @@ from yaspin import yaspin
 
 from ..core import logger
 from ..core.config import settings
-from ..db.database import SessionLocal
 from ..di.containers import setup_container
 from .dialogs import user_router
 from .handlers import (
@@ -18,7 +17,6 @@ from .handlers import (
     roles_router,
 )
 from .middlewares import (
-    DbSessionMiddleware,
     LoggerMiddleware,
     RateLimitMiddleware,
     RoleMiddleware,
@@ -70,8 +68,6 @@ async def setup_middlewares(dp: Dispatcher) -> None:
     else:
         logger.info("RateLimitMiddleware disabled")
 
-    dp.update.middleware(DbSessionMiddleware(SessionLocal))
-
 
 async def setup_di(dp: Dispatcher) -> AsyncContainer:
     container = await setup_container()
@@ -96,18 +92,16 @@ def setup_handlers(dp: Dispatcher) -> None:
 async def tg_bot_main() -> None:
     """Main bot function with graceful shutdown."""
     container: AsyncContainer | None = None
-
-    with yaspin(text="Bot initialization...", color="cyan") as sp:
-        dp = await setup_dispatcher()
-        container = await setup_di(dp)
-        bot = await setup_bot(container)
-        await setup_middlewares(dp)
-        setup_handlers(dp)
-        await bot.delete_webhook(drop_pending_updates=True)
-        logger.info("Starting bot")
-        sp.ok("Bot started")
-
     try:
+        with yaspin(text="Bot initialization...", color="cyan") as sp:
+            dp = await setup_dispatcher()
+            container = await setup_di(dp)
+            bot = await setup_bot(container)
+            await setup_middlewares(dp)
+            setup_handlers(dp)
+            await bot.delete_webhook(drop_pending_updates=True)
+            logger.info("Starting bot")
+            sp.ok("Bot started")
         await dp.start_polling(bot)
     except asyncio.CancelledError:
         logger.info("Received cancellation signal")
