@@ -8,7 +8,6 @@ from yaspin import yaspin
 
 from ..core import logger
 from ..core.config import settings
-from ..db.database import SessionLocal
 from ..di.containers import setup_container
 from .dialogs import user_router
 from .handlers import (
@@ -18,7 +17,6 @@ from .handlers import (
     roles_router,
 )
 from .middlewares import (
-    DbSessionMiddleware,
     LoggerMiddleware,
     RateLimitMiddleware,
     RoleMiddleware,
@@ -69,8 +67,6 @@ async def setup_middlewares(dp: Dispatcher) -> None:
         logger.info("RateLimitMiddleware enabled")
     else:
         logger.info("RateLimitMiddleware disabled")
-
-    dp.update.middleware(DbSessionMiddleware(SessionLocal))
 
 
 async def setup_di(dp: Dispatcher) -> AsyncContainer:
