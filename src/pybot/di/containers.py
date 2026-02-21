@@ -1,10 +1,12 @@
 from collections.abc import AsyncGenerator
 
+from aiogram import Bot
 from dishka import AsyncContainer, Provider, Scope, make_async_container, provide
 from dishka.integrations.aiogram import AiogramProvider
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from ..core import logger
+from ..core.config import settings
 from ..db.database import engine as global_engine
 from ..domain.services.level_calculator import LevelCalculator
 from ..infrastructure import LevelRepository, RoleRepository, RoleRequestRepository, UserRepository, ValuationRepository
@@ -142,6 +144,17 @@ class DomainServiceProvider(Provider):
         return LevelCalculator()
 
 
+class BotProvider(Provider):
+    @provide(scope=Scope.APP)
+    async def bot(self) -> AsyncGenerator[Bot, None]:
+        bot = Bot(settings.bot_token_test)
+        try:
+            yield bot
+        finally:
+            await bot.session.close()
+            logger.info("Bot session closed")
+
+
 async def setup_container() -> AsyncContainer:
     """Собрать контейнер."""
     return make_async_container(
@@ -151,4 +164,5 @@ async def setup_container() -> AsyncContainer:
         ServiceProvider(),
         AiogramProvider(),
         DomainServiceProvider(),
+        BotProvider(),
     )
