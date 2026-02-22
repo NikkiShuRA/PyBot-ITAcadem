@@ -20,6 +20,8 @@ dependencies = [
     "aiocache>=0.12.3",
     "dishka>=1.7.2",
     "pytest-coverage>=0.0",
+    "sqladmin>=0.23.0",
+    "fastapi>=0.129.1",
 ]
 
 [dependency-groups]

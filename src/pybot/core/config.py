@@ -9,6 +9,10 @@ class BotSettings(BaseSettings):
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
+    # Admin Panel
+    admin_panel_enabled: bool = Field(True, alias="ADMIN_PANEL_ENABLED")
+    web_host: str = Field("127.0.0.1", alias="WEB_HOST")
+    web_port: int = Field(8001, alias="WEB_PORT")
     # Telegram settings
     bot_token: str = Field(..., alias="BOT_TOKEN", description="Токен основного бота")
     bot_token_test: str = Field(..., alias="BOT_TOKEN_TEST", description="Токен тестового бота")

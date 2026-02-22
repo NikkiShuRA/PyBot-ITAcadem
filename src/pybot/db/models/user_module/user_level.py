@@ -13,5 +13,8 @@ class UserLevel(Base):
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
     level_id: Mapped[int] = mapped_column(Integer, ForeignKey("levels.id"), nullable=False)
 
-    user: Mapped[User] = relationship("User", back_populates="user_levels")
-    level: Mapped[Level] = relationship("Level", back_populates="user_levels")
+    user: Mapped[User] = relationship("User", back_populates="user_levels", lazy="joined")
+    level: Mapped[Level] = relationship("Level", back_populates="user_levels", lazy="joined")
+
+    def __str__(self) -> str:
+        return f"{self.level.level_type}: {self.level.name}"
