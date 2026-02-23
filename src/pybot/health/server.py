@@ -18,12 +18,11 @@ async def _watch_stop(server: uvicorn.Server, stop_event: MpEvent) -> None:
 
 def run_health_server(stop_event: MpEvent) -> None:
     config = uvicorn.Config(
-        "src.pybot.health.app:create_app",
+        "src.pybot.health.app:app",
         host=settings.health_api_host,
         port=settings.health_api_port,
         log_level=settings.log_level.lower(),
         access_log=False,
-        factory=True,
     )
     server = uvicorn.Server(config)
 
