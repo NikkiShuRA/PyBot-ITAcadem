@@ -3,33 +3,40 @@
 ## Install `just`
 
 ### Windows
+
 - `winget install Casey.Just`
 - or `choco install just`
 - or `scoop install just`
 
 ### macOS
+
 - `brew install just`
 
 ### Linux
+
 - `cargo install just`
 - or use your distro package manager (`apt`, `dnf`, `pacman`) if available
 
 Check installation:
+
 - `just --version`
 
 ## Usage
 
 Show command list:
+
 - `just`
 - `just --list`
 - `just help`
 
 Run a command:
+
 - `just install-dev`
 - `just lint`
 - `just run`
 
 Run migration command with argument:
+
 - `just migrate-create "add user status"`
 
 ## Commands in this project
