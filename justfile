@@ -22,8 +22,16 @@ format-check: # Check formatting with ruff
 lint: # Run linter
     uv run ruff check .
 
+style: # Run formatting check and lint and type check
+    just format-check
+    just lint
+    just type-check
+
 type-check: # Run type checker (ty)
     uv run ty check --python=.venv/ --output-format github --target-version 3.12 src/
+
+test-coverage: # Run tests with coverage and show missing lines
+    uv run pytest --cov=src/pybot --cov-report=term-missing
 
 migrate-create msg: # Create Alembic migration: just migrate-create "add new column"
     uv run alembic revision --autogenerate -m "{{msg}}"

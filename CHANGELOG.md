@@ -2,6 +2,41 @@
 
 <!-- version list -->
 
+## v0.12.0 (2026-02-23)
+
+### Bug Fixes
+
+- Исправил логику проверки ролей, добавив возможность эффективного обрабатывать множество ролей на
+  одном хэндлере, диалоге
+  ([`fd55f11`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/fd55f11fc355cf6926f3b5b58b6a437e88c7f993))
+
+- Убрал enqueue=True из логгера для исправления блокировки программы при её завершении
+  ([`fd55f11`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/fd55f11fc355cf6926f3b5b58b6a437e88c7f993))
+
+### Chores
+
+- **docs**: Подправил форматированиеи в JUSTFILE
+  ([`d5468ed`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/d5468edce5faa5eb9bf913be86fa362190eb5d21))
+
+- **docs**: Улучшил документацию за счёт добавления docstrings, атрибутов декораторов,
+  Query-параметров, примеров данных, добавления подробных Fields в DTO
+  ([`fd55f11`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/fd55f11fc355cf6926f3b5b58b6a437e88c7f993))
+
+### Features
+
+- Добавил фильтер для conditional UI в aiogram-dialog, с добавлением списка ролей пользователя в
+  данные из middleware
+  ([`fd55f11`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/fd55f11fc355cf6926f3b5b58b6a437e88c7f993))
+
+- **healthcheck**: Добавил FastAPI эндпоинты для проверки жизнеспособности системы и её готовности
+  ([`fd55f11`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/fd55f11fc355cf6926f3b5b58b6a437e88c7f993))
+
+### Refactoring
+
+- Добавил VO в объекты кода, и инструменты в CI-pipeline
+  ([`fd55f11`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/fd55f11fc355cf6926f3b5b58b6a437e88c7f993))
+
+
 ## v0.11.0 (2026-02-21)
 
 ### Bug Fixes

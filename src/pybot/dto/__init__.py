@@ -6,3 +6,6 @@ from .user_dto import UserProfileReadDTO as UserProfileReadDTO
 from .user_dto import UserLevelReadDTO as UserLevelReadDTO
 
 from .level_dto import LevelReadDTO as LevelReadDTO
+
+from .health_dto import HealthCheckDTO as HealthCheckDTO
+from .health_dto import HealthStatusDTO as HealthStatusDTO

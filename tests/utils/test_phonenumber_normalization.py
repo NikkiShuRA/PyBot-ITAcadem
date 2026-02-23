@@ -47,7 +47,7 @@ class TestNormalizePhoneRU:
             normalize_phone("   ")
 
         with pytest.raises(ValueError):
-            normalize_phone(None)  # ty:ignore[invalid-argument-type]
+            normalize_phone(None)
 
     def test_non_strict_mode(self) -> None:
         """В non-strict режиме возможны номера."""
