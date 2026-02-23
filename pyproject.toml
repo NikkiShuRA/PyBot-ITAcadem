@@ -18,6 +18,8 @@ dependencies = [
     "aiolimiter>=1.2.1",
     "aiocache>=0.12.3",
     "dishka>=1.7.2",
+    "fastapi>=0.115.0",
+    "uvicorn>=0.30.0",
 ]
 
 [dependency-groups]
@@ -35,6 +37,7 @@ dev = [
     "ruff>=0.14.11",
     "ty>=0.0.12",
     "polyfactory>=3.2.0",
+    "httpie>=3.2.4",
 ]
 
 [tool.ruff]
@@ -113,6 +116,9 @@ section-order = [
 explicit_package_bases = true
 namespace_packages = true
 mypy_path = ["src"]
+
+[tool.ty.environment]
+root = ["src", "."]
 
 [tool.commitizen]
 name = "cz_conventional_commits"

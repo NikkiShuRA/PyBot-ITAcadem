@@ -54,6 +54,23 @@ class BotSettings(BaseSettings):
         description="Enable role-check middleware",
     )
 
+    # Health API settings
+    health_api_enabled: bool = Field(
+        False,
+        alias="HEALTH_API_ENABLED",
+        description="Enable separate FastAPI health endpoints process",
+    )
+    health_api_host: str = Field(
+        "localhost",
+        alias="HEALTH_API_HOST",
+        description="Health API host",
+    )
+    health_api_port: int = Field(
+        8001,
+        alias="HEALTH_API_PORT",
+        description="Health API port",
+    )
+
     @property
     def active_bot_token(self) -> str:
         """Return active bot token based on BOT_MODE."""

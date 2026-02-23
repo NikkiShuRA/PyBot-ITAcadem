@@ -9,7 +9,7 @@ MIN_PHONE_LENGTH = 10
 MAX_PHONE_LENGTH = 15
 
 
-def normalize_phone(phone: str, strict: bool = True) -> str:
+def normalize_phone(phone: str | None, strict: bool = True) -> str:
     """
     Нормализует телефон РФ в E.164 (+79XXXXXXXXX).
 

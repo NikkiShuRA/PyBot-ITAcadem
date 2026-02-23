@@ -10,6 +10,7 @@ from ..core.config import settings
 from ..db.database import engine as global_engine
 from ..domain.services.level_calculator import LevelCalculator
 from ..infrastructure import LevelRepository, RoleRepository, RoleRequestRepository, UserRepository, ValuationRepository
+from ..services.health import HealthService, SessionExecutor
 from ..services.points import PointsService
 from ..services.role_request import RoleRequestService
 from ..services.users import UserService
@@ -103,6 +104,14 @@ class ServiceProvider(Provider):
         return RoleRequestService(db, role_repository, user_repository, role_request_repository)
 
 
+class HealthProvider(Provider):
+    """Health API services."""
+
+    @provide(scope=Scope.REQUEST)
+    def health_service(self, db: AsyncSession) -> HealthService:
+        return HealthService(SessionExecutor(db))
+
+
 class DomainServiceProvider(Provider):
     """Domain services."""
 
@@ -134,4 +143,13 @@ async def setup_container() -> AsyncContainer:
         AiogramProvider(),
         DomainServiceProvider(),
         BotProvider(),
+    )
+
+
+def setup_health_container() -> AsyncContainer:
+    """Build DI container for health API (minimal set)."""
+    return make_async_container(
+        DatabaseProvider(),
+        SessionProvider(),
+        HealthProvider(),
     )
