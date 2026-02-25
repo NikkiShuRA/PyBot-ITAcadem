@@ -2,6 +2,56 @@
 
 <!-- version list -->
 
+## v0.13.0 (2026-02-25)
+
+### Bug Fixes
+
+- Вернул delete_webhook для бота ([#71](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/71),
+  [`aabe7ea`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/aabe7ea3e26da5420a06337d04e52b9a9729b612))
+
+- Исправил логику проверки ролей, добавив возможность эффективного обрабатывать множество ролей на
+  одном хэндлере, диалоге ([#71](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/71),
+  [`aabe7ea`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/aabe7ea3e26da5420a06337d04e52b9a9729b612))
+
+- Убрал enqueue=True из логгера для исправления блокировки программы при её завершении
+  ([#71](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/71),
+  [`aabe7ea`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/aabe7ea3e26da5420a06337d04e52b9a9729b612))
+
+### Chores
+
+- **test**: Добавление тестов в CI-pipeline, создание инфраструктуры для тестов, создание первой
+  волны интеграционных тестов ([#71](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/71),
+  [`aabe7ea`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/aabe7ea3e26da5420a06337d04e52b9a9729b612))
+
+### Features
+
+- Добавил фильтер для conditional UI в aiogram-dialog, с добавлением списка ролей пользователя в
+  данные из middleware ([#71](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/71),
+  [`aabe7ea`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/aabe7ea3e26da5420a06337d04e52b9a9729b612))
+
+- Добавил хэндлеры для запроса роли у администратора
+  ([#71](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/71),
+  [`aabe7ea`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/aabe7ea3e26da5420a06337d04e52b9a9729b612))
+
+- Завершил бизнес-логику запроса роли у администратора
+  ([#71](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/71),
+  [`aabe7ea`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/aabe7ea3e26da5420a06337d04e52b9a9729b612))
+
+- Реализовал сервис для отправки сообщений в телеграмм
+  ([#71](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/71),
+  [`aabe7ea`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/aabe7ea3e26da5420a06337d04e52b9a9729b612))
+
+- **role-request**: Завершил flow запроса роли у админа и стабилизировал callback/coverage тесты
+  ([#71](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/71),
+  [`aabe7ea`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/aabe7ea3e26da5420a06337d04e52b9a9729b612))
+
+### Refactoring
+
+- Добавил VO в объекты кода, и инструменты в CI-pipeline
+  ([#71](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/71),
+  [`aabe7ea`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/aabe7ea3e26da5420a06337d04e52b9a9729b612))
+
+
 ## v0.12.0 (2026-02-23)
 
 ### Bug Fixes
