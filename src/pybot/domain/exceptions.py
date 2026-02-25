@@ -155,11 +155,25 @@ class RoleRequestAlreadyExistsError(DomainError):
         )
 
 
-class RoleRequestNotFoundError(DomainError):
-    def __init__(self, user_id: int) -> None:
+class RoleRequestAlreadyProcessedError(DomainError):
+    def __init__(self) -> None:
         super().__init__(
-            f"Запрос на роль для пользователя {user_id} не найден",
-            details={"user_id": user_id},
+            "Role request has already been processed",
+        )
+
+
+class RoleRequestRejectedError(DomainError):
+    def __init__(self, user_id: int, role_name: str) -> None:
+        super().__init__(
+            f"Запрос на роль '{role_name}' был отклонен пользователем {user_id}",
+            details={"user_id": user_id, "role": role_name},
+        )
+
+
+class RoleRequestNotFoundError(DomainError):
+    def __init__(self) -> None:
+        super().__init__(
+            "Role request was not found",
         )
 
 

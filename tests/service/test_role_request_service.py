@@ -12,6 +12,7 @@ from pybot.domain.exceptions import (
     RoleAlreadyAssignedError,
     RoleNotFoundError,
     RoleRequestAlreadyExistsError,
+    RoleRequestAlreadyProcessedError,
     RoleRequestNotFoundError,
     UserNotFoundError,
 )
@@ -143,16 +144,29 @@ async def test_change_request_status_updates_pending_request(
     await db.commit()
 
     # When
-    await service.change_request_status(user_id=user.id, new_status=RequestStatus.APPROVED)
+    await service.change_request_status(request_id=request.id, new_status=RequestStatus.APPROVED)
 
     # Then
     stmt = select(RoleRequest).where(RoleRequest.id == request.id)
     updated = (await db.execute(stmt)).scalar_one()
     assert updated.status == RequestStatus.APPROVED
+    assert await service.user_repository.has_role(db, user_id=user.id, role_name=role.name)
 
 
 @pytest.mark.asyncio
-async def test_change_request_status_raises_when_active_request_not_found(
+async def test_change_request_status_raises_when_request_not_found(
+    dishka_request_container,
+) -> None:
+    # Given
+    service = await dishka_request_container.get(RoleRequestService)
+
+    # When / Then
+    with pytest.raises(RoleRequestNotFoundError):
+        await service.change_request_status(request_id=404_404, new_status=RequestStatus.APPROVED)
+
+
+@pytest.mark.asyncio
+async def test_change_request_status_raises_when_request_already_processed(
     dishka_request_container,
 ) -> None:
     # Given
@@ -160,9 +174,9 @@ async def test_change_request_status_raises_when_active_request_not_found(
     service = await dishka_request_container.get(RoleRequestService)
     user = await create_user(db, spec=UserSpec(telegram_id=900_007))
     role = await create_role(db, name="Mentor")
-    await create_role_request(db, spec=RoleRequestSpec(user=user, role=role, status=RequestStatus.REJECTED))
+    request = await create_role_request(db, spec=RoleRequestSpec(user=user, role=role, status=RequestStatus.REJECTED))
     await db.commit()
 
     # When / Then
-    with pytest.raises(RoleRequestNotFoundError):
-        await service.change_request_status(user_id=user.id, new_status=RequestStatus.APPROVED)
+    with pytest.raises(RoleRequestAlreadyProcessedError):
+        await service.change_request_status(request_id=request.id, new_status=RequestStatus.APPROVED)

@@ -32,6 +32,7 @@ async def test_get_by_id_returns_user_with_loaded_relations(db_session) -> None:
     loaded = await repo.get_by_id(db_session, user.id)
 
     # Then
+    assert loaded is not None
     assert loaded.id == user.id
     assert len(loaded.roles) == 1
     assert len(loaded.user_levels) == 1
@@ -58,6 +59,7 @@ async def test_get_by_telegram_id_returns_user_or_raises(db_session) -> None:
     loaded = await repo.get_by_telegram_id(db_session, user.telegram_id)
 
     # Then
+    assert loaded is not None
     assert loaded.id == user.id
 
     with pytest.raises(UserNotFoundError):

@@ -46,12 +46,12 @@ async def test_get_recent_active_request_returns_none_when_absent(db_session) ->
 
 
 @pytest.mark.asyncio
-async def test_get_last_rejected_request_returns_oldest_record_by_current_ordering(db_session) -> None:
+async def test_get_last_rejected_request_returns_newest_record_by_created_at_desc(db_session) -> None:
     # Given
     repo = RoleRequestRepository()
     user = await create_user(db_session, spec=UserSpec(telegram_id=510_003))
     role = await create_role(db_session, name="Mentor")
-    old_request = await create_role_request(
+    await create_role_request(
         db_session,
         spec=RoleRequestSpec(
             user=user,
@@ -60,7 +60,7 @@ async def test_get_last_rejected_request_returns_oldest_record_by_current_orderi
             created_at=datetime.now() - timedelta(days=2),
         ),
     )
-    await create_role_request(
+    recent_request = await create_role_request(
         db_session,
         spec=RoleRequestSpec(
             user=user,
@@ -76,7 +76,7 @@ async def test_get_last_rejected_request_returns_oldest_record_by_current_orderi
 
     # Then
     assert found is not None
-    assert found.id == old_request.id
+    assert found.id == recent_request.id
 
 
 @pytest.mark.asyncio
