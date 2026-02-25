@@ -25,7 +25,6 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pytest-coverage>=0.0",
-    "aiogram-tests>=1.0.3",
     "alembic>=1.17.2",
     "pre-commit>=4.5.0",
     "pytest>=9.0.1",
@@ -38,6 +37,7 @@ dev = [
     "ty>=0.0.12",
     "polyfactory>=3.2.0",
     "httpie>=3.2.4",
+    "pytest-aiogram>=0.1.0",
 ]
 
 [tool.ruff]

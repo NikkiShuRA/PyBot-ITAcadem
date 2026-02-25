@@ -16,6 +16,7 @@ from pybot.domain.exceptions import (
     RoleRequestNotFoundError,
     UserNotFoundError,
 )
+from pybot.infrastructure.user_repository import UserRepository
 from pybot.services.role_request import RoleRequestService
 from tests.factories import RoleRequestSpec, UserSpec, attach_user_role, create_role, create_role_request, create_user
 
@@ -179,4 +180,27 @@ async def test_change_request_status_raises_when_request_already_processed(
 
     # When / Then
     with pytest.raises(RoleRequestAlreadyProcessedError):
+        await service.change_request_status(request_id=request.id, new_status=RequestStatus.APPROVED)
+
+
+@pytest.mark.asyncio
+async def test_change_request_status_raises_when_role_was_assigned_before_approve(
+    dishka_request_container,
+) -> None:
+    # Given
+    db = await dishka_request_container.get(AsyncSession)
+    service = await dishka_request_container.get(RoleRequestService)
+    user = await create_user(db, spec=UserSpec(telegram_id=900_008))
+    role = await create_role(db, name="Admin")
+    repo = UserRepository()
+    loaded_user = await repo.get_by_id(db, user.id)
+    assert loaded_user is not None
+    loaded_user.add_role(role)
+    request = await create_role_request(
+        db, spec=RoleRequestSpec(user=loaded_user, role=role, status=RequestStatus.PENDING)
+    )
+    await db.commit()
+
+    # When / Then
+    with pytest.raises(RoleAlreadyAssignedError):
         await service.change_request_status(request_id=request.id, new_status=RequestStatus.APPROVED)

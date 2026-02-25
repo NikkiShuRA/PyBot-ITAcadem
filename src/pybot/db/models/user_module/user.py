@@ -118,17 +118,13 @@ class User(Base):
             self.user_levels.append(new_link)
 
     def add_role(self, role: Role) -> None:
-        """
-        Доменная логика: Пользователь получает роль.
-        Мы проверяем, нет ли её уже, чтобы не дублировать.
-        """
+        """Assign role to user if it is not already present."""
         from ..role_module import UserRole  # noqa: PLC0415
 
-        # Проверяем по ID или имени, есть ли уже такая роль
         for user_role in self.roles:
             if user_role.role_id == role.id:
-                return  # Роль уже есть, ничего не делаем
-        # Создаем связь
+                return
+
         new_link = UserRole(user_id=self.id, role_id=role.id)
         self.roles.append(new_link)
 
