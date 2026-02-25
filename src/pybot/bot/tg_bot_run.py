@@ -99,7 +99,7 @@ async def tg_bot_main() -> None:
             bot = await setup_bot(container)
             await setup_middlewares(dp)
             setup_handlers(dp)
-            # await bot.delete_webhook(drop_pending_updates=True)
+            await bot.delete_webhook(drop_pending_updates=True)
             logger.info("Starting bot")
             sp.ok("Bot started")
         await dp.start_polling(bot)
