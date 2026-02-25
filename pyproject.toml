@@ -25,7 +25,6 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pytest-coverage>=0.0",
-    "aiogram-tests>=1.0.3",
     "alembic>=1.17.2",
     "pre-commit>=4.5.0",
     "pytest>=9.0.1",
@@ -38,6 +37,7 @@ dev = [
     "ty>=0.0.12",
     "polyfactory>=3.2.0",
     "httpie>=3.2.4",
+    "pytest-aiogram>=0.1.0",
 ]
 
 [tool.ruff]
@@ -101,6 +101,7 @@ exclude = ['test_*', '__init__.py']
 [tool.ruff.lint.per-file-ignores]
 "src/pybot/db/models/user_module/valuation.py" = ["PLR0913"]
 "src/pybot/di/containers.py" = ["PLR0913"]
+"src/pybot/services/role_request.py" = ["PLR0913"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["pybot"]
@@ -155,6 +156,6 @@ prerelease_token = "rc"
 prerelease = false
 
 [tool.pytest.ini_options]
-pythonpath = ["src"]
+pythonpath = ["src", "."]
 testpaths = ["tests"]
 addopts = "-q --strict-markers"

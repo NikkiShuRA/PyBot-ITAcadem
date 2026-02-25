@@ -10,8 +10,10 @@ from ..core.config import settings
 from ..db.database import engine as global_engine
 from ..domain.services.level_calculator import LevelCalculator
 from ..infrastructure import LevelRepository, RoleRepository, RoleRequestRepository, UserRepository, ValuationRepository
+from ..infrastructure.ports import TelegramNotificationService
 from ..services.health import HealthService, SessionExecutor
 from ..services.points import PointsService
+from ..services.ports import NotificationPort
 from ..services.role_request import RoleRequestService
 from ..services.users import UserService
 
@@ -100,8 +102,9 @@ class ServiceProvider(Provider):
         role_repository: RoleRepository,
         user_repository: UserRepository,
         role_request_repository: RoleRequestRepository,
+        notification_service: NotificationPort,
     ) -> RoleRequestService:
-        return RoleRequestService(db, role_repository, user_repository, role_request_repository)
+        return RoleRequestService(db, role_repository, user_repository, role_request_repository, notification_service)
 
 
 class HealthProvider(Provider):
@@ -133,6 +136,12 @@ class BotProvider(Provider):
             logger.info("Bot session closed")
 
 
+class PortsProvider(Provider):
+    @provide(scope=Scope.APP)
+    def notification_port(self, bot: Bot) -> NotificationPort:
+        return TelegramNotificationService(bot)
+
+
 async def setup_container() -> AsyncContainer:
     """Build the app DI container."""
     return make_async_container(
@@ -143,6 +152,7 @@ async def setup_container() -> AsyncContainer:
         AiogramProvider(),
         DomainServiceProvider(),
         BotProvider(),
+        PortsProvider(),
     )
 
 

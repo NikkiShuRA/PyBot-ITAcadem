@@ -2,6 +2,7 @@ from collections.abc import Sequence
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from ...core.constants import RequestStatus
 from ...db.models import RoleRequest
@@ -31,6 +32,7 @@ class RoleRequestRepository:
         stmt = (
             select(RoleRequest)
             .where(RoleRequest.user_id == user_id, RoleRequest.status == RequestStatus.PENDING)
+            .order_by(RoleRequest.created_at.desc())
             .limit(1)
         )
         result = await db.execute(stmt)
@@ -40,8 +42,13 @@ class RoleRequestRepository:
         stmt = (
             select(RoleRequest)
             .where(RoleRequest.user_id == user_id, RoleRequest.status == RequestStatus.REJECTED)
-            .order_by(RoleRequest.created_at)
+            .order_by(RoleRequest.created_at.desc())
             .limit(1)
         )
+        result = await db.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def get_request_by_id(self, db: AsyncSession, request_id: int) -> RoleRequest | None:
+        stmt = select(RoleRequest).options(selectinload(RoleRequest.role)).where(RoleRequest.id == request_id)
         result = await db.execute(stmt)
         return result.scalar_one_or_none()

@@ -1,3 +1,5 @@
+set windows-shell := ["powershell.exe", "-NoProfile", "-Command"]
+
 default:
     @just --list
 
@@ -31,7 +33,7 @@ type-check: # Run type checker (ty)
     uv run ty check --python=.venv/ --output-format github --target-version 3.12 src/
 
 test-coverage: # Run tests with coverage and show missing lines
-    uv run pytest --cov=src/pybot --cov-report=term-missing
+    uv run pytest --cov=src/pybot --cov-report=term-missing --cov-report=xml
 
 migrate-create msg: # Create Alembic migration: just migrate-create "add new column"
     uv run alembic revision --autogenerate -m "{{msg}}"

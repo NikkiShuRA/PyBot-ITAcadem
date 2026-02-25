@@ -19,6 +19,13 @@ class BotSettings(BaseSettings):
         alias="BOT_MODE",
         description="Bot runtime mode: 'test' uses BOT_TOKEN_TEST, 'prod' uses BOT_TOKEN",
     )
+    # TODO: Replace default value with real admin Telegram ID in .env,
+    # or switch to required Field(...) once all environments are configured.
+    role_request_admin_tg_id: int = Field(
+        0,
+        alias="ROLE_REQUEST_ADMIN_TG_ID",
+        description="Telegram user id of admin recipient for role requests",
+    )
 
     # Database settings
     database_url: str = Field(..., alias="DATABASE_URL", description="Database URL")
