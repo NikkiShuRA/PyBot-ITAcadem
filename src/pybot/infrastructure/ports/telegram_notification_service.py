@@ -51,7 +51,7 @@ class TelegramNotificationService(NotificationPort):
             raise ValueError("ROLE_REQUEST_ADMIN_TG_ID must be configured and greater than 0")
 
         mention = f"<a href='tg://user?id={requester_user_id}'>user {requester_user_id}</a>"
-        text = "Новый запрос роли\n\n" f"Request ID: {request_id}\n" f"Роль: {role_name}\n" f"Пользователь: {mention}"
+        text = f"Новый запрос роли\n\nRequest ID: {request_id}\nРоль: {role_name}\nПользователь: {mention}"
 
         try:
             await self.bot.send_message(
