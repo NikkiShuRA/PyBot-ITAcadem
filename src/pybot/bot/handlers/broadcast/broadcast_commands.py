@@ -74,7 +74,7 @@ async def _extract_message_for_broadcast(message: Message) -> str | None:
     return message_match.group(1)
 
 
-@broadcast_command_private_router.message(Command("broadcast"), flags={"role": "Admin"})
+@broadcast_command_private_router.message(Command("broadcast"), flags={"role": "Admin", "rate_limit": "expensive"})
 async def broadcast_command(message: Message, broadcast_service: FromDishka[BroadcastService]) -> None:
     broadcast_message = await _extract_message_for_broadcast(message)
     if broadcast_message is None:
