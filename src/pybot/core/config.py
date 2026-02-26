@@ -24,6 +24,16 @@ class BotSettings(BaseSettings):
         alias="NOTIFICATION_BACKEND",
         description="Notification backend: 'telegram' or 'logging'",
     )
+    fsm_storage_backend: Literal["memory", "redis"] = Field(
+        "memory",
+        alias="FSM_STORAGE_BACKEND",
+        description="FSM storage backend: 'memory' or 'redis'",
+    )
+    redis_url: str = Field(
+        "redis://localhost:6379/0",
+        alias="REDIS_URL",
+        description="Redis URL used for FSM storage when FSM_STORAGE_BACKEND=redis",
+    )
     # TODO: Replace default value with real admin Telegram ID in .env,
     # or switch to required Field(...) once all environments are configured.
     role_request_admin_tg_id: int = Field(
@@ -93,14 +103,14 @@ class BotSettings(BaseSettings):
     )
 
     @property
-    def active_bot_token(self) -> str:
+    def active_bot_token(self: Self) -> str:
         """Return active bot token based on BOT_MODE."""
         if self.bot_mode == "prod":
             return self.bot_token
         return self.bot_token_test
 
     @model_validator(mode="after")
-    def validate_broadcast_jitter_range(self) -> Self:
+    def validate_broadcast_jitter_range(self: Self) -> Self:
         if self.broadcast_jitter_max_ms < self.broadcast_jitter_min_ms:
             raise ValueError("BROADCAST_JITTER_MAX_MS must be greater than or equal to BROADCAST_JITTER_MIN_MS")
         return self
