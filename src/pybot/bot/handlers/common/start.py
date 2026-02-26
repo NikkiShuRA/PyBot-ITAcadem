@@ -2,6 +2,7 @@ from aiogram import flags
 from aiogram.filters import Command, CommandStart
 from aiogram.types import Message
 from aiogram_dialog import DialogManager
+from aiogram_dialog.api.entities.modes import StartMode
 from dishka.integrations.aiogram import FromDishka
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -37,7 +38,7 @@ async def cmd_start_private(
         await message.answer(
             "Пожалуйста, отправьте свой контакт, используя кнопку ниже.", reply_markup=request_contact_kb
         )
-        await dialog_manager.start(CreateProfileSG.contact)
+        await dialog_manager.start(CreateProfileSG.contact, mode=StartMode.RESET_STACK)
 
 
 # /start - в групповом чате

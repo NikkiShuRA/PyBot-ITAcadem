@@ -1,7 +1,7 @@
 import asyncio
 
 from aiogram import Bot, Dispatcher
-from aiogram.fsm.storage.base import BaseStorage
+from aiogram.fsm.storage.base import BaseStorage, DefaultKeyBuilder
 from aiogram.fsm.storage.redis import RedisStorage
 from aiogram_dialog import setup_dialogs
 from dishka import AsyncContainer
@@ -19,6 +19,7 @@ from .handlers import (
     profile_router,
     roles_router,
 )
+from .handlers.common.dialog_errors import register_dialog_error_handlers
 from .middlewares import (
     LoggerMiddleware,
     RateLimitMiddleware,
@@ -29,7 +30,10 @@ from .middlewares import (
 
 async def setup_dispatcher() -> Dispatcher:
     if settings.fsm_storage_backend == "redis":
-        storage = RedisStorage.from_url(settings.redis_url)
+        storage = RedisStorage.from_url(
+            settings.redis_url,
+            key_builder=DefaultKeyBuilder(with_destiny=True),
+        )
         logger.info("FSM storage backend enabled: redis ({redis_url})", redis_url=settings.redis_url)
         return Dispatcher(storage=storage)
 
@@ -90,6 +94,7 @@ async def setup_bot(container: AsyncContainer) -> Bot:
 
 
 def setup_handlers(dp: Dispatcher) -> None:
+    register_dialog_error_handlers(dp)
     dp.include_router(common_router)
     dp.include_router(points_router)
     dp.include_router(profile_router)
