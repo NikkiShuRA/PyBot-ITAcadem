@@ -77,7 +77,7 @@ async def test_accept_role_request_happy_path_updates_status_and_locks_buttons(
     answer_mock.assert_awaited_once_with("Approved")
     edit_reply_markup_mock.assert_awaited_once_with(reply_markup=None)
     assert any(
-        item["user_id"] == 920_001 and item["message_text"] == "Role request approved."
+        item.user_id == 920_001 and item.message_text == "Role request approved."
         for item in notification_service.direct_messages
     )
 
@@ -117,7 +117,7 @@ async def test_accept_role_request_already_processed_locks_buttons_and_reports_s
     answer_mock.assert_awaited_once_with("Already processed")
     edit_reply_markup_mock.assert_awaited_once_with(reply_markup=None)
     assert any(
-        item["user_id"] == 920_003 and item["message_text"] == "Role request has already been processed."
+        item.user_id == 920_003 and item.message_text == "Role request has already been processed."
         for item in notification_service.direct_messages
     )
 
@@ -157,7 +157,7 @@ async def test_reject_role_request_happy_path_updates_status_and_locks_buttons(
     answer_mock.assert_awaited_once_with("Rejected")
     edit_reply_markup_mock.assert_awaited_once_with(reply_markup=None)
     assert any(
-        item["user_id"] == 920_004 and item["message_text"] == "Role request rejected."
+        item.user_id == 920_004 and item.message_text == "Role request rejected."
         for item in notification_service.direct_messages
     )
 
@@ -197,6 +197,6 @@ async def test_reject_role_request_already_processed_locks_buttons_and_reports_s
     answer_mock.assert_awaited_once_with("Already processed")
     edit_reply_markup_mock.assert_awaited_once_with(reply_markup=None)
     assert any(
-        item["user_id"] == 920_002 and item["message_text"] == "Role request has already been processed."
+        item.user_id == 920_002 and item.message_text == "Role request has already been processed."
         for item in notification_service.direct_messages
     )

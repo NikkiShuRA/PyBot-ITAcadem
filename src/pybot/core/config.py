@@ -19,6 +19,11 @@ class BotSettings(BaseSettings):
         alias="BOT_MODE",
         description="Bot runtime mode: 'test' uses BOT_TOKEN_TEST, 'prod' uses BOT_TOKEN",
     )
+    notification_backend: Literal["telegram", "logging"] = Field(
+        "telegram",
+        alias="NOTIFICATION_BACKEND",
+        description="Notification backend: 'telegram' or 'logging'",
+    )
     # TODO: Replace default value with real admin Telegram ID in .env,
     # or switch to required Field(...) once all environments are configured.
     role_request_admin_tg_id: int = Field(

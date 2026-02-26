@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-from typing import Any
+from dataclasses import dataclass
 
-from aiogram import Bot
+from aiogram.types import InlineKeyboardMarkup
 from dishka import Provider, Scope, provide
 
-from pybot.core.constants import RoleEnum
 from pybot.services.ports import NotificationPort
 
 __test__ = False
@@ -15,48 +14,68 @@ class FakeNotificationPort(NotificationPort):
     """In-memory notification adapter for isolated tests."""
 
     def __init__(self) -> None:
-        self.role_requests: list[dict[str, Any]] = []
-        self.direct_messages: list[dict[str, Any]] = []
-        self.broadcast_messages: list[dict[str, Any]] = []
+        self.role_requests: list[RoleRequestNotificationRecord] = []
+        self.direct_messages: list[DirectMessageNotificationRecord] = []
 
     async def send_role_request_to_admin(self, request_id: int, requester_user_id: int, role_name: str) -> None:
         self.role_requests.append(
-            {
-                "request_id": request_id,
-                "requester_user_id": requester_user_id,
-                "role_name": role_name,
-            }
+            RoleRequestNotificationRecord(
+                request_id=request_id,
+                requester_user_id=requester_user_id,
+                role_name=role_name,
+            )
         )
 
     async def send_message(self, user_id: int, message_text: str) -> None:
         self.direct_messages.append(
-            {
-                "user_id": user_id,
-                "message_text": message_text,
-            }
+            DirectMessageNotificationRecord(
+                user_id=user_id,
+                message_text=message_text,
+            )
         )
 
-    async def broadcast(self, message_text: str, selected_role: RoleEnum | None) -> None:
-        self.broadcast_messages.append(
-            {
-                "message_text": message_text,
-                "selected_role": selected_role,
-            }
-        )
+
+@dataclass(frozen=True, slots=True)
+class RoleRequestNotificationRecord:
+    request_id: int
+    requester_user_id: int
+    role_name: str
+
+
+@dataclass(frozen=True, slots=True)
+class DirectMessageNotificationRecord:
+    user_id: int
+    message_text: str
+
+
+@dataclass(frozen=True, slots=True)
+class SentMessageRecord:
+    chat_id: int
+    text: str
+    parse_mode: str | None
+    reply_markup: InlineKeyboardMarkup | None
 
 
 class FakeBot:
     """Minimal bot stub to avoid real Telegram API calls in tests."""
 
     def __init__(self) -> None:
-        self.sent_messages: list[dict[str, Any]] = []
+        self.sent_messages: list[SentMessageRecord] = []
 
-    async def send_message(self, *args: Any, **kwargs: Any) -> None:
+    async def send_message(
+        self,
+        chat_id: int,
+        text: str,
+        parse_mode: str | None = None,
+        reply_markup: InlineKeyboardMarkup | None = None,
+    ) -> None:
         self.sent_messages.append(
-            {
-                "args": args,
-                "kwargs": kwargs,
-            }
+            SentMessageRecord(
+                chat_id=chat_id,
+                text=text,
+                parse_mode=parse_mode,
+                reply_markup=reply_markup,
+            )
         )
 
 
@@ -69,8 +88,8 @@ class TestOverridesProvider(Provider):
         self._notification_port = FakeNotificationPort()
 
     @provide(scope=Scope.APP)
-    def provide_bot(self) -> Bot:
-        return self._fake_bot  # type: ignore[return-value]
+    def provide_bot(self) -> FakeBot:
+        return self._fake_bot
 
     @provide(scope=Scope.APP)
     def provide_notification_port(self) -> NotificationPort:

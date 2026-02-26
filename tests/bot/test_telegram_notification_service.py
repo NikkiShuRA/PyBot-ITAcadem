@@ -89,11 +89,3 @@ async def test_send_message_reraises_bot_error(fake_bot) -> None:
         await service.send_message(user_id=321, message_text="Привет")
 
     fake_bot.send_message.assert_awaited_once()
-
-
-@pytest.mark.asyncio
-async def test_broadcast_is_not_implemented(fake_bot) -> None:
-    service = TelegramNotificationService(fake_bot)
-
-    with pytest.raises(NotImplementedError, match="Broadcast is not implemented"):
-        await service.broadcast(message_text="Hello", selected_role=None)

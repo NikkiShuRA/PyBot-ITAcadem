@@ -1,18 +1,9 @@
-from typing import Any, Protocol, runtime_checkable
-
 from aiogram import Bot
 
 from ...bot.keyboards.role_request_keyboard import get_admin_decision_kb
 from ...core import logger
 from ...core.config import settings
-from ...core.constants import RoleEnum
 from ...services.ports import NotificationPort
-
-
-@runtime_checkable
-class TelegramBotProtocol(Protocol):
-    async def send_message(self, *args: Any, **kwargs: Any) -> Any:
-        pass
 
 
 class TelegramNotificationService(NotificationPort):
@@ -28,7 +19,7 @@ class TelegramNotificationService(NotificationPort):
         Args:
             bot: Shared aiogram bot instance.
         """
-        self.bot: TelegramBotProtocol = bot
+        self.bot = bot
 
     async def send_role_request_to_admin(self, request_id: int, requester_user_id: int, role_name: str) -> None:
         """Send role request details to configured Telegram admin.
@@ -99,15 +90,3 @@ class TelegramNotificationService(NotificationPort):
                 message_preview=cleaned_text[:120],
             )
             raise
-
-    async def broadcast(self, message_text: str, selected_role: RoleEnum | None) -> None:
-        """Broadcast message via Telegram transport.
-
-        Args:
-            message_text: Outgoing message text.
-            selected_role: Optional role filter. ``None`` means all users.
-
-        Raises:
-            NotImplementedError: Broadcast is out of current task scope.
-        """
-        raise NotImplementedError("Broadcast is not implemented in current task")

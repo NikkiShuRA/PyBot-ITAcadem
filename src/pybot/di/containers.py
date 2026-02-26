@@ -10,7 +10,7 @@ from ..core.config import settings
 from ..db.database import engine as global_engine
 from ..domain.services.level_calculator import LevelCalculator
 from ..infrastructure import LevelRepository, RoleRepository, RoleRequestRepository, UserRepository, ValuationRepository
-from ..infrastructure.ports import TelegramNotificationService
+from ..infrastructure.ports import LoggingNotificationService, TelegramNotificationService
 from ..services.health import HealthService, SessionExecutor
 from ..services.points import PointsService
 from ..services.ports import NotificationPort
@@ -139,7 +139,11 @@ class BotProvider(Provider):
 class PortsProvider(Provider):
     @provide(scope=Scope.APP)
     def notification_port(self, bot: Bot) -> NotificationPort:
-        return TelegramNotificationService(bot)
+        if settings.notification_backend == "telegram":
+            return TelegramNotificationService(bot)
+        if settings.notification_backend == "logging":
+            return LoggingNotificationService()
+        raise ValueError(f"Unsupported NOTIFICATION_BACKEND value: {settings.notification_backend}")
 
 
 async def setup_container() -> AsyncContainer:
