@@ -1,9 +1,21 @@
 from aiogram import Bot
+from aiogram.exceptions import (
+    RestartingTelegram,
+    TelegramAPIError,
+    TelegramBadRequest,
+    TelegramEntityTooLarge,
+    TelegramForbiddenError,
+    TelegramNetworkError,
+    TelegramNotFound,
+    TelegramRetryAfter,
+    TelegramServerError,
+    TelegramUnauthorizedError,
+)
 
 from ...bot.keyboards.role_request_keyboard import get_admin_decision_kb
 from ...core import logger
 from ...core.config import settings
-from ...services.ports import NotificationPort
+from ...services.ports import NotificationPermanentError, NotificationPort, NotificationTemporaryError
 
 
 class TelegramNotificationService(NotificationPort):
@@ -34,7 +46,7 @@ class TelegramNotificationService(NotificationPort):
             Exception: Any Telegram API error is re-raised after logging.
         """
         admin_tg_id = settings.role_request_admin_tg_id
-        if admin_tg_id <= 0:  # TODO Убрать если поставиться обязательное id для админа
+        if admin_tg_id <= 0:  # TODO: make ROLE_REQUEST_ADMIN_TG_ID required after env rollout.
             logger.error(
                 "Invalid ROLE_REQUEST_ADMIN_TG_ID configuration: {admin_tg_id}",
                 admin_tg_id=admin_tg_id,
@@ -83,10 +95,47 @@ class TelegramNotificationService(NotificationPort):
 
         try:
             await self.bot.send_message(chat_id=user_id, text=cleaned_text)
-        except Exception:
+        except TelegramRetryAfter as exc:
+            logger.warning(
+                "Telegram retry-after while sending message | user_id={user_id} retry_after={retry_after}",
+                user_id=user_id,
+                retry_after=exc.retry_after,
+            )
+            raise NotificationTemporaryError(
+                message="Telegram rate limit encountered",
+                retry_after_seconds=float(exc.retry_after),
+            ) from exc
+        except (TelegramNetworkError, TelegramServerError, RestartingTelegram) as exc:
+            logger.warning(
+                "Temporary Telegram failure while sending message | user_id={user_id} error={error}",
+                user_id=user_id,
+                error=str(exc),
+            )
+            raise NotificationTemporaryError(message="Temporary Telegram delivery failure") from exc
+        except (
+            TelegramBadRequest,
+            TelegramForbiddenError,
+            TelegramUnauthorizedError,
+            TelegramNotFound,
+            TelegramEntityTooLarge,
+        ) as exc:
+            logger.warning(
+                "Permanent Telegram failure while sending message | user_id={user_id} error={error}",
+                user_id=user_id,
+                error=str(exc),
+            )
+            raise NotificationPermanentError(message="Permanent Telegram delivery failure") from exc
+        except TelegramAPIError as exc:
+            logger.warning(
+                "Telegram API error while sending message | user_id={user_id} error={error}",
+                user_id=user_id,
+                error=str(exc),
+            )
+            raise NotificationPermanentError(message="Telegram API delivery failure") from exc
+        except Exception as exc:
             logger.exception(
                 "Failed to send direct notification | user_id={user_id} message_preview={message_preview}",
                 user_id=user_id,
                 message_preview=cleaned_text[:120],
             )
-            raise
+            raise NotificationPermanentError(message="Unexpected notification delivery failure") from exc

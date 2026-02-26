@@ -24,6 +24,10 @@ class NotificationPort(ABC):
             requester_user_id: Requester identifier in current notification
                 transport semantics.
             role_name: Requested role name.
+
+        Raises:
+            NotificationTemporaryError: Transient delivery error, retry is allowed.
+            NotificationPermanentError: Non-retryable delivery error.
         """
         pass
 
@@ -35,5 +39,9 @@ class NotificationPort(ABC):
             user_id: Recipient identifier in current notification transport
                 semantics.
             message_text: Notification text.
+
+        Raises:
+            NotificationTemporaryError: Transient delivery error, retry is allowed.
+            NotificationPermanentError: Non-retryable delivery error.
         """
         pass

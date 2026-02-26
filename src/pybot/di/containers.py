@@ -11,6 +11,7 @@ from ..db.database import engine as global_engine
 from ..domain.services.level_calculator import LevelCalculator
 from ..infrastructure import LevelRepository, RoleRepository, RoleRequestRepository, UserRepository, ValuationRepository
 from ..infrastructure.ports import LoggingNotificationService, TelegramNotificationService
+from ..services.broadcast import BroadcastService
 from ..services.health import HealthService, SessionExecutor
 from ..services.points import PointsService
 from ..services.ports import NotificationPort
@@ -105,6 +106,15 @@ class ServiceProvider(Provider):
         notification_service: NotificationPort,
     ) -> RoleRequestService:
         return RoleRequestService(db, role_repository, user_repository, role_request_repository, notification_service)
+
+    @provide(scope=Scope.REQUEST)
+    def broadcast_service(
+        self,
+        db: AsyncSession,
+        user_repository: UserRepository,
+        notification_service: NotificationPort,
+    ) -> BroadcastService:
+        return BroadcastService(db, user_repository, notification_service)
 
 
 class HealthProvider(Provider):

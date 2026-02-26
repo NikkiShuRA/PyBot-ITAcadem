@@ -11,6 +11,7 @@ from ..core.config import settings
 from ..di.containers import setup_container
 from .dialogs import user_router
 from .handlers import (
+    broadcast_router,
     common_router,
     points_router,
     profile_router,
@@ -86,6 +87,7 @@ def setup_handlers(dp: Dispatcher) -> None:
     dp.include_router(profile_router)
     dp.include_router(user_router)
     dp.include_router(roles_router)
+    dp.include_router(broadcast_router)
     setup_dialogs(dp)
 
 

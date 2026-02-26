@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import Literal, Self
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -49,6 +49,15 @@ class BotSettings(BaseSettings):
     time_limit_expensive: int = Field(300, alias="TIME_LIMIT_EXPENSIVE")
     max_user_limiters: int = Field(1000, alias="MAX_USER_LIMITERS", description="Limiter cache size")
 
+    # Broadcast settings
+    broadcast_bulk_size: int = Field(20, alias="BROADCAST_BULK_SIZE", ge=1, le=25)
+    broadcast_max_concurrency: int = Field(5, alias="BROADCAST_MAX_CONCURRENCY", ge=1, le=10)
+    broadcast_batch_pause_ms: int = Field(1200, alias="BROADCAST_BATCH_PAUSE_MS", ge=700, le=5000)
+    broadcast_jitter_min_ms: int = Field(80, alias="BROADCAST_JITTER_MIN_MS", ge=50, le=1000)
+    broadcast_jitter_max_ms: int = Field(160, alias="BROADCAST_JITTER_MAX_MS", ge=50, le=2000)
+    broadcast_retry_attempts: int = Field(5, alias="BROADCAST_RETRY_ATTEMPTS", ge=1, le=10)
+    broadcast_retry_max_wait_s: int = Field(30, alias="BROADCAST_RETRY_MAX_WAIT_S", ge=1, le=120)
+
     # Middleware toggles
     enable_logging_middleware: bool = Field(
         True,
@@ -89,6 +98,12 @@ class BotSettings(BaseSettings):
         if self.bot_mode == "prod":
             return self.bot_token
         return self.bot_token_test
+
+    @model_validator(mode="after")
+    def validate_broadcast_jitter_range(self) -> Self:
+        if self.broadcast_jitter_max_ms < self.broadcast_jitter_min_ms:
+            raise ValueError("BROADCAST_JITTER_MAX_MS must be greater than or equal to BROADCAST_JITTER_MIN_MS")
+        return self
 
 
 settings: BotSettings = BotSettings()
