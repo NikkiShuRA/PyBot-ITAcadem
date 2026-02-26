@@ -76,7 +76,7 @@ line-length = 120
 indent-width = 4
 
 [tool.ruff.lint]
-preview = true
+preview = false
 select = [
     "E",
     "F",
@@ -85,14 +85,15 @@ select = [
     "SIM",
     "I",
     "C90",
-    "PL",
+    "PLC",
+    "PLE",
+    "PLR",
+    "PLW",
     "RUF",
     "TRY",
     "ANN",
     "S",
-    "B",
     "N",
-    "PL",
 ]
 fixable = ["ALL"]
 unfixable = []
