@@ -4,8 +4,8 @@ from aiogram.filters.command import Command
 from aiogram.types import Message
 from dishka import FromDishka
 
-from ....core import logger
 from ....core.constants import RoleEnum
+from ....domain.exceptions import BroadcastMessageNotSpecifiedError
 from ....dto import CompetenceReadDTO
 from ....services.broadcast import BroadcastService
 from ....services.competence import CompetenceService
@@ -53,29 +53,21 @@ def _extract_target_token(message: Message) -> str | None:
     return target_parts[0].strip()
 
 
-async def _extract_message_for_broadcast(message: Message, target_token: str) -> str | None:
+async def _extract_message_for_broadcast(message: Message, target_token: str) -> str:
     payload = _extract_payload_after_command(message)
-    if payload is None:
-        await message.reply("Invalid message format.")
-        return None
-
-    if not payload:
-        logger.info("Message for broadcast is not specified.")
-        return None
+    if payload is None or payload == "":
+        raise BroadcastMessageNotSpecifiedError()
 
     target_and_message = payload.split(maxsplit=1)
     if len(target_and_message) < TARGET_AND_MESSAGE_PARTS:
-        logger.info("Message for broadcast is not specified.")
-        return None
+        raise BroadcastMessageNotSpecifiedError()
 
     if target_and_message[0].casefold() != target_token.casefold():
-        logger.info("Broadcast target token mismatch.")
-        return None
+        raise BroadcastMessageNotSpecifiedError()
 
     broadcast_message = target_and_message[1].strip()
     if not broadcast_message:
-        logger.info("Message for broadcast is not specified.")
-        return None
+        raise BroadcastMessageNotSpecifiedError()
     return broadcast_message
 
 
@@ -90,8 +82,10 @@ async def broadcast_command(
         await message.reply("Specify broadcast target and message: /broadcast @all|Role|Competence <message>")
         return
 
-    broadcast_message = await _extract_message_for_broadcast(message, target_token)
-    if broadcast_message is None:
+    try:
+        broadcast_message = await _extract_message_for_broadcast(message, target_token)
+    except BroadcastMessageNotSpecifiedError:
+        await message.reply("Broadcast message is required. Format: /broadcast @all|Role|Competence <message>")
         return
 
     if _extract_all_ping(target_token):

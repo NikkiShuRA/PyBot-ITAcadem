@@ -67,6 +67,7 @@ class StubUserService:
     competencies_by_user_id: dict[int, list[CompetenceReadDTO]] = field(default_factory=dict)
     add_calls: list[tuple[int, list[str]]] = field(default_factory=list)
     remove_calls: list[tuple[int, list[str]]] = field(default_factory=list)
+    show_calls: list[int] = field(default_factory=list)
     add_error: ValueError | None = None
     remove_error: ValueError | None = None
 
@@ -95,7 +96,13 @@ class StubUserService:
         return user
 
     async def get_user_competencies(self, user_id: int) -> Sequence[CompetenceReadDTO]:
+        self.show_calls.append(user_id)
         return self.competencies_by_user_id.get(user_id, [])
+
+
+def _last_reply_text(reply_mock: AsyncMock) -> str:
+    assert reply_mock.await_args_list
+    return str(reply_mock.await_args_list[-1][0][0])
 
 
 @pytest.mark.asyncio
@@ -108,7 +115,9 @@ async def test_addcompetence_by_reply_calls_service_with_csv_names(
         users_by_id={target_user.id: target_user},
     )
     message = _build_message(
-        text="/addcompetence Python, SQL", from_user_id=100_001, reply_user_id=target_user.telegram_id
+        text="/addcompetence Python, SQL",
+        from_user_id=100_001,
+        reply_user_id=target_user.telegram_id,
     )
 
     reply_mock = AsyncMock()
@@ -118,7 +127,9 @@ async def test_addcompetence_by_reply_calls_service_with_csv_names(
 
     assert service.add_calls == [(target_user.id, ["Python", "SQL"])]
     assert reply_mock.await_count == 1
-    assert "Компетенции добавлены пользователю" in str(reply_mock.await_args.args[0])
+    reply_text = _last_reply_text(reply_mock)
+    assert "Python" in reply_text
+    assert "SQL" in reply_text
 
 
 @pytest.mark.asyncio
@@ -139,7 +150,7 @@ async def test_removecompetence_invalid_list_returns_error_message(
     await handle_remove_competence(message=message, user_service=service)
 
     assert service.remove_calls == [(target_user.id, ["Unknown"])]
-    assert "Competence names not found" in str(reply_mock.await_args.args[0])
+    assert "Competence names not found" in _last_reply_text(reply_mock)
 
 
 @pytest.mark.asyncio
@@ -160,7 +171,8 @@ async def test_showcompetences_without_target_uses_current_user(
 
     await handle_show_competences(message=message, user_service=service, user_id=current_user.id)
 
-    assert "Python" in str(reply_mock.await_args.args[0])
+    assert service.show_calls == [current_user.id]
+    assert "Python" in _last_reply_text(reply_mock)
 
 
 @pytest.mark.asyncio
@@ -183,8 +195,10 @@ async def test_showcompetences_with_target_text_id_uses_target_user(
 
     await handle_show_competences(message=message, user_service=service, user_id=admin_user.id)
 
-    assert "Target" in str(reply_mock.await_args.args[0])
-    assert "SQL" in str(reply_mock.await_args.args[0])
+    assert service.show_calls == [target_user.id]
+    reply_text = _last_reply_text(reply_mock)
+    assert "Target" in reply_text
+    assert "SQL" in reply_text
 
 
 @pytest.mark.asyncio
@@ -205,4 +219,44 @@ async def test_addcompetence_unknown_names_returns_validation_error(
     await handle_add_competence(message=message, user_service=service)
 
     assert service.add_calls == [(target_user.id, ["Unknown"])]
-    assert "Competence names not found" in str(reply_mock.await_args.args[0])
+    assert "Competence names not found" in _last_reply_text(reply_mock)
+
+
+@pytest.mark.asyncio
+async def test_addcompetence_distinguishes_missing_target_from_not_found_target(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    service = StubUserService(users_by_tg={}, users_by_id={})
+    missing_target_message = _build_message(text="/addcompetence Python,SQL", from_user_id=600_001)
+    not_found_target_message = _build_message(text="/addcompetence 999999 Python,SQL", from_user_id=600_001)
+    reply_mock = AsyncMock()
+    monkeypatch.setattr(Message, "reply", reply_mock)
+
+    await handle_add_competence(message=missing_target_message, user_service=service)
+    first_reply = _last_reply_text(reply_mock)
+    assert "/addcompetence" in first_reply
+
+    await handle_add_competence(message=not_found_target_message, user_service=service)
+    second_reply = _last_reply_text(reply_mock)
+    assert "not found" in second_reply.lower() or "не найден" in second_reply.lower()
+
+
+@pytest.mark.asyncio
+async def test_showcompetences_does_not_fallback_on_invalid_explicit_target(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    current_user = _build_user_read_dto(db_id=70, telegram_id=700_701, first_name="Admin")
+    service = StubUserService(
+        users_by_id={current_user.id: current_user},
+        competencies_by_user_id={
+            current_user.id: [CompetenceReadDTO(id=1, name="Python", description=None)],
+        },
+    )
+    message = _build_message(text="/showcompetences 999999", from_user_id=current_user.telegram_id)
+    reply_mock = AsyncMock()
+    monkeypatch.setattr(Message, "reply", reply_mock)
+
+    await handle_show_competences(message=message, user_service=service, user_id=current_user.id)
+
+    assert service.show_calls == []
+    assert "Python" not in _last_reply_text(reply_mock)

@@ -8,7 +8,7 @@ from aiogram.types import Message
 from dishka.integrations.aiogram import FromDishka
 
 from ....core import logger
-from ....domain.exceptions import UserNotFoundError
+from ....domain.exceptions import CommandTargetNotSpecifiedError, UserNotFoundError
 from ....dto import UserReadDTO
 from ....services.users import UserService
 from ...filters import check_text_message_correction, create_chat_type_routers
@@ -44,53 +44,70 @@ def _extract_payload_after_command(message: Message) -> str | None:
     return parts[1].strip()
 
 
+def _extract_target_token_from_payload(payload: str) -> str | None:
+    target_token_match = re.match(r"^(@\S+|\d+)\b", payload)
+    if target_token_match is None:
+        return None
+    return target_token_match.group(1)
+
+
+def _extract_numeric_target_token(message: Message) -> int | None:
+    payload = _extract_payload_after_command(message)
+    if payload is None or payload == "":
+        return None
+
+    target_token = _extract_target_token_from_payload(payload)
+    if target_token is None or not target_token.isdigit():
+        return None
+
+    return int(target_token)
+
+
+def _has_explicit_target_token(message: Message) -> bool:
+    payload = _extract_payload_after_command(message)
+    if payload is None or payload == "":
+        return False
+    return _extract_target_token_from_payload(payload) is not None
+
+
 async def _get_target_user_id_from_reply(message: Message) -> int | None:
     if message.reply_to_message and message.reply_to_message.from_user:
         return message.reply_to_message.from_user.id
     return None
 
 
-async def _get_target_user_id_from_mention(message: Message, user_service: UserService) -> int | None:
+async def _get_target_user_id_from_mention(message: Message) -> int | None:
     if not message.entities:
         return None
 
     for entity in message.entities:
         if entity.type == "text_mention" and entity.user is not None:
-            target_tg_id = entity.user.id
-            mentioned_user = await user_service.get_user_by_telegram_id(target_tg_id)
-            if mentioned_user is not None:
-                return mentioned_user.telegram_id
+            return entity.user.id
     return None
 
 
-async def _get_target_user_id_from_text(message: Message, user_service: UserService) -> int | None:
+async def _get_target_user_id_from_text(message: Message) -> int | None:
     payload = _extract_payload_after_command(message)
-    if payload is None or not payload:
+    if payload is None or payload == "":
         return None
 
-    first_token = payload.split(maxsplit=1)[0]
-    if not first_token.isdigit():
+    target_token = _extract_target_token_from_payload(payload)
+    if target_token is None or not target_token.isdigit():
         return None
 
-    target_tg_id = int(first_token)
-    user = await user_service.get_user_by_telegram_id(target_tg_id)
-    if user is None:
-        return None
-    return user.telegram_id
+    return int(target_token)
 
 
-async def _resolve_target_user_telegram_id(
-    message: Message, user_service: UserService
-) -> tuple[int | None, str | None]:
+async def _resolve_target_user_telegram_id(message: Message) -> tuple[int | None, str | None]:
     reply_target = await _get_target_user_id_from_reply(message)
     if reply_target is not None:
         return reply_target, "reply"
 
-    mention_target = await _get_target_user_id_from_mention(message, user_service)
+    mention_target = await _get_target_user_id_from_mention(message)
     if mention_target is not None:
         return mention_target, "mention"
 
-    text_target = await _get_target_user_id_from_text(message, user_service)
+    text_target = await _get_target_user_id_from_text(message)
     if text_target is not None:
         return text_target, "text"
 
@@ -132,22 +149,33 @@ async def _resolve_target_user_for_command(
     message: Message,
     user_service: UserService,
     *,
+    command_name: str,
     required: bool,
     fallback_user_id: int | None = None,
-) -> tuple[UserReadDTO | None, str | None]:
-    target_tg_id, target_source = await _resolve_target_user_telegram_id(message, user_service)
+) -> tuple[UserReadDTO, str | None]:
+    target_tg_id, target_source = await _resolve_target_user_telegram_id(message)
     if target_tg_id is not None:
         target_user = await user_service.get_user_by_telegram_id(target_tg_id)
+        if target_user is None:
+            raise UserNotFoundError(telegram_id=target_tg_id)
         return target_user, target_source
+
+    if _has_explicit_target_token(message):
+        numeric_target = _extract_numeric_target_token(message)
+        if numeric_target is not None:
+            raise UserNotFoundError(telegram_id=numeric_target)
+        raise UserNotFoundError()
 
     if fallback_user_id is not None:
         target_user = await user_service.get_user(fallback_user_id)
+        if target_user is None:
+            raise UserNotFoundError(user_id=fallback_user_id)
         return target_user, None
 
     if required:
-        return None, target_source
+        raise CommandTargetNotSpecifiedError(command_name=command_name)
 
-    return None, target_source
+    raise UserNotFoundError()
 
 
 @change_competence_global_router.message(
@@ -158,12 +186,21 @@ async def handle_add_competence(
     message: Message,
     user_service: FromDishka[UserService],
 ) -> None:
-    target_user, target_source = await _resolve_target_user_for_command(message, user_service, required=True)
-    if target_user is None:
+    try:
+        target_user, target_source = await _resolve_target_user_for_command(
+            message,
+            user_service,
+            command_name="addcompetence",
+            required=True,
+        )
+    except CommandTargetNotSpecifiedError:
         await message.reply(
             "Укажите пользователя через reply, text_mention или числовой telegram id.\n"
             "Формат: /addcompetence <tg_id|@mention> Python,SQL"
         )
+        return
+    except UserNotFoundError:
+        await message.reply("Пользователь не найден.")
         return
 
     competence_names = _extract_competence_names(message, target_source)
@@ -194,12 +231,21 @@ async def handle_remove_competence(
     message: Message,
     user_service: FromDishka[UserService],
 ) -> None:
-    target_user, target_source = await _resolve_target_user_for_command(message, user_service, required=True)
-    if target_user is None:
+    try:
+        target_user, target_source = await _resolve_target_user_for_command(
+            message,
+            user_service,
+            command_name="removecompetence",
+            required=True,
+        )
+    except CommandTargetNotSpecifiedError:
         await message.reply(
             "Укажите пользователя через reply, text_mention или числовой telegram id.\n"
             "Формат: /removecompetence <tg_id|@mention> Python,SQL"
         )
+        return
+    except UserNotFoundError:
+        await message.reply("Пользователь не найден.")
         return
 
     competence_names = _extract_competence_names(message, target_source)
@@ -231,14 +277,15 @@ async def handle_show_competences(
     user_service: FromDishka[UserService],
     user_id: int,
 ) -> None:
-    fallback_user_id = user_id
-    target_user, _ = await _resolve_target_user_for_command(
-        message,
-        user_service,
-        required=False,
-        fallback_user_id=fallback_user_id,
-    )
-    if target_user is None:
+    try:
+        target_user, _ = await _resolve_target_user_for_command(
+            message,
+            user_service,
+            command_name="showcompetences",
+            required=False,
+            fallback_user_id=user_id,
+        )
+    except UserNotFoundError:
         await message.reply("Пользователь не найден.")
         return
 

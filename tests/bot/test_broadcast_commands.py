@@ -11,6 +11,7 @@ from pybot.bot.handlers.broadcast.broadcast_commands import (
     _extract_message_for_broadcast,
     broadcast_command,
 )
+from pybot.domain.exceptions import BroadcastMessageNotSpecifiedError
 from pybot.dto import CompetenceReadDTO
 
 
@@ -49,11 +50,23 @@ class StubCompetenceService:
         return self.competencies
 
 
+def _last_reply_text(reply_mock: AsyncMock) -> str:
+    assert reply_mock.await_args_list
+    return str(reply_mock.await_args_list[-1][0][0])
+
+
 @pytest.mark.asyncio
 async def test_extract_message_for_broadcast_after_competence_target() -> None:
     message = _build_message("/broadcast Python hello team")
     extracted = await _extract_message_for_broadcast(message, "Python")
     assert extracted == "hello team"
+
+
+@pytest.mark.asyncio
+async def test_extract_message_for_broadcast_raises_when_message_is_missing() -> None:
+    message = _build_message("/broadcast @all")
+    with pytest.raises(BroadcastMessageNotSpecifiedError):
+        await _extract_message_for_broadcast(message, "@all")
 
 
 @pytest.mark.asyncio
@@ -139,4 +152,25 @@ async def test_broadcast_command_replies_when_target_is_unknown(monkeypatch: pyt
     assert broadcast_service.role_messages == []
     assert broadcast_service.competence_messages == []
     assert reply_mock.await_count == 1
-    assert "Unknown broadcast target" in str(reply_mock.await_args.args[0])
+    assert "Unknown broadcast target" in _last_reply_text(reply_mock)
+
+
+@pytest.mark.asyncio
+async def test_broadcast_command_replies_when_broadcast_message_missing(monkeypatch: pytest.MonkeyPatch) -> None:
+    message = _build_message("/broadcast @all")
+    broadcast_service = StubBroadcastService()
+    competence_service = StubCompetenceService(competencies=[])
+    reply_mock = AsyncMock()
+    monkeypatch.setattr(Message, "reply", reply_mock)
+
+    await broadcast_command(
+        message=message,
+        broadcast_service=broadcast_service,
+        competence_service=competence_service,
+    )
+
+    assert broadcast_service.all_messages == []
+    assert broadcast_service.role_messages == []
+    assert broadcast_service.competence_messages == []
+    assert reply_mock.await_count == 1
+    assert "Broadcast message is required" in _last_reply_text(reply_mock)
