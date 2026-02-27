@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 from collections import defaultdict, deque
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from unittest.mock import AsyncMock
 
@@ -27,13 +27,17 @@ class DeliveryOutcome(Enum):
 @dataclass(slots=True)
 class FakeUserRepository(UserRepository):
     users: list[User]
-    role_users: dict[str, list[User]]
+    role_users: dict[str, list[User]] = field(default_factory=dict)
+    competence_users: dict[int, list[User]] = field(default_factory=dict)
 
     async def get_all_users(self, db: AsyncSession) -> Sequence[User]:
         return self.users
 
     async def get_all_users_with_role(self, db: AsyncSession, role_name: str) -> Sequence[User]:
         return self.role_users.get(role_name, [])
+
+    async def get_all_users_with_competence_id(self, db: AsyncSession, competence_id: int) -> Sequence[User]:
+        return self.competence_users.get(competence_id, [])
 
 
 class ScriptedNotificationPort(NotificationPort):
@@ -219,3 +223,35 @@ async def test_broadcast_for_users_with_role_validates_role_name(monkeypatch: py
 
     with pytest.raises(ValueError, match="role_name"):
         await service.broadcast_for_users_with_role("  ", "hello")
+
+
+@pytest.mark.asyncio
+async def test_broadcast_for_users_with_competence_happy_path(monkeypatch: pytest.MonkeyPatch) -> None:
+    _configure_broadcast_settings(monkeypatch, bulk_size=2, max_concurrency=2, jitter_min_ms=80, jitter_max_ms=80)
+    users = [_mk_user(400), _mk_user(500), _mk_user(600)]
+    user_repository = FakeUserRepository(users=[], competence_users={1: users})
+    notification_port = ScriptedNotificationPort()
+    service = BroadcastService(AsyncMock(spec=AsyncSession), user_repository, notification_port)
+
+    sleep_mock = AsyncMock()
+    monkeypatch.setattr(asyncio, "sleep", sleep_mock)
+
+    result = await service.broadcast_for_users_with_competence(1, "hello")
+
+    assert result.attempted == 3
+    assert result.sent == 3
+    assert result.failed_temporary == 0
+    assert result.failed_permanent == 0
+    assert result.skipped_invalid_user == 0
+    sleep_mock.assert_awaited_once_with(1.28)
+
+
+@pytest.mark.asyncio
+async def test_broadcast_for_users_with_competence_validates_competence_id(monkeypatch: pytest.MonkeyPatch) -> None:
+    _configure_broadcast_settings(monkeypatch)
+    user_repository = FakeUserRepository(users=[])
+    notification_port = ScriptedNotificationPort()
+    service = BroadcastService(AsyncMock(spec=AsyncSession), user_repository, notification_port)
+
+    with pytest.raises(ValueError, match="competence_id"):
+        await service.broadcast_for_users_with_competence(0, "hello")

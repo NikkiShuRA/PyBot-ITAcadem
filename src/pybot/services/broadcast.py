@@ -62,6 +62,11 @@ class BroadcastService:
             raise ValueError("role_name must not be empty")
         return normalized
 
+    def _normalize_competence_id(self, competence_id: int) -> int:
+        if competence_id <= 0:
+            raise ValueError("competence_id must be positive")
+        return competence_id
+
     def _wait_for_retry(self, retry_state: RetryCallState) -> float:
         outcome = retry_state.outcome
         if outcome is not None:
@@ -172,6 +177,30 @@ class BroadcastService:
                 "failed_temporary={failed_temporary} "
                 "failed_permanent={failed_permanent} skipped_invalid={skipped_invalid}",
                 role_name=normalized_role_name,
+                attempted=result.attempted,
+                sent=result.sent,
+                failed_temporary=result.failed_temporary,
+                failed_permanent=result.failed_permanent,
+                skipped_invalid=result.skipped_invalid_user,
+            )
+            return result
+
+    async def broadcast_for_users_with_competence(self, competence_id: int, message: str) -> BroadcastResult:
+        broadcast_lock = self._get_broadcast_lock()
+        if broadcast_lock.locked():
+            raise BroadcastAlreadyRunningError("Broadcast is already running")
+
+        normalized_competence_id = self._normalize_competence_id(competence_id)
+        normalized_message = self._normalize_message(message)
+
+        async with broadcast_lock:
+            users = await self.user_repository.get_all_users_with_competence_id(self.db, normalized_competence_id)
+            result = await self._broadcast_users(users, normalized_message)
+            logger.info(
+                "Broadcast finished for competence_id={competence_id} | attempted={attempted} sent={sent} "
+                "failed_temporary={failed_temporary} "
+                "failed_permanent={failed_permanent} skipped_invalid={skipped_invalid}",
+                competence_id=normalized_competence_id,
                 attempted=result.attempted,
                 sent=result.sent,
                 failed_temporary=result.failed_temporary,

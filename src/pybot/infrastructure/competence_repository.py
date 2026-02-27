@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..db.models import Competence
@@ -30,6 +30,17 @@ class CompetenceRepository:
         stmt = select(Competence).where(Competence.name == name)
         result = await db.execute(stmt)
         return result.scalar_one_or_none()
+
+    async def get_by_names(self, db: AsyncSession, names: Sequence[str]) -> Sequence[Competence]:
+        normalized_names = list(dict.fromkeys(name.strip().lower() for name in names if name.strip()))
+        if not normalized_names:
+            return []
+
+        stmt = (
+            select(Competence).where(func.lower(Competence.name).in_(normalized_names)).order_by(Competence.name.asc())
+        )
+        result = await db.execute(stmt)
+        return result.scalars().all()
 
     async def create(self, db: AsyncSession, name: str, description: str | None = None) -> Competence:
         competence = Competence(name=name, description=description)
