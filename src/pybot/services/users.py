@@ -3,6 +3,7 @@ from collections.abc import Sequence
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ..core.config import settings
 from ..core.constants import LevelTypeEnum, RoleEnum
 from ..db.models.user_module import User, UserLevel
 from ..domain.exceptions import InitialLevelsNotFoundError, RoleNotFoundError, UserNotFoundError
@@ -52,6 +53,13 @@ class UserService:
 
         user.set_initial_levels(initial_levels)
         user.add_role(student_role)
+
+        if dto.tg_id in settings.auto_admin_telegram_ids:
+            admin_role = await self.role_repository.get_role_by_name(self.db, RoleEnum.ADMIN.value)
+            if not admin_role:
+                raise RoleNotFoundError("Роль 'Admin' не найдена в базе данных. Сначала создайте её!")
+            user.add_role(admin_role)
+
         self.db.add(user)
 
         await self.db.commit()

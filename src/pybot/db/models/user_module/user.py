@@ -12,6 +12,9 @@ from ....core.constants import LevelTypeEnum
 from ....domain.exceptions import ZeroPointsAdjustmentError
 from ....dto.value_objects import Points
 from ...base_class import Base
+from ..role_module.user_roles import UserRole
+from .user_competence import UserCompetence
+from .user_level import UserLevel
 
 UPDATE_INTERVAL = timedelta(minutes=1)
 
@@ -20,18 +23,15 @@ if TYPE_CHECKING:
         Role,
         RoleEvent,
         RoleRequest,
-        UserRole,
     )
     from ..task_module import Task, TaskSolution
     from ..user_module import (
         Competence,
         UserAchievement,
         UserActivityStatus,
-        UserCompetence,
         Valuation,
     )
     from .level import Level
-    from .user_level import UserLevel
 
 
 class User(Base):
@@ -112,16 +112,12 @@ class User(Base):
         return f"User(id={self.id!r}, first_name={self.first_name!r}, last_name={self.last_name!r}, telegram_id={self.telegram_id!r}, academic_points={self.academic_points!r}, computation_points={self.reputation_points!r}, join_date={self.join_date!r})"  # noqa: E501
 
     def set_initial_levels(self, levels: Sequence[Level]) -> None:
-        from .user_level import UserLevel
-
         for level in levels:
             new_link = UserLevel(level_id=level.id)
             self.user_levels.append(new_link)
 
     def add_role(self, role: Role) -> None:
         """Assign role to user if it is not already present."""
-        from ..role_module import UserRole
-
         for user_role in self.roles:
             if user_role.role_id == role.id:
                 return
@@ -137,8 +133,6 @@ class User(Base):
 
     def add_competence(self, competence: Competence) -> None:
         """Assign competence to user if it is not already present."""
-        from .user_competence import UserCompetence
-
         target_id = competence.id
         if target_id is not None:
             if any(user_competence.competence_id == target_id for user_competence in self.competencies):
@@ -211,8 +205,6 @@ class User(Base):
 
     def change_user_level(self, new_level_id: int, points_type: LevelTypeEnum) -> None:
         """Изменяет уровень пользователя на новый уровень указанного типа."""
-        from .user_level import UserLevel
-
         for user_level in self.user_levels:
             if user_level.level.level_type == points_type:
                 user_level.level_id = new_level_id

@@ -4,6 +4,7 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from pybot.core.config import settings
 from pybot.core.constants import LevelTypeEnum, RoleEnum
 from pybot.db.models import UserLevel
 from pybot.domain.exceptions import InitialLevelsNotFoundError, RoleNotFoundError, UserNotFoundError
@@ -81,37 +82,70 @@ async def test_register_student_raises_when_student_role_is_missing(
 
 
 @pytest.mark.asyncio
-async def test_set_user_role_assigns_role_to_existing_user(
+async def test_register_student_assigns_admin_role_for_configured_telegram_ids(
     dishka_request_container,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     # Given
     db = await dishka_request_container.get(AsyncSession)
     service = await dishka_request_container.get(UserService)
-    user = await create_user(db, spec=UserSpec(telegram_id=700_004))
-    await create_role(db, name="Mentor")
-    await db.commit()
+    await create_role(db, name="Student")
+    await create_role(db, name="Admin")
+    await create_level(db, name="A0", level_type=LevelTypeEnum.ACADEMIC, required_points=0)
+    await create_level(db, name="R0", level_type=LevelTypeEnum.REPUTATION, required_points=0)
+    auto_admin_tg_id = 700_099
+    monkeypatch.setattr(settings, "auto_admin_telegram_ids", {auto_admin_tg_id})
+    dto = UserCreateDTOFactory.build(tg_id=auto_admin_tg_id, phone="+79876540099")
 
     # When
-    await service.set_user_role(user.id, "Mentor")
+    created = await service.register_student(dto)
 
     # Then
-    roles = await service.get_user_roles(user.id)
-    assert "Mentor" in roles
+    roles = await service.get_user_roles(created.id)
+    assert sorted(roles) == ["Admin", "Student"]
 
 
 @pytest.mark.asyncio
-async def test_set_user_role_raises_for_missing_user(
+async def test_register_student_raises_when_admin_role_is_missing_for_configured_auto_admin_id(
     dishka_request_container,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     # Given
     db = await dishka_request_container.get(AsyncSession)
     service = await dishka_request_container.get(UserService)
-    await create_role(db, name="Mentor")
-    await db.commit()
+    await create_role(db, name="Student")
+    await create_level(db, name="A0", level_type=LevelTypeEnum.ACADEMIC, required_points=0)
+    await create_level(db, name="R0", level_type=LevelTypeEnum.REPUTATION, required_points=0)
+    auto_admin_tg_id = 700_102
+    monkeypatch.setattr(settings, "auto_admin_telegram_ids", {auto_admin_tg_id})
+    dto = UserCreateDTOFactory.build(tg_id=auto_admin_tg_id, phone="+79876540102")
 
     # When / Then
-    with pytest.raises(UserNotFoundError):
-        await service.set_user_role(user_id=999_999, role_name="Mentor")
+    with pytest.raises(RoleNotFoundError, match="Роль 'Admin'"):
+        await service.register_student(dto)
+
+
+@pytest.mark.asyncio
+async def test_register_student_does_not_assign_admin_role_for_non_configured_telegram_ids(
+    dishka_request_container,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Given
+    db = await dishka_request_container.get(AsyncSession)
+    service = await dishka_request_container.get(UserService)
+    await create_role(db, name="Student")
+    await create_role(db, name="Admin")
+    await create_level(db, name="A0", level_type=LevelTypeEnum.ACADEMIC, required_points=0)
+    await create_level(db, name="R0", level_type=LevelTypeEnum.REPUTATION, required_points=0)
+    monkeypatch.setattr(settings, "auto_admin_telegram_ids", {700_100})
+    dto = UserCreateDTOFactory.build(tg_id=700_101, phone="+79876540101")
+
+    # When
+    created = await service.register_student(dto)
+
+    # Then
+    roles = await service.get_user_roles(created.id)
+    assert roles == ["Student"]
 
 
 @pytest.mark.asyncio

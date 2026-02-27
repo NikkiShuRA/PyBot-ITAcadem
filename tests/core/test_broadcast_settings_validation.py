@@ -33,3 +33,15 @@ def test_broadcast_batch_pause_min_validation() -> None:
             DATABASE_URL="sqlite+aiosqlite:///./test.db",
             BROADCAST_BATCH_PAUSE_MS=600,
         )
+
+
+def test_auto_admin_telegram_ids_parsed_from_json_array(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("AUTO_ADMIN_TELEGRAM_IDS", "[123456789,987654321,123456789]")
+
+    parsed_settings = BotSettings(
+        BOT_TOKEN="123456:prod",
+        BOT_TOKEN_TEST="123456:test",
+        DATABASE_URL="sqlite+aiosqlite:///./test.db",
+    )
+
+    assert parsed_settings.auto_admin_telegram_ids == {123456789, 987654321}

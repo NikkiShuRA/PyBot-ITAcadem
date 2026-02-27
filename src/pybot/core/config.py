@@ -41,6 +41,11 @@ class BotSettings(BaseSettings):
         alias="ROLE_REQUEST_ADMIN_TG_ID",
         description="Telegram user id of admin recipient for role requests",
     )
+    auto_admin_telegram_ids: set[int] = Field(
+        default_factory=set,
+        alias="AUTO_ADMIN_TELEGRAM_IDS",
+        description="Telegram user ids that receive Admin role automatically on registration",
+    )
 
     # Database settings
     database_url: str = Field(..., alias="DATABASE_URL", description="Database URL")
