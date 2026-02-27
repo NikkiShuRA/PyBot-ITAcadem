@@ -105,6 +105,7 @@ exclude = ['test_*', '__init__.py']
 "src/pybot/db/models/user_module/valuation.py" = ["PLR0913"]
 "src/pybot/di/containers.py" = ["PLR0913"]
 "src/pybot/services/role_request.py" = ["PLR0913"]
+"src/pybot/services/users.py" = ["PLR0913"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["pybot"]

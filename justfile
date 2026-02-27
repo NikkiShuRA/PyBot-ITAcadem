@@ -29,6 +29,11 @@ style: # Run formatting check and lint and type check
     just lint
     just type-check
 
+quality-gate: # Full code quality gate (format check + lint + type check)
+    just format-check
+    just lint
+    just type-check
+
 type-check: # Run type checker (ty)
     uv run ty check --python=.venv/ --output-format github --target-version 3.12 src/
 

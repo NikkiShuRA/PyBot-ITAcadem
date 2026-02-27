@@ -9,3 +9,9 @@ from .level_dto import LevelReadDTO as LevelReadDTO
 
 from .health_dto import HealthCheckDTO as HealthCheckDTO
 from .health_dto import HealthStatusDTO as HealthStatusDTO
+
+from .competence_dto import CompetenceByIdDTO as CompetenceByIdDTO
+from .competence_dto import CompetenceCreateDTO as CompetenceCreateDTO
+from .competence_dto import CompetenceIdsDTO as CompetenceIdsDTO
+from .competence_dto import CompetenceReadDTO as CompetenceReadDTO
+from .competence_dto import CompetenceUpdateDTO as CompetenceUpdateDTO

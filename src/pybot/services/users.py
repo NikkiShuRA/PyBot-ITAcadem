@@ -7,6 +7,7 @@ from ..core.constants import LevelTypeEnum, RoleEnum
 from ..db.models.user_module import User, UserLevel
 from ..domain.exceptions import InitialLevelsNotFoundError, RoleNotFoundError, UserNotFoundError
 from ..dto import UserCreateDTO, UserLevelReadDTO, UserProfileReadDTO, UserReadDTO
+from ..infrastructure.competence_repository import CompetenceRepository
 from ..infrastructure.level_repository import LevelRepository
 from ..infrastructure.role_repository import RoleRepository
 from ..infrastructure.user_repository import UserRepository
@@ -22,11 +23,13 @@ class UserService:
         user_repository: UserRepository,
         level_repository: LevelRepository,
         role_repository: RoleRepository,
+        competence_repository: CompetenceRepository,
     ) -> None:
         self.db: AsyncSession = db
         self.user_repository: UserRepository = user_repository
         self.level_repository: LevelRepository = level_repository
         self.role_repository: RoleRepository = role_repository
+        self.competence_repository: CompetenceRepository = competence_repository
 
     async def register_student(self, dto: UserCreateDTO) -> UserReadDTO:
         initial_levels = await self.level_repository.get_initial_levels(self.db)
@@ -162,6 +165,64 @@ class UserService:
 
         await self.db.commit()
 
+        return await map_orm_user_to_user_read_dto(user)
+
+    async def get_users_with_competence_id(self, competence_id: int) -> Sequence[UserReadDTO]:
+        users = await self.user_repository.get_all_users_with_competence_id(self.db, competence_id)
+        return [await map_orm_user_to_user_read_dto(user) for user in users]
+
+    async def add_user_competencies(self, user_id: int, competence_ids: Sequence[int]) -> UserReadDTO:
+        user = await self.user_repository.get_by_id(self.db, user_id)
+        if not user:
+            raise UserNotFoundError(user_id=user_id)
+
+        normalized_ids = sorted(set(competence_ids))
+        if normalized_ids:
+            competencies = await self.competence_repository.get_by_ids(self.db, normalized_ids)
+            found_ids = {competence.id for competence in competencies}
+            missing_ids = [competence_id for competence_id in normalized_ids if competence_id not in found_ids]
+            if missing_ids:
+                raise ValueError(f"Competence ids not found: {missing_ids}")
+            user.add_competencies(competencies)
+
+        await self.db.commit()
+        return await map_orm_user_to_user_read_dto(user)
+
+    async def remove_user_competencies(self, user_id: int, competence_ids: Sequence[int]) -> UserReadDTO:
+        user = await self.user_repository.get_by_id(self.db, user_id)
+        if not user:
+            raise UserNotFoundError(user_id=user_id)
+
+        normalized_ids = sorted(set(competence_ids))
+        if normalized_ids:
+            competencies = await self.competence_repository.get_by_ids(self.db, normalized_ids)
+            found_ids = {competence.id for competence in competencies}
+            missing_ids = [competence_id for competence_id in normalized_ids if competence_id not in found_ids]
+            if missing_ids:
+                raise ValueError(f"Competence ids not found: {missing_ids}")
+            user.remove_competencies(competencies)
+
+        await self.db.commit()
+        return await map_orm_user_to_user_read_dto(user)
+
+    async def update_user_competencies(self, user_id: int, competence_ids: Sequence[int]) -> UserReadDTO:
+        user = await self.user_repository.get_by_id(self.db, user_id)
+        if not user:
+            raise UserNotFoundError(user_id=user_id)
+
+        current_competencies = await self.user_repository.get_all_user_competencies(self.db, user_id)
+        user.remove_competencies(current_competencies)
+
+        normalized_ids = sorted(set(competence_ids))
+        if normalized_ids:
+            competencies = await self.competence_repository.get_by_ids(self.db, normalized_ids)
+            found_ids = {competence.id for competence in competencies}
+            missing_ids = [competence_id for competence_id in normalized_ids if competence_id not in found_ids]
+            if missing_ids:
+                raise ValueError(f"Competence ids not found: {missing_ids}")
+            user.add_competencies(competencies)
+
+        await self.db.commit()
         return await map_orm_user_to_user_read_dto(user)
 
 

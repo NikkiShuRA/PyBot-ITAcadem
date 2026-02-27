@@ -32,14 +32,8 @@ jobs:
       - name: Install dependencies (including dev-group)
         run: just install-dev
 
-      - name: Ruff lint
-        run: just lint
-
-      - name: Ruff format check (fail if code is not formatted)
-        run: just format-check
-
-      - name: Type check with ty (GitHub annotations)
-        run: just type-check
+      - name: Run quality-gate (format check + lint + type check)
+        run: just quality-gate
 
   tests-and-coverage:
     name: Tests & Coverage

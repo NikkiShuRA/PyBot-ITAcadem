@@ -7,8 +7,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from pybot.core.constants import LevelTypeEnum, RoleEnum
 from pybot.db.models import UserLevel
 from pybot.domain.exceptions import InitialLevelsNotFoundError, RoleNotFoundError, UserNotFoundError
+from pybot.infrastructure.user_repository import UserRepository
 from pybot.services.users import UserService
-from tests.factories import UserCreateDTOFactory, UserSpec, attach_user_role, create_level, create_role, create_user
+from tests.factories import (
+    UserCreateDTOFactory,
+    UserSpec,
+    attach_user_competence,
+    attach_user_role,
+    create_competence,
+    create_level,
+    create_role,
+    create_user,
+)
 
 
 @pytest.mark.asyncio
@@ -177,3 +187,111 @@ async def test_get_user_roles_returns_all_assigned_roles(
 
     # Then
     assert sorted(roles) == ["Admin", "Student"]
+
+
+@pytest.mark.asyncio
+async def test_get_users_with_competence_id_returns_matching_users(
+    dishka_request_container,
+) -> None:
+    # Given
+    db = await dishka_request_container.get(AsyncSession)
+    service = await dishka_request_container.get(UserService)
+    python_competence = await create_competence(db, name="Python")
+    user_one = await create_user(db, spec=UserSpec(telegram_id=700_010))
+    user_two = await create_user(db, spec=UserSpec(telegram_id=700_011))
+    user_three = await create_user(db, spec=UserSpec(telegram_id=700_012))
+    await attach_user_competence(db, user=user_one, competence=python_competence)
+    await attach_user_competence(db, user=user_two, competence=python_competence)
+    await db.commit()
+
+    # When
+    users = await service.get_users_with_competence_id(python_competence.id)
+
+    # Then
+    assert {user.telegram_id for user in users} == {user_one.telegram_id, user_two.telegram_id}
+    assert user_three.telegram_id not in {user.telegram_id for user in users}
+
+
+@pytest.mark.asyncio
+async def test_add_user_competencies_adds_links_for_user(
+    dishka_request_container,
+) -> None:
+    # Given
+    db = await dishka_request_container.get(AsyncSession)
+    service = await dishka_request_container.get(UserService)
+    user_repository = await dishka_request_container.get(UserRepository)
+    user = await create_user(db, spec=UserSpec(telegram_id=700_013))
+    python_competence = await create_competence(db, name="Python")
+    sql_competence = await create_competence(db, name="SQL")
+    await db.commit()
+
+    # When
+    await service.add_user_competencies(user.id, [python_competence.id, sql_competence.id])
+
+    # Then
+    loaded = await user_repository.get_by_id(db, user.id)
+    assert loaded is not None
+    assert sorted(link.competence_id for link in loaded.competencies) == [python_competence.id, sql_competence.id]
+
+
+@pytest.mark.asyncio
+async def test_remove_user_competencies_removes_only_requested_links(
+    dishka_request_container,
+) -> None:
+    # Given
+    db = await dishka_request_container.get(AsyncSession)
+    service = await dishka_request_container.get(UserService)
+    user_repository = await dishka_request_container.get(UserRepository)
+    user = await create_user(db, spec=UserSpec(telegram_id=700_014))
+    python_competence = await create_competence(db, name="Python")
+    sql_competence = await create_competence(db, name="SQL")
+    await attach_user_competence(db, user=user, competence=python_competence)
+    await attach_user_competence(db, user=user, competence=sql_competence)
+    await db.commit()
+
+    # When
+    await service.remove_user_competencies(user.id, [python_competence.id])
+
+    # Then
+    loaded = await user_repository.get_by_id(db, user.id)
+    assert loaded is not None
+    assert [link.competence_id for link in loaded.competencies] == [sql_competence.id]
+
+
+@pytest.mark.asyncio
+async def test_update_user_competencies_replaces_existing_set(
+    dishka_request_container,
+) -> None:
+    # Given
+    db = await dishka_request_container.get(AsyncSession)
+    service = await dishka_request_container.get(UserService)
+    user_repository = await dishka_request_container.get(UserRepository)
+    user = await create_user(db, spec=UserSpec(telegram_id=700_015))
+    python_competence = await create_competence(db, name="Python")
+    sql_competence = await create_competence(db, name="SQL")
+    go_competence = await create_competence(db, name="Go")
+    await attach_user_competence(db, user=user, competence=python_competence)
+    await db.commit()
+
+    # When
+    await service.update_user_competencies(user.id, [sql_competence.id, go_competence.id])
+
+    # Then
+    loaded = await user_repository.get_by_id(db, user.id)
+    assert loaded is not None
+    assert sorted(link.competence_id for link in loaded.competencies) == [sql_competence.id, go_competence.id]
+
+
+@pytest.mark.asyncio
+async def test_add_user_competencies_raises_for_unknown_competence_id(
+    dishka_request_container,
+) -> None:
+    # Given
+    db = await dishka_request_container.get(AsyncSession)
+    service = await dishka_request_container.get(UserService)
+    user = await create_user(db, spec=UserSpec(telegram_id=700_016))
+    await db.commit()
+
+    # When / Then
+    with pytest.raises(ValueError, match="Competence ids not found"):
+        await service.add_user_competencies(user.id, [999_999])

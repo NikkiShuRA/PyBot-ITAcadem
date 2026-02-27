@@ -15,7 +15,13 @@ from src.pybot.core.constants import LevelTypeEnum, RoleEnum
 from src.pybot.core.logger import setup_logger
 from src.pybot.db.database import SessionLocal, engine
 from src.pybot.db.models import Level, Role
-from src.pybot.dto import UserCreateDTO
+from src.pybot.dto import CompetenceCreateDTO, CompetenceReadDTO, UserCreateDTO
+from src.pybot.infrastructure.competence_repository import CompetenceRepository
+from src.pybot.infrastructure.level_repository import LevelRepository
+from src.pybot.infrastructure.role_repository import RoleRepository
+from src.pybot.infrastructure.user_repository import UserRepository
+from src.pybot.services.competence import CompetenceService
+from src.pybot.services.users import UserService
 
 logger = setup_logger()
 fake = Faker("ru_RU")
@@ -26,6 +32,15 @@ NUM_LEVELS_PER_TYPE = 15
 MAX_POINTS_RANGE = 1050
 POINT_STEPS = [5, 10]
 MIN_TELEGRAM_ID = 1000000000
+MAX_COMPETENCIES_PER_USER = 3
+COMPETENCIES_SEED: tuple[tuple[str, str], ...] = (
+    ("Python", "Разработка на Python"),
+    ("SQL", "Работа с реляционными базами данных"),
+    ("Git", "Контроль версий и командная разработка"),
+    ("Linux", "Базовые навыки администрирования Linux"),
+    ("Docker", "Контейнеризация приложений"),
+    ("Algorithms", "Базовые алгоритмы и структуры данных"),
+)
 
 
 class PhoneNumberLength(enum.Enum):
@@ -121,7 +136,12 @@ def _sanitize_phone_number(phone_raw: str) -> str:
     return "+" + phone_cleaned
 
 
-async def generate_users_data(session: AsyncSession, num_users: int) -> None:
+async def generate_users_data(
+    session: AsyncSession,
+    user_service: UserService,
+    competencies: Sequence[CompetenceReadDTO],
+    num_users: int,
+) -> None:
     """Генерирует и добавляет фейковых пользователей в базу данных."""
     logger.info(f"Начинаем генерацию {num_users} фейковых пользователей...")
 
@@ -215,6 +235,14 @@ async def generate_users_data(session: AsyncSession, num_users: int) -> None:
                 points_type=LevelTypeEnum.REPUTATION,
             )
 
+            if competencies:
+                selected_count = random.randint(1, min(MAX_COMPETENCIES_PER_USER, len(competencies)))  # noqa: S311
+                selected_competence_ids = random.sample(
+                    [competence.id for competence in competencies],
+                    selected_count,
+                )
+                await user_service.add_user_competencies(user.id, selected_competence_ids)
+
             successfully_created += 1
             logger.debug(f"✓ Пользователь {idx} успешно создан (ID: {user.id})")
 
@@ -267,12 +295,39 @@ async def add_roles_data(session: AsyncSession) -> Sequence[Role]:
     return roles_to_add
 
 
+async def add_competencies_data(competence_service: CompetenceService) -> Sequence[CompetenceReadDTO]:
+    """Добавляет компетенции в БД (если их там еще нет)."""
+    logger.info("Начинаем генерацию компетенций...")
+
+    existing = await competence_service.get_all_competencies()
+    if existing:
+        logger.info("Компетенции уже существуют в БД. Пропускаем генерацию.")
+        return existing
+
+    created: list[CompetenceReadDTO] = []
+    for name, description in COMPETENCIES_SEED:
+        competence = await competence_service.create_competence(CompetenceCreateDTO(name=name, description=description))
+        created.append(competence)
+
+    logger.info(f"Добавлено {len(created)} компетенций в базу данных.")
+    return created
+
+
 async def fill_database() -> None:
     """Основная функция для заполнения базы данных фейковыми данными."""
     logger.info("Запуск скрипта заполнения базы данных...")
 
     async with SessionLocal() as session:
         try:
+            competence_repository = CompetenceRepository()
+            competence_service = CompetenceService(session, competence_repository)
+            user_service = UserService(
+                session,
+                UserRepository(),
+                LevelRepository(),
+                RoleRepository(),
+                competence_repository,
+            )
             # 1️⃣ Генерация и добавление уровней
             await generate_levels_data(session)
 
@@ -280,7 +335,8 @@ async def fill_database() -> None:
             await add_roles_data(session)
 
             # 3️⃣ Генерация и добавление пользователей
-            await generate_users_data(session, NUM_FAKE_USERS)
+            competencies = await add_competencies_data(competence_service)
+            await generate_users_data(session, user_service, competencies, NUM_FAKE_USERS)
 
             logger.success("Заполнение базы данных успешно завершено!")
         except Exception as e:

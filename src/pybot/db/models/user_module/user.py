@@ -24,6 +24,7 @@ if TYPE_CHECKING:
     )
     from ..task_module import Task, TaskSolution
     from ..user_module import (
+        Competence,
         UserAchievement,
         UserActivityStatus,
         UserCompetence,
@@ -111,7 +112,7 @@ class User(Base):
         return f"User(id={self.id!r}, first_name={self.first_name!r}, last_name={self.last_name!r}, telegram_id={self.telegram_id!r}, academic_points={self.academic_points!r}, computation_points={self.reputation_points!r}, join_date={self.join_date!r})"  # noqa: E501
 
     def set_initial_levels(self, levels: Sequence[Level]) -> None:
-        from .user_level import UserLevel  # noqa: PLC0415
+        from .user_level import UserLevel
 
         for level in levels:
             new_link = UserLevel(level_id=level.id)
@@ -119,7 +120,7 @@ class User(Base):
 
     def add_role(self, role: Role) -> None:
         """Assign role to user if it is not already present."""
-        from ..role_module import UserRole  # noqa: PLC0415
+        from ..role_module import UserRole
 
         for user_role in self.roles:
             if user_role.role_id == role.id:
@@ -133,6 +134,51 @@ class User(Base):
         Доменная логика: Пользователь теряет роль.
         """
         self.roles = [ur for ur in self.roles if ur.role_id != role.id]
+
+    def add_competence(self, competence: Competence) -> None:
+        """Assign competence to user if it is not already present."""
+        from .user_competence import UserCompetence
+
+        target_id = competence.id
+        if target_id is not None:
+            if any(user_competence.competence_id == target_id for user_competence in self.competencies):
+                return
+            self.competencies.append(UserCompetence(competence_id=target_id))
+            return
+
+        for user_competence in self.competencies:
+            existing_competence = user_competence.__dict__.get("competence")
+            if existing_competence is competence:
+                return
+
+        new_link = UserCompetence()
+        new_link.competence = competence
+        self.competencies.append(new_link)
+
+    def add_competencies(self, competencies: Sequence[Competence]) -> None:
+        """Assign multiple competencies to user, skipping duplicates."""
+        for competence in competencies:
+            self.add_competence(competence)
+
+    def remove_competence(self, competence: Competence) -> None:
+        """Remove competence from user."""
+        target_id = competence.id
+        if target_id is not None:
+            self.competencies = [
+                user_competence for user_competence in self.competencies if user_competence.competence_id != target_id
+            ]
+            return
+
+        self.competencies = [
+            user_competence
+            for user_competence in self.competencies
+            if user_competence.__dict__.get("competence") is not competence
+        ]
+
+    def remove_competencies(self, competencies: Sequence[Competence]) -> None:
+        """Remove multiple competencies from user."""
+        for competence in competencies:
+            self.remove_competence(competence)
 
     def change_last_user_active(self) -> None:
         """Обновить дату последней активности пользователя"""
@@ -165,7 +211,7 @@ class User(Base):
 
     def change_user_level(self, new_level_id: int, points_type: LevelTypeEnum) -> None:
         """Изменяет уровень пользователя на новый уровень указанного типа."""
-        from .user_level import UserLevel  # noqa: PLC0415
+        from .user_level import UserLevel
 
         for user_level in self.user_levels:
             if user_level.level.level_type == points_type:

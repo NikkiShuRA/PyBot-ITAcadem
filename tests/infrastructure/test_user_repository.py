@@ -8,7 +8,9 @@ from pybot.core.constants import LevelTypeEnum
 from pybot.domain.exceptions import UserNotFoundError, UsersNotFoundError
 from pybot.infrastructure.user_repository import UserRepository
 from tests.factories import (
+    attach_user_competence,
     UserSpec,
+    create_competence,
     attach_user_level,
     attach_user_role,
     create_level,
@@ -98,6 +100,47 @@ async def test_get_all_users_with_role_filters_and_raises_on_empty(db_session) -
 
     with pytest.raises(UsersNotFoundError):
         await repo.get_all_users_with_role(db_session, "Mentor")
+
+
+@pytest.mark.asyncio
+async def test_get_all_user_competencies_returns_user_competencies(db_session) -> None:
+    # Given
+    repo = UserRepository()
+    user = await create_user(db_session, spec=UserSpec(telegram_id=500_040))
+    python_competence = await create_competence(db_session, name="Python")
+    sql_competence = await create_competence(db_session, name="SQL")
+    await attach_user_competence(db_session, user=user, competence=python_competence)
+    await attach_user_competence(db_session, user=user, competence=sql_competence)
+    await db_session.commit()
+
+    # When
+    competencies = await repo.get_all_user_competencies(db_session, user.id)
+
+    # Then
+    assert [competence.name for competence in competencies] == ["Python", "SQL"]
+
+
+@pytest.mark.asyncio
+async def test_get_all_users_with_competence_id_filters_and_raises_on_empty(db_session) -> None:
+    # Given
+    repo = UserRepository()
+    first_user = await create_user(db_session, spec=UserSpec(telegram_id=500_041))
+    second_user = await create_user(db_session, spec=UserSpec(telegram_id=500_042))
+    python_competence = await create_competence(db_session, name="Python")
+    go_competence = await create_competence(db_session, name="Go")
+    await attach_user_competence(db_session, user=first_user, competence=python_competence)
+    await attach_user_competence(db_session, user=second_user, competence=go_competence)
+    await db_session.commit()
+
+    # When
+    users = await repo.get_all_users_with_competence_id(db_session, python_competence.id)
+
+    # Then
+    assert len(users) == 1
+    assert users[0].id == first_user.id
+
+    with pytest.raises(UsersNotFoundError):
+        await repo.get_all_users_with_competence_id(db_session, competence_id=999_999)
 
 
 @pytest.mark.asyncio

@@ -6,7 +6,7 @@ from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pybot.core.constants import LevelTypeEnum, RequestStatus
-from pybot.db.models import Level, Role, RoleRequest, User, UserLevel, UserRole, Valuation
+from pybot.db.models import Competence, Level, Role, RoleRequest, User, UserCompetence, UserLevel, UserRole, Valuation
 
 
 @dataclass(slots=True)
@@ -84,11 +84,25 @@ async def create_level(
     return level
 
 
+async def create_competence(db: AsyncSession, *, name: str, description: str | None = None) -> Competence:
+    competence = Competence(name=name, description=description)
+    db.add(competence)
+    await db.flush()
+    return competence
+
+
 async def attach_user_level(db: AsyncSession, *, user: User, level: Level) -> UserLevel:
     user_level = UserLevel(user_id=user.id, level_id=level.id, level=level, user=user)
     db.add(user_level)
     await db.flush()
     return user_level
+
+
+async def attach_user_competence(db: AsyncSession, *, user: User, competence: Competence) -> UserCompetence:
+    user_competence = UserCompetence(user_id=user.id, competence_id=competence.id)
+    db.add(user_competence)
+    await db.flush()
+    return user_competence
 
 
 async def attach_user_role(db: AsyncSession, *, user: User, role: Role) -> None:
