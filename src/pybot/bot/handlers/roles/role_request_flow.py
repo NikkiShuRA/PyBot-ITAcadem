@@ -57,7 +57,7 @@ async def _extract_role(message: Message) -> RoleEnum | None:
         return None
 
 
-@role_request_private_router.message(Command("role_request"), flags={"role": "Student"})
+@role_request_private_router.message(Command("role_request"), flags={"role": "Student", "rate_limit": "moderate"})
 async def cmd_role_request(
     message: Message,
     role_request_service: FromDishka[RoleRequestService],

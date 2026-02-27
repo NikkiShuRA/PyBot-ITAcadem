@@ -106,7 +106,7 @@ async def _extract_role_and_reason(
     return role, reason
 
 
-@change_role_global_router.message(Command("addrole"), flags={"role": "Admin"})
+@change_role_global_router.message(Command("addrole"), flags={"role": "Admin", "rate_limit": "expensive"})
 async def handle_set_role(
     message: Message,
     user_service: FromDishka[UserService],
@@ -161,7 +161,7 @@ async def handle_set_role(
         await message.reply("❌ Неожиданная ошибка при изменении роли")
 
 
-@change_role_global_router.message(Command("removerole"), flags={"role": "Admin"})
+@change_role_global_router.message(Command("removerole"), flags={"role": "Admin", "rate_limit": "expensive"})
 async def handle_remove_role(
     message: Message,
     user_service: FromDishka[UserService],

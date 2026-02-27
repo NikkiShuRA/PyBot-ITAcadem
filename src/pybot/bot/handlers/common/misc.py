@@ -8,7 +8,7 @@ from ...filters import create_chat_type_routers
 _, _, misc_global_router = create_chat_type_routers("start")
 
 
-@misc_global_router.message(Command("ping"), flags={"rate_limit": "expensive", "role": {"Student", "Admin"}})
+@misc_global_router.message(Command("ping"), flags={"rate_limit": "expensive", "role": {"Student", "Mentor", "Admin"}})
 async def cmd_ping(
     message: Message,
     user_service: FromDishka[UserService],
