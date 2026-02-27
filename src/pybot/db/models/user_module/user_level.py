@@ -1,8 +1,15 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from sqlalchemy import ForeignKey, Integer, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ...base_class import Base
-from . import Level, User
+
+if TYPE_CHECKING:
+    from .level import Level
+    from .user import User
 
 
 class UserLevel(Base):

@@ -3,6 +3,7 @@ from collections.abc import Sequence
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ..core.config import settings
 from ..core.constants import LevelTypeEnum, RoleEnum
 from ..db.models.user_module import User, UserLevel
 from ..domain.exceptions import InitialLevelsNotFoundError, RoleNotFoundError, UserNotFoundError
@@ -45,6 +46,13 @@ class UserService:
 
         user.set_initial_levels(initial_levels)
         user.add_role(student_role)
+
+        if dto.tg_id in settings.auto_admin_telegram_ids:
+            admin_role = await self.role_repository.get_role_by_name(self.db, RoleEnum.ADMIN.value)
+            if not admin_role:
+                raise RoleNotFoundError("Роль 'Admin' не найдена в базе данных. Сначала создайте её!")
+            user.add_role(admin_role)
+
         self.db.add(user)
 
         await self.db.commit()
@@ -70,22 +78,6 @@ class UserService:
     ) -> bool:
         """Проверить, имеет ли пользователь заданную роль."""
         return await self.user_repository.has_role(self.db, user_id, user_role)
-
-    async def set_user_role(self, user_id: int, role_name: str) -> None:
-        """Присвоить роль пользователю"""
-
-        user = await self.user_repository.get_by_id(self.db, user_id)
-        if not user:
-            raise UserNotFoundError(user_id=user_id)
-
-        role = await self.role_repository.get_role_by_name(self.db, role_name)
-
-        if not role:
-            raise RoleNotFoundError(f"Роль '{role_name}' не найдена в базе данных. Сначала создайте её!")
-
-        user.add_role(role)
-
-        await self.db.commit()
 
     async def remove_user_role(self, tg_id: int, role_name: str) -> UserReadDTO | None:
         """Удалить роль у пользователя"""

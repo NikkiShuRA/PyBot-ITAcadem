@@ -28,18 +28,3 @@ async def cmd_ping(
 
     await message.answer(f"Hello, {user.first_name}! Admin: {is_admin}")
     await message.answer("pong")
-
-
-@misc_global_router.message(Command("admin"))
-async def give_admin(message: Message, user_service: FromDishka[UserService], user_id: int) -> None:
-    if message.from_user is None:
-        await message.answer("You must be logged in to use this command.")
-        return
-
-    user = await user_service.get_user(user_id)
-    if user is None:
-        await message.answer("User profile not found.")
-        return
-
-    user = await user_service.set_user_role(user_id, "Admin")
-    await message.answer("You have been granted admin rights.")
