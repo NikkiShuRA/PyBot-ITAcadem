@@ -25,20 +25,20 @@
 ## MoSCoW (этот цикл)
 
 ### Must
-- [] Реализовать массовую рассылку:
-  - [x] сервис `BroadcastService`
-  - [ ] таргетинг `@all`, `role:<role>`, `competence:<slug>`
-  - [ ] dedup получателей + итоговая статистика отправки
-- [x] Реализовать bulk-отправку в Telegram адаптере (`NotificationPort` + infrastructure adapter).
-- [x] Добавить handler команды `/broadcast` с RBAC и rate-limit.
-- [ ] Добавить auto-bootstrap admin по `BOOTSTRAP_ADMIN_TG_ID` при регистрации/первом входе.
-- [ ] Убрать dev-команды выдачи admin-роли из боевой маршрутизации.
+- [X] Реализовать массовую рассылку:
+  - [X] сервис `BroadcastService`
+  - [X] таргетинг `@all`, `role:<role>`, `competence:<slug>`
+  - [X] dedup получателей + итоговая статистика отправки
+- [X] Реализовать bulk-отправку в Telegram адаптере (`NotificationPort` + infrastructure adapter).
+- [X] Добавить handler команды `/broadcast` с RBAC и rate-limit.
+- [X] Добавить auto-bootstrap admin по `BOOTSTRAP_ADMIN_TG_ID` при регистрации/первом входе.
+- [X] Убрать dev-команды выдачи admin-роли из боевой маршрутизации.
 - [ ] Ввести мягкий `presentation`-слой:
   - [ ] `src/pybot/presentation/telegram/...`
   - [ ] `src/pybot/presentation/http/...`
-  - [ ] оставить shim-реэкспорты на старых путях для совместимости
-- [x] Добавить `Dockerfile` и `docker-compose` для деплоя бота с health-check.
-- [ ] Обновить `/help` под новый функционал рассылки.
+- [ ] оставить shim-реэкспорты на старых путях для совместимости
+- [X] Добавить `Dockerfile` и `docker-compose` для деплоя бота с health-check.
+- [X] Обновить `/help` под новый функционал рассылки.
 - [ ] Обеспечить прохождение quality-gate:
   - [ ] `pytest`
   - [ ] `ruff check`

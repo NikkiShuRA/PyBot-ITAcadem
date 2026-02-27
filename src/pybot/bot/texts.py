@@ -5,14 +5,15 @@ HELP_PRIVATE = textwrap.dedent(
     Доступные команды (личный чат):
     /start - запуск бота и старт/перезапуск регистрации
     /profile - показать профиль
-    /role_request <Student|Mentor|Admin> - запросить роль (для роли Student)
+    /role_request <Student|Mentor|Admin> - запросить роль у администратора
     /help - показать это сообщение
     /info - информация о проекте
     /ping - проверка доступности бота (Student/Admin)
 
     Команды администратора:
-    /broadcast @all <текст> - рассылка всем
+    /broadcast @all <текст> - рассылка всем пользователям
     /broadcast <Student|Mentor|Admin> <текст> - рассылка по роли
+    /broadcast <Competence> <текст> - рассылка по компетенции
     /academic_points @user <число> "причина" - изменить академические баллы
     /reputation_points @user <число> "причина" - изменить репутационные баллы
     /addrole @user <Student|Mentor|Admin> "причина" - добавить роль
@@ -54,7 +55,7 @@ INFO_GLOBAL = textwrap.dedent(
     - регистрация и профиль пользователя;
     - система академических и репутационных баллов;
     - роли и запрос роли у администратора;
-    - администраторские рассылки.
+    - администраторские рассылки (@all, по роли, по компетенции).
 
     Репозиторий проекта:
     https://github.com/NikkiShuRA/PyBot-ITAcadem.git
