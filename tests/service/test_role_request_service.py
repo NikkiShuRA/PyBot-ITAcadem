@@ -19,6 +19,7 @@ from pybot.domain.exceptions import (
 from pybot.infrastructure.user_repository import UserRepository
 from pybot.services.role_request import RoleRequestService
 from tests.factories import RoleRequestSpec, UserSpec, attach_user_role, create_role, create_role_request, create_user
+from tests.providers import FakeNotificationPort
 
 
 @pytest.mark.asyncio
@@ -139,6 +140,7 @@ async def test_change_request_status_updates_pending_request(
     # Given
     db = await dishka_request_container.get(AsyncSession)
     service = await dishka_request_container.get(RoleRequestService)
+    notification_service = await dishka_request_container.get(FakeNotificationPort)
     user = await create_user(db, spec=UserSpec(telegram_id=900_006))
     role = await create_role(db, name="Mentor")
     request = await create_role_request(db, spec=RoleRequestSpec(user=user, role=role, status=RequestStatus.PENDING))
@@ -152,6 +154,36 @@ async def test_change_request_status_updates_pending_request(
     updated = (await db.execute(stmt)).scalar_one()
     assert updated.status == RequestStatus.APPROVED
     assert await service.user_repository.has_role(db, user_id=user.id, role_name=role.name)
+    assert any(
+        item.user_id == user.telegram_id and item.message_text == "Ваша заявка на роль Mentor была одобрена."
+        for item in notification_service.direct_messages
+    )
+
+
+@pytest.mark.asyncio
+async def test_change_request_status_sends_russian_notification_for_rejected_request(
+    dishka_request_container,
+) -> None:
+    # Given
+    db = await dishka_request_container.get(AsyncSession)
+    service = await dishka_request_container.get(RoleRequestService)
+    notification_service = await dishka_request_container.get(FakeNotificationPort)
+    user = await create_user(db, spec=UserSpec(telegram_id=900_009))
+    role = await create_role(db, name="Admin")
+    request = await create_role_request(db, spec=RoleRequestSpec(user=user, role=role, status=RequestStatus.PENDING))
+    await db.commit()
+
+    # When
+    await service.change_request_status(request_id=request.id, new_status=RequestStatus.REJECTED)
+
+    # Then
+    stmt = select(RoleRequest).where(RoleRequest.id == request.id)
+    updated = (await db.execute(stmt)).scalar_one()
+    assert updated.status == RequestStatus.REJECTED
+    assert any(
+        item.user_id == user.telegram_id and item.message_text == "Ваша заявка на роль Admin была отклонена."
+        for item in notification_service.direct_messages
+    )
 
 
 @pytest.mark.asyncio
