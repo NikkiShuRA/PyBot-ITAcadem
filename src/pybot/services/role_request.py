@@ -57,7 +57,7 @@ class RoleRequestService:
         else:
             return not (datetime.now(None) - last_reject.updated_at) < timedelta(
                 seconds=5
-            )  # TODO Время timedelta выставленна для тестов
+            )  # TODO Р’СЂРµРјСЏ timedelta РІС‹СЃС‚Р°РІР»РµРЅРЅР° РґР»СЏ С‚РµСЃС‚РѕРІ
 
     async def create_role_request(self, user_id: int, role: str) -> CreateRoleRequestDTO:
         if not await self.check_requesting_user(user_id, role):
@@ -99,5 +99,5 @@ class RoleRequestService:
         await self.db.commit()
         await self.notification_service.send_message(
             user_id=user.telegram_id,
-            message_text=f"Ваша заявка на роль {request.role.name} была {request.status.name}",
+            message_text=f"Р’Р°С€Р° Р·Р°СЏРІРєР° РЅР° СЂРѕР»СЊ {request.role.name} Р±С‹Р»Р° {request.status.value}",
         )

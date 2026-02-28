@@ -83,7 +83,7 @@ async def cmd_role_request(
         await message.reply("Unexpected error. Please try again later.")
         logger.exception("Unexpected error in cmd_role_request")
     else:
-        await message.reply(f"Role request for {role.value} was sent.")
+        await message.reply(f"⏳ Role request for {role.value} is being processed.")
 
 
 @role_request_private_router.callback_query(
@@ -125,8 +125,8 @@ async def accept_role_request(
         )
         logger.exception("Unexpected error in accept_role_request")
     else:
-        await notification_service.send_message(callback_query.from_user.id, "Role request approved.")
-        answer_text = "Approved"
+        await notification_service.send_message(callback_query.from_user.id, "✅ Role request approved.")
+        answer_text = "✅ Approved"
         lock_buttons = True
     finally:
         await _finalize_role_request_callback(callback_query, answer_text=answer_text, lock_buttons=lock_buttons)
@@ -167,8 +167,8 @@ async def reject_role_request(
         )
         logger.exception("Unexpected error in reject_role_request")
     else:
-        await notification_service.send_message(callback_query.from_user.id, "Role request rejected.")
-        answer_text = "Rejected"
+        await notification_service.send_message(callback_query.from_user.id, "❌ Role request rejected.")
+        answer_text = "❌ Rejected"
         lock_buttons = True
     finally:
         await _finalize_role_request_callback(callback_query, answer_text=answer_text, lock_buttons=lock_buttons)
