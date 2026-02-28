@@ -1,6 +1,8 @@
 import asyncio
 
 from aiogram import Bot, Dispatcher
+from aiogram.fsm.storage.base import BaseStorage, DefaultKeyBuilder
+from aiogram.fsm.storage.redis import RedisStorage
 from aiogram_dialog import setup_dialogs
 from dishka import AsyncContainer
 from dishka.integrations.aiogram import setup_dishka
@@ -11,11 +13,13 @@ from ..core.config import settings
 from ..di.containers import setup_container
 from .dialogs import user_router
 from .handlers import (
+    broadcast_router,
     common_router,
     points_router,
     profile_router,
     roles_router,
 )
+from .handlers.common.dialog_errors import register_dialog_error_handlers
 from .middlewares import (
     LoggerMiddleware,
     RateLimitMiddleware,
@@ -25,6 +29,15 @@ from .middlewares import (
 
 
 async def setup_dispatcher() -> Dispatcher:
+    if settings.fsm_storage_backend == "redis":
+        storage = RedisStorage.from_url(
+            settings.redis_url,
+            key_builder=DefaultKeyBuilder(with_destiny=True),
+        )
+        logger.info("FSM storage backend enabled: redis ({redis_url})", redis_url=settings.redis_url)
+        return Dispatcher(storage=storage)
+
+    logger.info("FSM storage backend enabled: memory")
     return Dispatcher()
 
 
@@ -81,17 +94,20 @@ async def setup_bot(container: AsyncContainer) -> Bot:
 
 
 def setup_handlers(dp: Dispatcher) -> None:
+    register_dialog_error_handlers(dp)
     dp.include_router(common_router)
     dp.include_router(points_router)
     dp.include_router(profile_router)
     dp.include_router(user_router)
     dp.include_router(roles_router)
+    dp.include_router(broadcast_router)
     setup_dialogs(dp)
 
 
 async def tg_bot_main() -> None:
     """Main bot function with graceful shutdown."""
     container: AsyncContainer | None = None
+    dp: Dispatcher | None = None
     try:
         with yaspin(text="Bot initialization...", color="cyan") as sp:
             dp = await setup_dispatcher()
@@ -111,6 +127,15 @@ async def tg_bot_main() -> None:
         raise
     finally:
         logger.info("Graceful shutdown...")
+
+        if dp is not None:
+            storage: BaseStorage | None = getattr(dp, "storage", None)
+            if storage is not None:
+                try:
+                    await storage.close()
+                    logger.info("Dispatcher FSM storage closed")
+                except Exception:
+                    logger.exception("Error while closing dispatcher FSM storage")
 
         if container is not None:
             try:

@@ -1,8 +1,8 @@
 from aiogram.types import ContentType
 from aiogram_dialog import Dialog, Window
 from aiogram_dialog.widgets.input import MessageInput
-from aiogram_dialog.widgets.kbd import Back, Cancel, Next
-from aiogram_dialog.widgets.text import Const, Format
+from aiogram_dialog.widgets.kbd import Back, Button, Cancel
+from aiogram_dialog.widgets.text import Const
 
 from .handlers import (
     on_contact_input,
@@ -42,11 +42,11 @@ profile_create_dialog = Dialog(
         Const("🆔 Отчество?"),
         MessageInput(on_patronymic_input, content_types=ContentType.TEXT),  # ty:ignore[invalid-argument-type]
         Back(Const("⬅️ Назад")),
-        Next(Const("➡️ Пропустить"), on_click=on_patronymic_skip),  # ty:ignore[invalid-argument-type]
+        Button(
+            Const("➡️ Пропустить"),
+            id="skip_patronymic",
+            on_click=on_patronymic_skip,  # ty:ignore[invalid-argument-type]
+        ),
         state=CreateProfileSG.patronymic,
-    ),
-    Window(
-        Format("✅ Профиль создан. Добро пожаловать, {dialog_data[first_name]}!"),
-        state=CreateProfileSG.finish,
     ),
 )

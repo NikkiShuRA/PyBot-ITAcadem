@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import Annotated, Literal, Self
 
-from pydantic import Field
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field, field_validator, model_validator
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
+
+from .constants import RoleEnum
 
 
 class BotSettings(BaseSettings):
@@ -19,12 +21,32 @@ class BotSettings(BaseSettings):
         alias="BOT_MODE",
         description="Bot runtime mode: 'test' uses BOT_TOKEN_TEST, 'prod' uses BOT_TOKEN",
     )
+    notification_backend: Literal["telegram", "logging"] = Field(
+        "telegram",
+        alias="NOTIFICATION_BACKEND",
+        description="Notification backend: 'telegram' or 'logging'",
+    )
+    fsm_storage_backend: Literal["memory", "redis"] = Field(
+        "memory",
+        alias="FSM_STORAGE_BACKEND",
+        description="FSM storage backend: 'memory' or 'redis'",
+    )
+    redis_url: str = Field(
+        "redis://localhost:6379/0",
+        alias="REDIS_URL",
+        description="Redis URL used for FSM storage when FSM_STORAGE_BACKEND=redis",
+    )
     # TODO: Replace default value with real admin Telegram ID in .env,
     # or switch to required Field(...) once all environments are configured.
     role_request_admin_tg_id: int = Field(
         0,
         alias="ROLE_REQUEST_ADMIN_TG_ID",
         description="Telegram user id of admin recipient for role requests",
+    )
+    auto_admin_telegram_ids: set[int] = Field(
+        default_factory=set,
+        alias="AUTO_ADMIN_TELEGRAM_IDS",
+        description="Telegram user ids that receive Admin role automatically on registration",
     )
 
     # Database settings
@@ -43,6 +65,15 @@ class BotSettings(BaseSettings):
     rate_limit_expensive: int = Field(3, alias="RATE_LIMIT_EXPENSIVE")
     time_limit_expensive: int = Field(300, alias="TIME_LIMIT_EXPENSIVE")
     max_user_limiters: int = Field(1000, alias="MAX_USER_LIMITERS", description="Limiter cache size")
+
+    # Broadcast settings
+    broadcast_bulk_size: int = Field(20, alias="BROADCAST_BULK_SIZE", ge=1, le=25)
+    broadcast_max_concurrency: int = Field(5, alias="BROADCAST_MAX_CONCURRENCY", ge=1, le=10)
+    broadcast_batch_pause_ms: int = Field(1200, alias="BROADCAST_BATCH_PAUSE_MS", ge=700, le=5000)
+    broadcast_jitter_min_ms: int = Field(80, alias="BROADCAST_JITTER_MIN_MS", ge=50, le=1000)
+    broadcast_jitter_max_ms: int = Field(160, alias="BROADCAST_JITTER_MAX_MS", ge=50, le=2000)
+    broadcast_retry_attempts: int = Field(5, alias="BROADCAST_RETRY_ATTEMPTS", ge=1, le=10)
+    broadcast_retry_max_wait_s: int = Field(30, alias="BROADCAST_RETRY_MAX_WAIT_S", ge=1, le=120)
 
     # Middleware toggles
     enable_logging_middleware: bool = Field(
@@ -78,12 +109,65 @@ class BotSettings(BaseSettings):
         description="Health API port",
     )
 
+    broadcast_allowed_roles: Annotated[set[str], NoDecode] = Field(
+        default_factory=lambda: {"Admin"},
+        alias="BROADCAST_ALLOWED_ROLES",
+        description="Broadcast allowed roles",
+    )
+
+    broadcast_max_text_length: int = Field(
+        4093,
+        alias="BROADCAST_MAX_TEXT_LENGTH",
+        description="Broadcast body length before adding crop suffix",
+        ge=1,
+        le=4096,
+    )
+
     @property
-    def active_bot_token(self) -> str:
+    def active_bot_token(self: Self) -> str:
         """Return active bot token based on BOT_MODE."""
         if self.bot_mode == "prod":
             return self.bot_token
         return self.bot_token_test
+
+    @field_validator("broadcast_allowed_roles", mode="before")
+    @classmethod
+    def parse_broadcast_allowed_roles(cls, value: object) -> set[str]:
+        if isinstance(value, set):
+            roles = {str(role).strip() for role in value if str(role).strip()}
+            return cls._validate_roles(roles)
+
+        if isinstance(value, list | tuple):
+            roles = {str(role).strip() for role in value if str(role).strip()}
+            return cls._validate_roles(roles)
+
+        if isinstance(value, str):
+            normalized = value.strip()
+            if not normalized:
+                return set()
+
+            # Supports both "Admin,Mentor" and JSON-like '["Admin","Mentor"]'.
+            normalized = normalized.strip("[]")
+            tokens = (token.strip().strip("\"'") for token in normalized.split(","))
+            roles = {token for token in tokens if token}
+            return cls._validate_roles(roles)
+
+        raise ValueError("BROADCAST_ALLOWED_ROLES must be a comma-separated string or a sequence")
+
+    @staticmethod
+    def _validate_roles(roles: set[str]) -> set[str]:
+        available_roles = {role.value for role in RoleEnum}
+        unknown_roles = roles - available_roles
+        if unknown_roles:
+            sorted_roles = ", ".join(sorted(unknown_roles))
+            raise ValueError(f"Unknown role(s) in BROADCAST_ALLOWED_ROLES: {sorted_roles}")
+        return roles
+
+    @model_validator(mode="after")
+    def validate_broadcast_jitter_range(self: Self) -> Self:
+        if self.broadcast_jitter_max_ms < self.broadcast_jitter_min_ms:
+            raise ValueError("BROADCAST_JITTER_MAX_MS must be greater than or equal to BROADCAST_JITTER_MIN_MS")
+        return self
 
 
 settings: BotSettings = BotSettings()

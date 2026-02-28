@@ -177,6 +177,23 @@ class RoleRequestNotFoundError(DomainError):
         )
 
 
+class CommandTargetNotSpecifiedError(DomainError):
+    """Command target is required but missing."""
+
+    def __init__(self, command_name: str) -> None:
+        super().__init__(
+            f"Target user is not specified for command '{command_name}'",
+            details={"command": command_name},
+        )
+
+
+class BroadcastMessageNotSpecifiedError(DomainError):
+    """Broadcast command has no message payload."""
+
+    def __init__(self) -> None:
+        super().__init__("Broadcast message is not specified")
+
+
 class UsersRolesNotFoundError(DomainError):
     """Роли пользователей не найдены в системе."""
 

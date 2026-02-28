@@ -18,6 +18,16 @@ from ..infrastructure import RoleRepository, RoleRequestRepository, UserReposito
 from ..services.ports import NotificationPort
 
 
+def _render_role_request_status_text(status: RequestStatus) -> str:
+    status_text_map = {
+        RequestStatus.APPROVED: "одобрена",
+        RequestStatus.REJECTED: "отклонена",
+        RequestStatus.PENDING: "на рассмотрении",
+        RequestStatus.CANCELED: "отменена",
+    }
+    return status_text_map.get(status, status.value)
+
+
 class RoleRequestService:
     def __init__(
         self,
@@ -57,7 +67,7 @@ class RoleRequestService:
         else:
             return not (datetime.now(None) - last_reject.updated_at) < timedelta(
                 seconds=5
-            )  # TODO Время timedelta выставленна для тестов
+            )  # TODO: Значение timedelta выставлено для тестов.
 
     async def create_role_request(self, user_id: int, role: str) -> CreateRoleRequestDTO:
         if not await self.check_requesting_user(user_id, role):
@@ -97,7 +107,8 @@ class RoleRequestService:
             user.add_role(request.role)
         self.db.add(request)
         await self.db.commit()
+        status_text = _render_role_request_status_text(request.status)
         await self.notification_service.send_message(
             user_id=user.telegram_id,
-            message_text=f"Ваша заявка на роль {request.role.name} была {request.status.name}",
+            message_text=f"Ваша заявка на роль {request.role.name} была {status_text}.",
         )

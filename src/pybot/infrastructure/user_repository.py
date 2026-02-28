@@ -1,10 +1,11 @@
+from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import Sequence, and_, or_, select, update
+from sqlalchemy import and_, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from ..db.models import Role, User, UserLevel, UserRole
+from ..db.models import Competence, Role, User, UserCompetence, UserLevel, UserRole
 from ..domain.exceptions import UserNotFoundError, UsersNotFoundError
 from ..dto import UserCreateDTO
 
@@ -26,7 +27,11 @@ class UserRepository:
     ) -> User | None:
         stmt = (
             select(User)
-            .options(selectinload(User.roles), selectinload(User.user_levels).joinedload(UserLevel.level))
+            .options(
+                selectinload(User.roles),
+                selectinload(User.user_levels).joinedload(UserLevel.level),
+                selectinload(User.competencies),
+            )
             .where(User.id == id_)
         )
         result = await db.execute(stmt)
@@ -76,6 +81,32 @@ class UserRepository:
         stmt = select(User).where(User.roles.any(Role.name == role_name)).options(selectinload(User.roles))
         result = await db.execute(stmt)
 
+        users = result.scalars().all()
+
+        if not users:
+            raise UsersNotFoundError()
+
+        return users
+
+    async def get_all_user_competencies(self, db: AsyncSession, user_id: int) -> Sequence[Competence]:
+        stmt = (
+            select(Competence)
+            .select_from(UserCompetence)
+            .join(Competence, UserCompetence.competence_id == Competence.id)
+            .where(UserCompetence.user_id == user_id)
+            .order_by(Competence.name.asc())
+        )
+        result = await db.execute(stmt)
+        return result.scalars().all()
+
+    async def get_all_users_with_competence_id(self, db: AsyncSession, competence_id: int) -> Sequence[User]:
+        stmt = (
+            select(User)
+            .join(UserCompetence, UserCompetence.user_id == User.id)
+            .where(UserCompetence.competence_id == competence_id)
+            .options(selectinload(User.competencies).joinedload(UserCompetence.competence))
+        )
+        result = await db.execute(stmt)
         users = result.scalars().all()
 
         if not users:

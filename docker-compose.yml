@@ -1,0 +1,36 @@
+services:
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pybot-bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-sqlite+aiosqlite:///./data/pybot_itacadem.db}
+      AUTO_SEED_DB: ${AUTO_SEED_DB:-true}
+      FSM_STORAGE_BACKEND: ${FSM_STORAGE_BACKEND:-redis}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - pybot_data:/app/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: pybot-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pybot_data:
+  redis_data:

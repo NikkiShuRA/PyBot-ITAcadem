@@ -64,7 +64,9 @@ def settings_overrides(monkeypatch: pytest.MonkeyPatch, test_database_url: str) 
     monkeypatch.setattr(settings, "bot_mode", "test")
     monkeypatch.setattr(settings, "bot_token", "123456:TEST_TOKEN")
     monkeypatch.setattr(settings, "bot_token_test", "123456:TEST_TOKEN")
+    monkeypatch.setattr(settings, "notification_backend", "telegram")
     monkeypatch.setattr(settings, "role_request_admin_tg_id", 999999999)
+    monkeypatch.setattr(settings, "auto_admin_telegram_ids", set())
     monkeypatch.setattr(settings, "health_api_enabled", False)
     yield
 

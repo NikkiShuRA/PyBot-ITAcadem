@@ -1,5 +1,5 @@
 import os
-import subprocess  # noqa: S404
+import subprocess
 import sys
 from urllib.parse import urlparse
 

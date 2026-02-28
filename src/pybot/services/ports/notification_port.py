@@ -1,7 +1,5 @@
 from abc import ABC, abstractmethod
 
-from ...core.constants import RoleEnum
-
 
 class NotificationPort(ABC):
     """Outbound notifications contract for application services.
@@ -26,6 +24,10 @@ class NotificationPort(ABC):
             requester_user_id: Requester identifier in current notification
                 transport semantics.
             role_name: Requested role name.
+
+        Raises:
+            NotificationTemporaryError: Transient delivery error, retry is allowed.
+            NotificationPermanentError: Non-retryable delivery error.
         """
         pass
 
@@ -37,15 +39,9 @@ class NotificationPort(ABC):
             user_id: Recipient identifier in current notification transport
                 semantics.
             message_text: Notification text.
-        """
-        pass
 
-    @abstractmethod
-    async def broadcast(self, message_text: str, selected_role: RoleEnum | None) -> None:
-        """Broadcast a message to a role segment or all users.
-
-        Args:
-            message_text: Notification text.
-            selected_role: Optional role filter. ``None`` means all users.
+        Raises:
+            NotificationTemporaryError: Transient delivery error, retry is allowed.
+            NotificationPermanentError: Non-retryable delivery error.
         """
         pass

@@ -33,7 +33,6 @@
 ### Система ролей
 
 Поддержка ролей: Student, Mentor, Admin
-/admin — выдача прав администратора (временно открыта для тестирования)
 Проверка прав через middleware (флаг role="Admin" на хендлерах)
 
 ### Инфраструктурные фичи
@@ -249,3 +248,46 @@ HEALTH_API_PORT=8001
 
 - `GET /health` — liveness
 - `GET /ready` — readiness (проверка БД)
+
+---
+
+## Runbook
+
+### Deploy
+
+1. Prepare release:
+   - pull code (`git pull`) or checkout target tag/commit;
+   - verify `.env` values (`BOT_TOKEN`, `DATABASE_URL`, health API settings);
+   - run `just quality-gate`.
+2. Prepare data:
+   - create DB backup (for SQLite: copy `.db` file before release);
+   - confirm migrations are up to date.
+3. Roll out:
+   - apply migrations: `uv run alembic upgrade head`;
+   - restart app:
+     - systemd/local: restart service;
+     - Docker: `docker compose up -d --build`.
+4. Verify startup logs:
+   - no DI/DB/Bot initialization errors;
+   - polling is running.
+
+### Smoke-check
+
+1. Check health endpoints:
+   - `GET /health` returns 200;
+   - `GET /ready` returns 200.
+2. Check Telegram bot basics:
+   - `/start` opens expected flow;
+   - `/ping` returns expected response;
+   - `/profile` works without errors.
+3. Check logs:
+   - no traceback in middlewares/handlers;
+   - no DB connection/session close errors.
+
+### Rollback
+
+1. Stop current release or switch traffic away.
+2. Checkout previous stable tag/commit.
+3. Restore DB from backup if release included incompatible migrations/data changes.
+4. Restart application on previous version.
+5. Repeat smoke-check and confirm normal operation.

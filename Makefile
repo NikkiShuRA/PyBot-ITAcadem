@@ -1,4 +1,4 @@
-.PHONY: help install install-dev run format format-check lint type-check migrate-create migrate-apply
+.PHONY: help install install-dev run format format-check lint type-check quality-gate migrate-create migrate-apply
 
 # Цвета для вывода
 GREEN  := $(shell tput -Txterm setaf 2)
@@ -50,3 +50,8 @@ clean: ## Очистить кэши Python и uv
 pre-commit: install-dev ## Установить и запустить pre-commit (один раз)
 	uv run pre-commit install
 	uv run pre-commit run --all-files
+
+quality-gate: ## Full quality-gate: format-check + lint + type-check
+	$(MAKE) format-check
+	$(MAKE) lint
+	$(MAKE) type-check

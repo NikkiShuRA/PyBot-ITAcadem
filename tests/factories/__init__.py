@@ -2,7 +2,9 @@ from .dto_factories import AdjustUserPointsDTOFactory as AdjustUserPointsDTOFact
 from .dto_factories import PointsFactory as PointsFactory
 from .dto_factories import UserCreateDTOFactory as UserCreateDTOFactory
 from .model_factories import attach_user_level as attach_user_level
+from .model_factories import attach_user_competence as attach_user_competence
 from .model_factories import attach_user_role as attach_user_role
+from .model_factories import create_competence as create_competence
 from .model_factories import create_level as create_level
 from .model_factories import create_role as create_role
 from .model_factories import create_role_request as create_role_request

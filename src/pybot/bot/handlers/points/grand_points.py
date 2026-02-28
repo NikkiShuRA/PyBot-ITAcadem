@@ -128,7 +128,7 @@ async def _handle_points_command(
         await message.reply("❌ Ошибка при изменении баллов")
 
 
-@grand_points_global_router.message(Command("academic_points"), flags={"role": "Admin"})
+@grand_points_global_router.message(Command("academic_points"), flags={"role": "Admin", "rate_limit": "expensive"})
 async def handle_academic_points(
     message: Message, user_service: FromDishka[UserService], points_service: FromDishka[PointsService]
 ) -> None:
@@ -150,7 +150,7 @@ async def handle_academic_points(
         logger.exception("Unexpected error in handle_academic_points")
 
 
-@grand_points_global_router.message(Command("reputation_points"), flags={"role": "Admin"})
+@grand_points_global_router.message(Command("reputation_points"), flags={"role": "Admin", "rate_limit": "expensive"})
 async def handle_reputation_points(
     message: Message,
     user_service: FromDishka[UserService],

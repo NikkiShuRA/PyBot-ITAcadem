@@ -9,8 +9,17 @@ from ..core import logger
 from ..core.config import settings
 from ..db.database import engine as global_engine
 from ..domain.services.level_calculator import LevelCalculator
-from ..infrastructure import LevelRepository, RoleRepository, RoleRequestRepository, UserRepository, ValuationRepository
-from ..infrastructure.ports import TelegramNotificationService
+from ..infrastructure import (
+    CompetenceRepository,
+    LevelRepository,
+    RoleRepository,
+    RoleRequestRepository,
+    UserRepository,
+    ValuationRepository,
+)
+from ..infrastructure.ports import LoggingNotificationService, TelegramNotificationService
+from ..services.broadcast import BroadcastService
+from ..services.competence import CompetenceService
 from ..services.health import HealthService, SessionExecutor
 from ..services.points import PointsService
 from ..services.ports import NotificationPort
@@ -70,6 +79,10 @@ class RepositoryProvider(Provider):
     def role_request_repository(self) -> RoleRequestRepository:
         return RoleRequestRepository()
 
+    @provide(scope=Scope.APP)
+    def competence_repository(self) -> CompetenceRepository:
+        return CompetenceRepository()
+
 
 class ServiceProvider(Provider):
     """Application services."""
@@ -81,8 +94,9 @@ class ServiceProvider(Provider):
         user_repository: UserRepository,
         level_repository: LevelRepository,
         role_repository: RoleRepository,
+        competence_repository: CompetenceRepository,
     ) -> UserService:
-        return UserService(db, user_repository, level_repository, role_repository)
+        return UserService(db, user_repository, level_repository, role_repository, competence_repository)
 
     @provide(scope=Scope.REQUEST)
     def points_service(
@@ -105,6 +119,23 @@ class ServiceProvider(Provider):
         notification_service: NotificationPort,
     ) -> RoleRequestService:
         return RoleRequestService(db, role_repository, user_repository, role_request_repository, notification_service)
+
+    @provide(scope=Scope.REQUEST)
+    def broadcast_service(
+        self,
+        db: AsyncSession,
+        user_repository: UserRepository,
+        notification_service: NotificationPort,
+    ) -> BroadcastService:
+        return BroadcastService(db, user_repository, notification_service)
+
+    @provide(scope=Scope.REQUEST)
+    def competence_service(
+        self,
+        db: AsyncSession,
+        competence_repository: CompetenceRepository,
+    ) -> CompetenceService:
+        return CompetenceService(db, competence_repository)
 
 
 class HealthProvider(Provider):
@@ -139,7 +170,11 @@ class BotProvider(Provider):
 class PortsProvider(Provider):
     @provide(scope=Scope.APP)
     def notification_port(self, bot: Bot) -> NotificationPort:
-        return TelegramNotificationService(bot)
+        if settings.notification_backend == "telegram":
+            return TelegramNotificationService(bot)
+        if settings.notification_backend == "logging":
+            return LoggingNotificationService()
+        raise ValueError(f"Unsupported NOTIFICATION_BACKEND value: {settings.notification_backend}")
 
 
 async def setup_container() -> AsyncContainer:
