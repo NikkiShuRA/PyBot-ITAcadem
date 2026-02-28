@@ -1,4 +1,4 @@
-from aiogram.types import CallbackQuery, Contact, Message
+from aiogram.types import CallbackQuery, Contact, Message, ReplyKeyboardRemove
 from aiogram_dialog import DialogManager
 from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.kbd import Button
@@ -22,6 +22,14 @@ async def on_contact_input(
     manager: DialogManager,
     user_service: FromDishka[UserService],
 ) -> None:
+    await _handle_contact_input(message, manager, user_service)
+
+
+async def _handle_contact_input(
+    message: Message,
+    manager: DialogManager,
+    user_service: UserService,
+) -> None:
     contact: Contact | None = message.contact if message.contact else None
     if contact is None or contact.phone_number is None:
         await message.answer("Контакт не может быть пустым. Попробуйте снова.")
@@ -30,7 +38,10 @@ async def on_contact_input(
     phone: str = contact.phone_number
     user = await user_service.get_user_by_phone(phone)
     if user:
-        await message.answer(f"Найден существующий профиль. Твой ID: {user.id}")
+        await message.answer(
+            f"Найден существующий профиль. Твой ID: {user.id}",
+            reply_markup=ReplyKeyboardRemove(),
+        )
         await manager.done()
         return
 
@@ -39,6 +50,7 @@ async def on_contact_input(
         manager.dialog_data["tg_id"] = message.from_user.id
     else:
         manager.dialog_data["tg_id"] = None
+    await message.answer("Контакт получен. Продолжаем регистрацию.", reply_markup=ReplyKeyboardRemove())
     await manager.next()
 
 
