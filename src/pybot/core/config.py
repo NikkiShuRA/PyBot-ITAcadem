@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-from typing import Literal, Self
+from typing import Annotated, Literal, Self
 
-from pydantic import Field, model_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field, field_validator, model_validator
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
+
+from .constants import RoleEnum
 
 
 class BotSettings(BaseSettings):
@@ -107,12 +109,59 @@ class BotSettings(BaseSettings):
         description="Health API port",
     )
 
+    broadcast_allowed_roles: Annotated[set[str], NoDecode] = Field(
+        default_factory=lambda: {"Admin"},
+        alias="BROADCAST_ALLOWED_ROLES",
+        description="Broadcast allowed roles",
+    )
+
+    broadcast_max_text_length: int = Field(
+        4093,
+        alias="BROADCAST_MAX_TEXT_LENGTH",
+        description="Broadcast body length before adding crop suffix",
+        ge=1,
+        le=4096,
+    )
+
     @property
     def active_bot_token(self: Self) -> str:
         """Return active bot token based on BOT_MODE."""
         if self.bot_mode == "prod":
             return self.bot_token
         return self.bot_token_test
+
+    @field_validator("broadcast_allowed_roles", mode="before")
+    @classmethod
+    def parse_broadcast_allowed_roles(cls, value: object) -> set[str]:
+        if isinstance(value, set):
+            roles = {str(role).strip() for role in value if str(role).strip()}
+            return cls._validate_roles(roles)
+
+        if isinstance(value, list | tuple):
+            roles = {str(role).strip() for role in value if str(role).strip()}
+            return cls._validate_roles(roles)
+
+        if isinstance(value, str):
+            normalized = value.strip()
+            if not normalized:
+                return set()
+
+            # Supports both "Admin,Mentor" and JSON-like '["Admin","Mentor"]'.
+            normalized = normalized.strip("[]")
+            tokens = (token.strip().strip("\"'") for token in normalized.split(","))
+            roles = {token for token in tokens if token}
+            return cls._validate_roles(roles)
+
+        raise ValueError("BROADCAST_ALLOWED_ROLES must be a comma-separated string or a sequence")
+
+    @staticmethod
+    def _validate_roles(roles: set[str]) -> set[str]:
+        available_roles = {role.value for role in RoleEnum}
+        unknown_roles = roles - available_roles
+        if unknown_roles:
+            sorted_roles = ", ".join(sorted(unknown_roles))
+            raise ValueError(f"Unknown role(s) in BROADCAST_ALLOWED_ROLES: {sorted_roles}")
+        return roles
 
     @model_validator(mode="after")
     def validate_broadcast_jitter_range(self: Self) -> Self:

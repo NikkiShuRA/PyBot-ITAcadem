@@ -35,6 +35,16 @@ def test_broadcast_batch_pause_min_validation() -> None:
         )
 
 
+def test_broadcast_max_text_length_validation() -> None:
+    with pytest.raises(ValidationError, match="BROADCAST_MAX_TEXT_LENGTH"):
+        BotSettings(
+            BOT_TOKEN="123456:prod",
+            BOT_TOKEN_TEST="123456:test",
+            DATABASE_URL="sqlite+aiosqlite:///./test.db",
+            BROADCAST_MAX_TEXT_LENGTH=0,
+        )
+
+
 def test_auto_admin_telegram_ids_parsed_from_json_array(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("AUTO_ADMIN_TELEGRAM_IDS", "[123456789,987654321,123456789]")
 
@@ -45,3 +55,36 @@ def test_auto_admin_telegram_ids_parsed_from_json_array(monkeypatch: pytest.Monk
     )
 
     assert parsed_settings.auto_admin_telegram_ids == {123456789, 987654321}
+
+
+def test_broadcast_allowed_roles_parsed_from_comma_separated_string(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("BROADCAST_ALLOWED_ROLES", "Admin,Mentor,Admin")
+
+    parsed_settings = BotSettings(
+        BOT_TOKEN="123456:prod",
+        BOT_TOKEN_TEST="123456:test",
+        DATABASE_URL="sqlite+aiosqlite:///./test.db",
+    )
+
+    assert parsed_settings.broadcast_allowed_roles == {"Admin", "Mentor"}
+
+
+def test_broadcast_allowed_roles_default_is_admin() -> None:
+    parsed_settings = BotSettings(
+        BOT_TOKEN="123456:prod",
+        BOT_TOKEN_TEST="123456:test",
+        DATABASE_URL="sqlite+aiosqlite:///./test.db",
+    )
+
+    assert parsed_settings.broadcast_allowed_roles == {"Admin"}
+
+
+def test_broadcast_allowed_roles_rejects_unknown_role(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("BROADCAST_ALLOWED_ROLES", "Admin,WrongRole")
+
+    with pytest.raises(ValidationError, match="Unknown role"):
+        BotSettings(
+            BOT_TOKEN="123456:prod",
+            BOT_TOKEN_TEST="123456:test",
+            DATABASE_URL="sqlite+aiosqlite:///./test.db",
+        )

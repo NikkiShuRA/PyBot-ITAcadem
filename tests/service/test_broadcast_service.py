@@ -53,12 +53,14 @@ class ScriptedNotificationPort(NotificationPort):
         self.started_event = started_event
         self.release_event = release_event
         self.call_counts: dict[int, int] = defaultdict(int)
+        self.messages_by_user: dict[int, list[str]] = defaultdict(list)
 
     async def send_role_request_to_admin(self, request_id: int, requester_user_id: int, role_name: str) -> None:
         return None
 
     async def send_message(self, user_id: int, message_text: str) -> None:
         self.call_counts[user_id] += 1
+        self.messages_by_user[user_id].append(message_text)
 
         if self.started_event is not None and not self.started_event.is_set():
             self.started_event.set()
@@ -90,6 +92,7 @@ def _configure_broadcast_settings(
     jitter_max_ms: int = 160,
     retry_attempts: int = 5,
     retry_max_wait_s: int = 1,
+    max_text_length: int = 4096,
 ) -> None:
     monkeypatch.setattr(settings, "broadcast_bulk_size", bulk_size)
     monkeypatch.setattr(settings, "broadcast_max_concurrency", max_concurrency)
@@ -98,6 +101,7 @@ def _configure_broadcast_settings(
     monkeypatch.setattr(settings, "broadcast_jitter_max_ms", jitter_max_ms)
     monkeypatch.setattr(settings, "broadcast_retry_attempts", retry_attempts)
     monkeypatch.setattr(settings, "broadcast_retry_max_wait_s", retry_max_wait_s)
+    monkeypatch.setattr(settings, "broadcast_max_text_length", max_text_length)
 
 
 @pytest.mark.asyncio
@@ -255,3 +259,27 @@ async def test_broadcast_for_users_with_competence_validates_competence_id(monke
 
     with pytest.raises(ValueError, match="competence_id"):
         await service.broadcast_for_users_with_competence(0, "hello")
+
+
+@pytest.mark.asyncio
+async def test_broadcast_crops_text_with_ellipsis_when_message_exceeds_limit(monkeypatch: pytest.MonkeyPatch) -> None:
+    _configure_broadcast_settings(monkeypatch, max_text_length=10)
+    user_repository = FakeUserRepository(users=[_mk_user(700)])
+    notification_port = ScriptedNotificationPort()
+    service = BroadcastService(AsyncMock(spec=AsyncSession), user_repository, notification_port)
+
+    await service.broadcast_for_all("0123456789abcdef")
+
+    assert notification_port.messages_by_user[700] == ["0123456789..."]
+
+
+@pytest.mark.asyncio
+async def test_broadcast_keeps_text_as_is_when_message_within_limit(monkeypatch: pytest.MonkeyPatch) -> None:
+    _configure_broadcast_settings(monkeypatch, max_text_length=10)
+    user_repository = FakeUserRepository(users=[_mk_user(701)])
+    notification_port = ScriptedNotificationPort()
+    service = BroadcastService(AsyncMock(spec=AsyncSession), user_repository, notification_port)
+
+    await service.broadcast_for_all("0123456789")
+
+    assert notification_port.messages_by_user[701] == ["0123456789"]

@@ -52,7 +52,7 @@
 
 - [ ] Рефактор `fill_point_db.py` (убрать legacy-дубли и прямые обходы архитектуры).
 - [ ] Минимальный audit-log для операций рассылки/массовых операций.
-- [ ] Runbook в README: деплой, smoke-check, rollback-шаги.
+- [X] Runbook в README: деплой, smoke-check, rollback-шаги.
 
 ### Could
 
