@@ -11,6 +11,27 @@ from ....mappers.user_mappers import map_dialog_data_to_user_create_dto
 from ....services.users import UserService
 
 
+def _validate_name_input(raw_text: str, field_name: str, *, allow_empty: bool = False) -> str | None:
+    """Validate a name-like input without silently dropping invalid symbols."""
+    text = raw_text.strip()
+    if not text:
+        if allow_empty:
+            return None
+        raise ValueError(f"Поле «{field_name}» не может быть пустым. Попробуйте снова.")
+
+    cleaned_text = UserCreateDTO.clean_string(text)
+    if cleaned_text != text:
+        raise ValueError(f"Поле «{field_name}» должно содержать только русские буквы и пробелы.")
+
+    if len(text) < UserCreateDTO.NAME_MIN_LENGTH:
+        raise ValueError(f"Поле «{field_name}» слишком короткое.")
+
+    if len(text) > UserCreateDTO.NAME_MAX_LENGTH:
+        raise ValueError(f"Поле «{field_name}» слишком длинное. Максимум {UserCreateDTO.NAME_MAX_LENGTH} символов.")
+
+    return text
+
+
 async def on_other_messages(message: Message, message_input: MessageInput, manager: DialogManager) -> None:
     await message.answer("Пожалуйста, введите корректное значение.")
 
@@ -47,21 +68,14 @@ async def on_first_name_input(
     widget: MessageInput,
     manager: DialogManager,
 ) -> None:
-    first_name: str | None = message.text if message.text else None
-    if not first_name:
-        await message.answer("Имя не может быть пустым. Попробуйте снова.")
+    first_name = message.text or ""
+    try:
+        validated_first_name = _validate_name_input(first_name, "Имя")
+    except ValueError as err:
+        await message.answer(str(err))
         return
 
-    cleaned_first_name = UserCreateDTO.clean_string(first_name)
-    if not cleaned_first_name or len(cleaned_first_name) < UserCreateDTO.NAME_MIN_LENGTH:
-        await message.answer("Имя должно содержать только русские буквы и пробелы.")
-        return
-
-    if len(cleaned_first_name) > UserCreateDTO.NAME_MAX_LENGTH:
-        await message.answer(f"Имя слишком длинное. Максимум {UserCreateDTO.NAME_MAX_LENGTH} символов.")
-        return
-
-    manager.dialog_data["first_name"] = cleaned_first_name
+    manager.dialog_data["first_name"] = validated_first_name
     await manager.next()
 
 
@@ -70,21 +84,14 @@ async def on_last_name_input(
     widget: MessageInput,
     manager: DialogManager,
 ) -> None:
-    last_name: str | None = message.text if message.text else None
-    if not last_name:
-        await message.answer("Фамилия не может быть пустой. Попробуйте снова.")
+    last_name = message.text or ""
+    try:
+        validated_last_name = _validate_name_input(last_name, "Фамилия")
+    except ValueError as err:
+        await message.answer(str(err))
         return
 
-    cleaned_last_name = UserCreateDTO.clean_string(last_name)
-    if not cleaned_last_name or len(cleaned_last_name) < UserCreateDTO.NAME_MIN_LENGTH:
-        await message.answer("Фамилия должна содержать только русские буквы и пробелы.")
-        return
-
-    if len(cleaned_last_name) > UserCreateDTO.NAME_MAX_LENGTH:
-        await message.answer(f"Фамилия слишком длинная. Максимум {UserCreateDTO.NAME_MAX_LENGTH} символов.")
-        return
-
-    manager.dialog_data["last_name"] = cleaned_last_name
+    manager.dialog_data["last_name"] = validated_last_name
     await manager.next()
 
 
@@ -95,18 +102,26 @@ async def on_patronymic_input(
     manager: DialogManager,
     user_service: FromDishka[UserService],
 ) -> None:
-    patronymic = message.text if message.text else None
-    cleaned_patronymic = None
+    await _on_patronymic_input_impl(
+        message=message,
+        widget=widget,
+        manager=manager,
+        user_service=user_service,
+    )
 
-    if patronymic:
-        cleaned_patronymic = UserCreateDTO.clean_string(patronymic)
-        if cleaned_patronymic and len(cleaned_patronymic) < UserCreateDTO.NAME_MIN_LENGTH:
-            await message.answer("Отчество должно содержать только русские буквы и пробелы.")
-            return
 
-        if cleaned_patronymic and len(cleaned_patronymic) > UserCreateDTO.NAME_MAX_LENGTH:
-            await message.answer(f"Отчество слишком длинное. Максимум {UserCreateDTO.NAME_MAX_LENGTH} символов.")
-            return
+async def _on_patronymic_input_impl(
+    message: Message,
+    widget: MessageInput,
+    manager: DialogManager,
+    user_service: UserService,
+) -> None:
+    patronymic = message.text or ""
+    try:
+        cleaned_patronymic = _validate_name_input(patronymic, "Отчество", allow_empty=True)
+    except ValueError as err:
+        await message.answer(str(err))
+        return
 
     manager.dialog_data["patronymic"] = cleaned_patronymic
     user_data = await map_dialog_data_to_user_create_dto(manager)
