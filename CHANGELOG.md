@@ -2,6 +2,28 @@
 
 <!-- version list -->
 
+## v0.15.0 (2026-02-28)
+
+### Chores
+
+- **dependencies**: Обновление зависимостей в проекте
+  ([`1f85d49`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/1f85d49f4ac87de0d6710e0b606511da34c765a5))
+
+### Features
+
+- Добавил цветные кнопки и пофиксил блокер конфигурации
+  ([#73](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/73),
+  [`229b523`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/229b5238bbd2d64fcbf7dc3ce290c6c3d218cd09))
+
+- **bot**: Добавил цветные кнопки для логики запроса роли и улучшил типизацию в тестах
+  ([#73](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/73),
+  [`229b523`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/229b5238bbd2d64fcbf7dc3ce290c6c3d218cd09))
+
+- **UX**: Добавил цветовое кодирование для кнопок
+  ([#73](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/73),
+  [`229b523`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/229b5238bbd2d64fcbf7dc3ce290c6c3d218cd09))
+
+
 ## v0.14.1 (2026-02-28)
 
 
