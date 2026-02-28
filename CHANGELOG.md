@@ -2,6 +2,118 @@
 
 <!-- version list -->
 
+## v0.14.0 (2026-02-28)
+
+### Bug Fixes
+
+- Вернул delete_webhook для бота
+  ([`984b2eb`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/984b2ebed3aa185ef6cb2963091c8c5d655f39ce))
+
+- Добавил отвязку клавиатуры при вводе контакта при регистрации
+  ([`84eb792`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/84eb7927db915df62958b869bd5c111d486cfc85))
+
+- Изменил логику валидации, приведя её в вид более соотвествующий поставленным бизнесс требованиям
+  ([`adafbe9`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/adafbe936bd8e9ed42a541547d15be0494c15f82))
+
+- Исправил Mojibake в сообщениях запроса роли
+  ([`5fcd5cc`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/5fcd5cc94afc8f94e6d0ac38820c997c58aa78ee))
+
+- Исправил логику проверки ролей, добавив возможность эффективного обрабатывать множество ролей на
+  одном хэндлере, диалоге
+  ([`a549d11`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/a549d11e2ed71555d24b9cf564d57fc39046e2c3))
+
+- Исправил ошибку с незавершением диалога регистрации
+  ([`ff9e69f`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/ff9e69fcef8e449d84f6076d0e4f103dc80f2092))
+
+- Перешёл на более стабильную версию функционала ruff из-за ошибки парсинга run.py при запуске
+  линтера
+  ([`cca3514`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/cca3514e5dda5028fd9514a3fe1a1c866bbf34b4))
+
+- Убрал enqueue=True из логгера для исправления блокировки программы при её завершении
+  ([`0015d83`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/0015d831983c2d296d445c36185788d4cdb98926))
+
+- Убрал не используемую заглушку ошибки в скрипте
+  ([`5bc0595`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/5bc0595ca75badc8002abafd2f255eda93864dbb))
+
+- **deployment**: Исправление ошибки сохранения FSM в Redis в aiogrma-dialog
+  ([`6b31ef4`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/6b31ef4b7020d990d59c39a3ca94df0f78a04ac6))
+
+### Chores
+
+- **dependencies**: Изменил uv.lock
+  ([`c3bd870`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/c3bd8707982378cbdca68f28f8b566ee2bc2fe41))
+
+- **deploy**: Добавил базовые dockerfile и docker-compose.yaml
+  ([`5a7ecdf`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/5a7ecdf565d2b2e884114ebc317d2981e050a971))
+
+- **deploy**: Добавил использование миграций базы данных, также скрипта её заполнения при деплое, а
+  также использование .env для получения данных
+  ([`b232f13`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/b232f13899b6eea6137907b8bf1faafc3c34604a))
+
+- **deploy**: Пофиксил ошибку с байтами с BOM-рисками
+  ([`8156f47`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/8156f47f9b61861ec419f579f0f727c13b8b8744))
+
+- **docs**: Обновил /help для большего отражения текущего состояния проекта
+  ([`96f598c`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/96f598cd73c4ecc5858ffb800e35afd403e21af0))
+
+- **format**: Применил markdownlint для исправления ошибок форматирования в плане развития проекта
+  ([`8092805`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/8092805017b10f1ecbf29a5153248f2188080920))
+
+- **test**: Добавление тестов в CI-pipeline, создание инфраструктуры для тестов, создание первой
+  волны интеграционных тестов
+  ([`e39da4c`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/e39da4c4ebb53d206e7d576cf8d6314be8db7aa8))
+
+### Documentation
+
+- **README**: Добавил раздел Runbook для запуска бота и внесения в него изменений
+  ([`7e19e2b`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/7e19e2b16c400c5783cf809e8b0974d7f46daec2))
+
+### Features
+
+- Добавил rate-limiting для команды рассылки
+  ([`9baedb1`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/9baedb176a0d16a94b144180a6f8ce37279ca848))
+
+- Добавил ratelimting и role limiting для текущих handler-ов, где это необходимо
+  ([`8eadc18`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/8eadc18f4ab7c7551084596330fa5bd691b56c3a))
+
+- Добавил автодобавление роли админа при регистрации, по telegram id в конфигурации и удалил
+  dev-команду /admin
+  ([`b0e54be`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/b0e54bee2228ed297ec0768ae0b5d546f806489e))
+
+- Добавил поддержку Redis для хранения FSM
+  ([`7248e39`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/7248e39d638ec53d2e18e7743ce6b70a5dcee4fe))
+
+- Добавил реализацию NotificationPort, которая отправляет сообщения в логгер
+  ([`30dae28`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/30dae287c7603b9ca066cfa98d65867a0c6f413d))
+
+- Добавил фильтер для conditional UI в aiogram-dialog, с добавлением списка ролей пользователя в
+  данные из middleware
+  ([`6e00087`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/6e000872aeacffde67057e5e5db0df2b9d350fbe))
+
+- Добавил хэндлеры для запроса роли у администратора
+  ([`cea37db`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/cea37db70db0449615f134b6b96d131ab4f823de))
+
+- Завершение функциональности рассылки в боте
+  ([`e49ef04`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/e49ef0422581e299c63f1425ef347dfd659beafc))
+
+- Завершил бизнес-логику запроса роли у администратора
+  ([`bf01dd2`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/bf01dd29511a8207f48be5bcac2a66f60590530a))
+
+- Реализовал сервис для отправки сообщений в телеграмм
+  ([`2aa1f8d`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/2aa1f8d062f1c84cd4cc1cf4cbea35a6acb0e6be))
+
+- Реализовал ядро бизнес-логики для работы с компетенциями
+  ([`2d54c71`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/2d54c7123ddf0168cdc6f7fd7056f5b00fe84783))
+
+- Сделал первый полный flow системы рассылок, по ролям и по @all
+  ([`f0f29b9`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/f0f29b909845bcebcfa9f73d24a0c6cb5e19aad3))
+
+### Refactoring
+
+- Добавил VO в объекты кода, и инструменты в CI-pipeline
+  ([`5436feb`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/5436feb66e7d773568b6aed86fa743267a4d2823))
+
+
 ## v0.13.0 (2026-02-25)
 
 ### Bug Fixes
