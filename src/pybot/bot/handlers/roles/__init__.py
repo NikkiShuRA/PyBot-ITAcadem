@@ -12,8 +12,6 @@ roles_global_router.include_router(change_competence_global_router)
 
 roles_private_router.include_router(role_request_private_router)
 
-roles_private_router.include_router(role_request_private_router)
-
 roles_router = Router(name="roles")
 roles_router.include_routers(
     roles_private_router,
