@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 from aiogram.filters.callback_data import CallbackData
-from aiogram.types import InlineKeyboardMarkup
-from aiogram.utils.keyboard import InlineKeyboardBuilder
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 from ...core.constants import RequestStatus
 
@@ -11,15 +12,22 @@ class RoleRequestCB(CallbackData, prefix="role_req"):
 
 
 def get_admin_decision_kb(request_id: int) -> InlineKeyboardMarkup:
-    builder = InlineKeyboardBuilder()
+    approve_callback_data = RoleRequestCB(action=RequestStatus.APPROVED, request_id=request_id).pack()
+    reject_callback_data = RoleRequestCB(action=RequestStatus.REJECTED, request_id=request_id).pack()
 
-    builder.button(
-        text="✅ Одобрить",
-        callback_data=RoleRequestCB(action=RequestStatus.APPROVED, request_id=request_id),
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="Одобрить",
+                    callback_data=approve_callback_data,
+                    style="success",
+                ),
+                InlineKeyboardButton(
+                    text="Отклонить",
+                    callback_data=reject_callback_data,
+                    style="danger",
+                ),
+            ],
+        ]
     )
-    builder.button(
-        text="❌ Отклонить", callback_data=RoleRequestCB(action=RequestStatus.REJECTED, request_id=request_id)
-    )
-
-    builder.adjust(2)
-    return builder.as_markup()

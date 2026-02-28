@@ -130,6 +130,23 @@ class BotSettings(BaseSettings):
             return self.bot_token
         return self.bot_token_test
 
+    @field_validator("debug", mode="before")
+    @classmethod
+    def parse_debug_flag(cls, value: bool | str | int) -> bool:
+        if isinstance(value, bool):
+            return value
+
+        if isinstance(value, int):
+            return value != 0
+
+        normalized = value.strip().lower()
+        if normalized in {"1", "true", "t", "yes", "y", "on", "debug"}:
+            return True
+        if normalized in {"0", "false", "f", "no", "n", "off", "release"}:
+            return False
+
+        raise ValueError("DEBUG must be a boolean-like value (e.g. true/false/debug/release)")
+
     @field_validator("broadcast_allowed_roles", mode="before")
     @classmethod
     def parse_broadcast_allowed_roles(cls, value: object) -> set[str]:

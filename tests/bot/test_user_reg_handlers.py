@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from types import SimpleNamespace
+from typing import Protocol
 from unittest.mock import AsyncMock
 
 import pytest
@@ -32,17 +33,21 @@ def _build_message(
 
 @dataclass(slots=True)
 class StubDialogManager:
-    dialog_data: dict[str, object] = field(default_factory=dict)
+    dialog_data: dict[str, str | int | None] = field(default_factory=dict)
     next: AsyncMock = field(default_factory=AsyncMock)
     done: AsyncMock = field(default_factory=AsyncMock)
 
 
+class SupportsUserId(Protocol):
+    id: int
+
+
 @dataclass(slots=True)
 class StubUserService:
-    existing_user: object | None = None
+    existing_user: SupportsUserId | None = None
     phone_queries: list[str] = field(default_factory=list)
 
-    async def get_user_by_phone(self, phone: str) -> object | None:
+    async def get_user_by_phone(self, phone: str) -> SupportsUserId | None:
         self.phone_queries.append(phone)
         return self.existing_user
 
@@ -70,8 +75,10 @@ async def test_on_contact_input_removes_keyboard_and_moves_to_next_step(
     manager.done.assert_not_awaited()
 
     assert answer_mock.await_count == 1
-    assert answer_mock.await_args.args[0] == "Контакт получен. Продолжаем регистрацию."
-    assert isinstance(answer_mock.await_args.kwargs.get("reply_markup"), ReplyKeyboardRemove)
+    await_args = answer_mock.await_args
+    assert await_args is not None
+    assert await_args.args[0] == "Контакт получен. Продолжаем регистрацию."
+    assert isinstance(await_args.kwargs.get("reply_markup"), ReplyKeyboardRemove)
 
 
 @pytest.mark.asyncio
@@ -96,8 +103,10 @@ async def test_on_contact_input_removes_keyboard_for_existing_user_and_finishes(
     assert manager.dialog_data == {}
 
     assert answer_mock.await_count == 1
-    assert answer_mock.await_args.args[0] == "Найден существующий профиль. Твой ID: 42"
-    assert isinstance(answer_mock.await_args.kwargs.get("reply_markup"), ReplyKeyboardRemove)
+    await_args = answer_mock.await_args
+    assert await_args is not None
+    assert await_args.args[0] == "Найден существующий профиль. Твой ID: 42"
+    assert isinstance(await_args.kwargs.get("reply_markup"), ReplyKeyboardRemove)
 
 
 @pytest.mark.asyncio
@@ -122,5 +131,7 @@ async def test_on_contact_input_with_empty_contact_keeps_keyboard_and_does_not_a
     assert manager.dialog_data == {}
 
     assert answer_mock.await_count == 1
-    assert answer_mock.await_args.args[0] == "Контакт не может быть пустым. Попробуйте снова."
-    assert "reply_markup" not in answer_mock.await_args.kwargs
+    await_args = answer_mock.await_args
+    assert await_args is not None
+    assert await_args.args[0] == "Контакт не может быть пустым. Попробуйте снова."
+    assert "reply_markup" not in await_args.kwargs
