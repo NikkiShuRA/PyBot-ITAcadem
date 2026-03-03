@@ -33,7 +33,7 @@ class LoggingNotificationService(NotificationPort):
     async def send_role_request_to_admin(self, request_id: int, requester_user_id: int, role_name: str) -> None:
         """Log role request notification with payload and store event in ring buffer."""
         admin_tg_id = settings.role_request_admin_tg_id
-        if admin_tg_id <= 0:
+        if isinstance(admin_tg_id, bool) or not isinstance(admin_tg_id, int) or admin_tg_id <= 0:
             logger.error(
                 "Invalid ROLE_REQUEST_ADMIN_TG_ID configuration: {admin_tg_id}",
                 admin_tg_id=admin_tg_id,

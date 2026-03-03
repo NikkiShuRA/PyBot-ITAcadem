@@ -24,6 +24,7 @@ dependencies = [
     "alembic>=1.17.2",
     "faker>=38.2.0",
     "redis>=6.4.0",
+    "starlette-dishka>=1.0.1",
 ]
 
 [dependency-groups]

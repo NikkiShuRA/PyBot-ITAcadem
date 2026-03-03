@@ -46,7 +46,7 @@ class TelegramNotificationService(NotificationPort):
             Exception: Any Telegram API error is re-raised after logging.
         """
         admin_tg_id = settings.role_request_admin_tg_id
-        if admin_tg_id <= 0:  # TODO: make ROLE_REQUEST_ADMIN_TG_ID required after env rollout.
+        if isinstance(admin_tg_id, bool) or not isinstance(admin_tg_id, int) or admin_tg_id <= 0:
             logger.error(
                 "Invalid ROLE_REQUEST_ADMIN_TG_ID configuration: {admin_tg_id}",
                 admin_tg_id=admin_tg_id,

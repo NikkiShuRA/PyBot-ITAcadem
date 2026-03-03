@@ -40,6 +40,7 @@ class BotSettings(BaseSettings):
         ...,
         alias="ROLE_REQUEST_ADMIN_TG_ID",
         description="Telegram user id of admin recipient for role requests",
+        gt=0,
     )
     auto_admin_telegram_ids: set[int] = Field(
         default_factory=set,

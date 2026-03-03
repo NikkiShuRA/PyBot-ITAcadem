@@ -87,13 +87,13 @@ async def test_send_role_request_to_admin_sends_message_with_keyboard(
 
 
 @pytest.mark.asyncio
-async def test_send_role_request_to_admin_raises_on_invalid_admin_id(
+async def test_send_role_request_to_admin_raises_on_missing_admin_id(
     monkeypatch: pytest.MonkeyPatch,
     fake_bot: BotFixture,
 ) -> None:
     service = TelegramNotificationService(fake_bot.bot)
 
-    monkeypatch.setattr(notification_module.settings, "role_request_admin_tg_id", 0)
+    monkeypatch.setattr(notification_module.settings, "role_request_admin_tg_id", None)
 
     with pytest.raises(ValueError, match="ROLE_REQUEST_ADMIN_TG_ID"):
         await service.send_role_request_to_admin(request_id=1, requester_user_id=2, role_name="Admin")

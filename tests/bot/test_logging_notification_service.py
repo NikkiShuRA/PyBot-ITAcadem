@@ -32,14 +32,14 @@ async def test_send_role_request_to_admin_logs_and_buffers_event(
 
 
 @pytest.mark.asyncio
-async def test_send_role_request_to_admin_raises_on_invalid_admin_id(
+async def test_send_role_request_to_admin_raises_on_missing_admin_id(
     monkeypatch: pytest.MonkeyPatch,
     mocker,
 ) -> None:
     service = LoggingNotificationService()
     error_mock = mocker.patch.object(logging_module.logger, "error")
 
-    monkeypatch.setattr(logging_module.settings, "role_request_admin_tg_id", 0)
+    monkeypatch.setattr(logging_module.settings, "role_request_admin_tg_id", None)
 
     with pytest.raises(ValueError, match="ROLE_REQUEST_ADMIN_TG_ID"):
         await service.send_role_request_to_admin(request_id=1, requester_user_id=2, role_name="Mentor")
