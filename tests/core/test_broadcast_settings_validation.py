@@ -1,5 +1,6 @@
 import pytest
 from pydantic import ValidationError
+from pydantic_settings import SettingsConfigDict
 
 from pybot.core.config import BotSettings
 
@@ -111,8 +112,11 @@ def test_role_request_admin_tg_id_must_be_greater_than_zero() -> None:
 
 
 def test_role_request_admin_tg_id_is_required() -> None:
+    class BotSettingsWithoutDotenv(BotSettings):
+        model_config = SettingsConfigDict(env_file=None, env_file_encoding="utf-8")
+
     with pytest.raises(ValidationError) as exc_info:
-        BotSettings(
+        BotSettingsWithoutDotenv(
             BOT_TOKEN="123456:prod",
             BOT_TOKEN_TEST="123456:test",
             DATABASE_URL="sqlite+aiosqlite:///./test.db",
