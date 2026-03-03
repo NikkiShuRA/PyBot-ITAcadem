@@ -1,6 +1,6 @@
 import pytest
 from pydantic import ValidationError
-from pydantic_settings import SettingsConfigDict
+from pydantic_settings import BaseSettings, PydanticBaseSettingsSource
 
 from pybot.core.config import BotSettings
 
@@ -113,7 +113,16 @@ def test_role_request_admin_tg_id_must_be_greater_than_zero() -> None:
 
 def test_role_request_admin_tg_id_is_required() -> None:
     class BotSettingsWithoutDotenv(BotSettings):
-        model_config = SettingsConfigDict(env_file=None, env_file_encoding="utf-8")
+        @classmethod
+        def settings_customise_sources(
+            cls,
+            settings_cls: type[BaseSettings],
+            init_settings: PydanticBaseSettingsSource,
+            env_settings: PydanticBaseSettingsSource,
+            dotenv_settings: PydanticBaseSettingsSource,
+            file_secret_settings: PydanticBaseSettingsSource,
+        ) -> tuple[PydanticBaseSettingsSource, ...]:
+            return (init_settings,)
 
     with pytest.raises(ValidationError) as exc_info:
         BotSettingsWithoutDotenv(
