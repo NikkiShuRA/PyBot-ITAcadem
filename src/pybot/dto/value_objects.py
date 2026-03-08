@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+from datetime import datetime, timedelta
 from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, Field
+import pendulum
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic_extra_types.cron import CronStr
+from pydantic_extra_types.timezone_name import TimeZoneName
 
-from ..core.constants import LevelTypeEnum
+from ..core.constants import LevelTypeEnum, TaskScheduleKind
 
 
 class BaseValueModel(BaseModel):
@@ -109,3 +113,100 @@ class Points(BaseValueModel):
             return self.adjust(-other.value)
 
         raise NotImplementedError(f"Subtraction not supported between Points and {type(other)}")
+
+
+# TODO add domain errors
+class TaskSchedule(BaseValueModel):
+    model_config = ConfigDict(extra="forbid", frozen=True, arbitrary_types_allowed=True)
+
+    kind: TaskScheduleKind
+    run_at: pendulum.DateTime | None = None
+    interval: timedelta | None = None
+    cron: CronStr | None = None
+    timezone: TimeZoneName | None = None
+
+    @classmethod
+    def immediate(cls) -> TaskSchedule:
+        return cls(kind=TaskScheduleKind.IMMEDIATE)
+
+    @classmethod
+    def at(cls, run_at: datetime | pendulum.DateTime) -> TaskSchedule:
+        return cls.model_validate({"kind": TaskScheduleKind.AT, "run_at": run_at})
+
+    @classmethod
+    def every(cls, interval: timedelta) -> TaskSchedule:
+        return cls(kind=TaskScheduleKind.INTERVAL, interval=interval)
+
+    @classmethod
+    def cron_based(cls, cron: str, timezone: str = "UTC") -> TaskSchedule:
+        return cls.model_validate({"kind": TaskScheduleKind.CRON, "cron": cron, "timezone": timezone})
+
+    @field_validator("run_at", mode="before")
+    @classmethod
+    def validate_run_at(cls, value: object) -> pendulum.DateTime | None:
+        if value is None:
+            return None
+        if isinstance(value, pendulum.DateTime):
+            if value.tzinfo is None:
+                raise ValueError("run_at must be timezone-aware")
+            return value
+        if isinstance(value, datetime):
+            if value.tzinfo is None:
+                raise ValueError("run_at must be timezone-aware")
+            return pendulum.instance(value)
+
+        raise ValueError("run_at must be a datetime or pendulum.DateTime instance")
+
+    @field_validator("interval")
+    @classmethod
+    def validate_interval(cls, value: timedelta | None) -> timedelta | None:
+        if value is None:
+            return None
+        if value <= timedelta(0):
+            raise ValueError("interval must be greater than zero")
+        if value.total_seconds() < 1:
+            raise ValueError("interval must be at least 1 second")
+        return value
+
+    @model_validator(mode="after")
+    def validate_shape(self) -> TaskSchedule:
+        match self.kind:
+            case TaskScheduleKind.IMMEDIATE:
+                self._validate_immediate_schedule()
+            case TaskScheduleKind.AT:
+                self._validate_at_schedule()
+            case TaskScheduleKind.INTERVAL:
+                self._validate_interval_schedule()
+            case TaskScheduleKind.CRON:
+                self._validate_cron_schedule()
+
+        return self
+
+    def _validate_immediate_schedule(self) -> None:
+        if any(value is not None for value in (self.run_at, self.interval, self.cron, self.timezone)):
+            raise ValueError("immediate schedule must not contain timing fields")
+
+    def _validate_at_schedule(self) -> None:
+        if self.run_at is None:
+            raise ValueError("at schedule requires run_at")
+        if any(value is not None for value in (self.interval, self.cron, self.timezone)):
+            raise ValueError("at schedule must contain only run_at")
+
+    def _validate_interval_schedule(self) -> None:
+        if self.interval is None:
+            raise ValueError("interval schedule requires interval")
+        if any(value is not None for value in (self.run_at, self.cron, self.timezone)):
+            raise ValueError("interval schedule must contain only interval")
+
+    def _validate_cron_schedule(self) -> None:
+        if self.cron is None:
+            raise ValueError("cron schedule requires cron expression")
+        if self.run_at is not None or self.interval is not None:
+            raise ValueError("cron schedule must not contain run_at or interval")
+        if self.timezone is None:
+            raise ValueError("cron schedule requires timezone")
+
+    def as_taskiq_datetime(self) -> pendulum.DateTime:
+        if self.run_at is None:
+            raise ValueError("run_at is only available for AT schedules")
+        return self.run_at

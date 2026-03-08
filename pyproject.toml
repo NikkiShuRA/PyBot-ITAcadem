@@ -25,6 +25,10 @@ dependencies = [
     "faker>=38.2.0",
     "redis>=6.4.0",
     "starlette-dishka>=1.0.1",
+    "taskiq>=0.12.1",
+    "taskiq-redis>=1.2.2",
+    "pendulum>=3.2.0",
+    "pydantic-extra-types[cron,pendulum]>=2.11.0",
 ]
 
 [dependency-groups]

@@ -15,10 +15,12 @@ from ..infrastructure.user_repository import UserRepository
 from .ports import NotificationPermanentError, NotificationPort, NotificationTemporaryError
 
 
+##TODO refactor
 class BroadcastAlreadyRunningError(RuntimeError):
     """Raised when another broadcast is already in progress."""
 
 
+##TODO refactor
 @dataclass(slots=True)
 class BroadcastResult:
     attempted: int = 0
@@ -50,6 +52,7 @@ class BroadcastService:
             cls._broadcast_lock_loop = running_loop
         return cls._broadcast_lock
 
+    ##TODO refactor
     def _normalize_message(self, message: str) -> str:
         normalized = message.strip()
         if not normalized:
@@ -63,12 +66,14 @@ class BroadcastService:
         # user feedback that text was truncated.
         return f"{normalized[: max_length_with_suffix - 3]}..."
 
+    ##TODO refactor
     def _normalize_role(self, role_name: str) -> str:
         normalized = role_name.strip()
         if not normalized:
             raise ValueError("role_name must not be empty")
         return normalized
 
+    ##TODO refactor
     def _normalize_competence_id(self, competence_id: int) -> int:
         if competence_id <= 0:
             raise ValueError("competence_id must be positive")

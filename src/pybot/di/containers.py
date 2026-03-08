@@ -3,6 +3,7 @@ from collections.abc import AsyncGenerator
 from aiogram import Bot
 from dishka import AsyncContainer, Provider, Scope, make_async_container, provide
 from dishka.integrations.aiogram import AiogramProvider
+from dishka.integrations.taskiq import TaskiqProvider
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from ..core import logger
@@ -18,11 +19,13 @@ from ..infrastructure import (
     ValuationRepository,
 )
 from ..infrastructure.ports import LoggingNotificationService, TelegramNotificationService
+from ..infrastructure.taskiq.taskiq_notification_dispatcher import TaskIQNotificationDispatcher
 from ..services.broadcast import BroadcastService
 from ..services.competence import CompetenceService
 from ..services.health import HealthService, SessionExecutor
+from ..services.notification_facade import NotificationFacade
 from ..services.points import PointsService
-from ..services.ports import NotificationPort
+from ..services.ports import NotificationDispatchPort, NotificationPort
 from ..services.role_request import RoleRequestService
 from ..services.users import UserService
 
@@ -169,12 +172,22 @@ class BotProvider(Provider):
 
 class PortsProvider(Provider):
     @provide(scope=Scope.APP)
-    def notification_port(self, bot: Bot) -> NotificationPort:
+    async def notification_port(self, bot: Bot) -> NotificationPort:
         if settings.notification_backend == "telegram":
             return TelegramNotificationService(bot)
         if settings.notification_backend == "logging":
             return LoggingNotificationService()
         raise ValueError(f"Unsupported NOTIFICATION_BACKEND value: {settings.notification_backend}")
+
+    @provide(scope=Scope.APP)
+    async def notification_dispatch_port(self) -> NotificationDispatchPort:
+        return TaskIQNotificationDispatcher()
+
+
+class FacadeProvider(Provider):
+    @provide(scope=Scope.APP)
+    async def notification_facade(self, notification_port: NotificationDispatchPort) -> NotificationFacade:
+        return NotificationFacade(notification_port)
 
 
 async def setup_container() -> AsyncContainer:
@@ -188,6 +201,7 @@ async def setup_container() -> AsyncContainer:
         DomainServiceProvider(),
         BotProvider(),
         PortsProvider(),
+        FacadeProvider(),
     )
 
 
@@ -197,4 +211,18 @@ def setup_health_container() -> AsyncContainer:
         DatabaseProvider(),
         SessionProvider(),
         HealthProvider(),
+    )
+
+
+def setup_taskiq_container() -> AsyncContainer:
+    """Build DI container for TaskIQ worker runtime."""
+    return make_async_container(
+        DatabaseProvider(),
+        SessionProvider(),
+        RepositoryProvider(),
+        ServiceProvider(),
+        DomainServiceProvider(),
+        BotProvider(),
+        PortsProvider(),
+        TaskiqProvider(),
     )
