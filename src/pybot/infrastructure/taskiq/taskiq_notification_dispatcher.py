@@ -15,14 +15,14 @@ if TYPE_CHECKING:
 class TaskIQNotificationDispatcher(NotificationDispatchPort):
     def __init__(self, schedule_source: ListRedisScheduleSource | None = None) -> None:
         if schedule_source is None:
-            taskiq_app = import_module("pybot.infrastructure.taskiq.taskiq_app")
+            taskiq_app = import_module(".taskiq_app", package=__package__)
             schedule_source = taskiq_app.get_taskiq_schedule_source()
         self._schedule_source = schedule_source
 
     @staticmethod
     def _task() -> Any:
         # TaskIQ + Dishka currently confuses static typing on producer-side calls.
-        notification_module = import_module("pybot.infrastructure.taskiq.tasks.notification")
+        notification_module = import_module(".tasks.notification", package=__package__)
         return cast(Any, notification_module.send_notification_task)
 
     async def dispatch_message(self, user_id: int, message_text: str, schedule: TaskSchedule) -> str:

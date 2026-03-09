@@ -38,6 +38,7 @@ def _format_points_type_label(points_type: LevelTypeEnum) -> str:
             return ""
 
 
+# TODO Перенести это в фасад нотификации?
 def _build_points_notification_message(
     points: Points,
     points_type: LevelTypeEnum,
