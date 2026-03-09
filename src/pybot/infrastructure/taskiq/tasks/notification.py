@@ -68,7 +68,9 @@ async def send_notification_task(
     message = validate_message(message)
 
     try:
+        logger.info("Начинаю отправку сообщения пользователю")
         await notification_port.send_message(user_id=user_id, message_text=message)
+        logger.info("Завершаю отправку сообщения пользователю")
     except NotificationTemporaryError:
         logger.warning("Notification temporary delivery failure for user_id={user_id}", user_id=user_id)
         return NotificationTaskPayload(status="failed_temporary", user_id=user_id, message=message)

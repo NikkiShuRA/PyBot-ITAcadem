@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from importlib import import_module
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 from ...core.constants import TaskScheduleKind
 from ...dto.value_objects import TaskSchedule
@@ -23,7 +23,7 @@ class TaskIQNotificationDispatcher(NotificationDispatchPort):
     def _task() -> Any:
         # TaskIQ + Dishka currently confuses static typing on producer-side calls.
         notification_module = import_module(".tasks.notification", package=__package__)
-        return cast(Any, notification_module.send_notification_task)
+        return notification_module.send_notification_task
 
     async def dispatch_message(self, user_id: int, message_text: str, schedule: TaskSchedule) -> str:
         notification_task = self._task()
