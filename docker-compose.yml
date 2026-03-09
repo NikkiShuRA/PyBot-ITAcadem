@@ -27,8 +27,6 @@ services:
     container_name: pybot-taskiq-worker
     command:
       [
-        "uv",
-        "run",
         "taskiq",
         "worker",
         "src.pybot.infrastructure.taskiq.entrypoint:broker",
@@ -41,8 +39,6 @@ services:
     container_name: pybot-taskiq-scheduler
     command:
       [
-        "uv",
-        "run",
         "taskiq",
         "scheduler",
         "src.pybot.infrastructure.taskiq.entrypoint:scheduler",
