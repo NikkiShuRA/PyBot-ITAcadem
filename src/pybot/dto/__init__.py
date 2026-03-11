@@ -15,3 +15,6 @@ from .competence_dto import CompetenceCreateDTO as CompetenceCreateDTO
 from .competence_dto import CompetenceIdsDTO as CompetenceIdsDTO
 from .competence_dto import CompetenceReadDTO as CompetenceReadDTO
 from .competence_dto import CompetenceUpdateDTO as CompetenceUpdateDTO
+
+from .notify_dto import NotifyDTO as NotifyDTO
+from .notify_dto import NotificationTaskPayload as NotificationTaskPayload

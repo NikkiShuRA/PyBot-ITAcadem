@@ -4,6 +4,7 @@ from importlib import import_module
 from typing import TYPE_CHECKING, Any
 
 from ...core.constants import TaskScheduleKind
+from ...dto import NotifyDTO
 from ...dto.value_objects import TaskSchedule
 from ...services.ports import NotificationDispatchPort
 
@@ -37,8 +38,7 @@ class TaskIQNotificationDispatcher(NotificationDispatchPort):
                     created = await notification_task.schedule_by_time(
                         self._schedule_source,
                         schedule.as_taskiq_datetime(),
-                        user_id=user_id,
-                        message=message_text,
+                        notification_data=NotifyDTO(user_id=user_id, message=message_text),
                     )
                     return created.schedule_id
                 else:
@@ -50,8 +50,7 @@ class TaskIQNotificationDispatcher(NotificationDispatchPort):
                 created = await notification_task.schedule_by_interval(
                     self._schedule_source,
                     schedule.interval,
-                    user_id=user_id,
-                    message=message_text,
+                    notification_data=NotifyDTO(user_id=user_id, message=message_text),
                 )
                 return created.schedule_id
             case TaskScheduleKind.CRON:
@@ -66,8 +65,7 @@ class TaskIQNotificationDispatcher(NotificationDispatchPort):
                     .schedule_by_cron(
                         self._schedule_source,
                         str(schedule.cron),
-                        user_id=user_id,
-                        message=message_text,
+                        notification_data=NotifyDTO(user_id=user_id, message=message_text),
                     )
                 )
                 return created.schedule_id

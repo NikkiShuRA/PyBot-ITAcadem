@@ -1,56 +1,20 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Literal
-
 from dishka.integrations.taskiq import FromDishka, inject
 
 from ....core import logger
-from ....core.config import settings
+from ....dto import NotificationTaskPayload, NotifyDTO
 from ....services.ports import NotificationPermanentError, NotificationPort, NotificationTemporaryError
 from ..taskiq_app import get_taskiq_broker
 
 broker = get_taskiq_broker()
 
-NotificationStatus = Literal["sent", "failed_temporary", "failed_permanent"]
 
-
-@dataclass(slots=True)
-class NotificationTaskPayload:
-    status: NotificationStatus
-    user_id: int
-    message: str
-
-
-# TODO: перекинуть это в utils и добавить domain errors
-def validate_message(message: str) -> str:
-    """Validate message parameter of send_notification_task."""
-    message = message.strip()
-
-    if not message:
-        raise ValueError("Message cannot be empty")
-
-    if len(message) > settings.broadcast_max_text_length:
-        raise ValueError(f"Message length cannot exceed {settings.broadcast_max_text_length} characters")
-
-    return message
-
-
-# TODO: перекинуть это в utils и добавить domain errors
-def validate_user_id(user_id: int) -> int:
-    """Validate user_id parameter of send_notification_task."""
-    if user_id <= 0:
-        raise ValueError("User ID must be greater than 0")
-
-    return user_id
-
-
-# TODO: Проверить при следующем архитектурном обходе и подумать над retry
+# this task intentionally performs a single delivery attempt
 @broker.task(task_name="notification.send_notification_task")
 @inject(patch_module=True)
 async def send_notification_task(
-    user_id: int,
-    message: str,
+    notification_data: NotifyDTO,
     *,
     notification_port: FromDishka[NotificationPort],
 ) -> NotificationTaskPayload:
@@ -64,8 +28,7 @@ async def send_notification_task(
     Returns:
         NotificationTaskPayload: A payload with the status of the notification delivery.
     """
-    user_id = validate_user_id(user_id)
-    message = validate_message(message)
+    user_id, message = notification_data.user_id, notification_data.message
 
     try:
         logger.info("Начинаю отправку сообщения пользователю")
