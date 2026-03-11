@@ -46,6 +46,7 @@ async def cmd_profile_private(
 
 
 # Показ профиля
+# TODO Отрефакторить логику профиля
 async def show_profile(message: Message, db: AsyncSession, user_read: UserReadDTO) -> None:
     user_profile = await collect_user_profile(db, user_read)
 

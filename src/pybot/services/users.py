@@ -33,6 +33,7 @@ class UserService:
         self.role_repository: RoleRepository = role_repository
         self.competence_repository: CompetenceRepository = competence_repository
 
+    # TODO Refactor убрать в utils
     @staticmethod
     def _normalize_competence_names(competence_names: Sequence[str]) -> list[str]:
         return list(dict.fromkeys(name.strip().lower() for name in competence_names if name.strip()))
@@ -143,6 +144,7 @@ class UserService:
         else:
             return None
 
+    # TODO: Удалить дублирующиеся методы
     async def add_user_role(
         self,
         telegram_id: int,
