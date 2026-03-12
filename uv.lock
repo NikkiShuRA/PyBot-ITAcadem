@@ -1329,7 +1329,7 @@ dev = [
     { name = "pytest-asyncio", specifier = ">=1.3.0" },
     { name = "pytest-coverage", specifier = ">=0.0" },
     { name = "pytest-mock", specifier = ">=3.14.0" },
-    { name = "ruff", specifier = ">=0.14.11" },
+    { name = "ruff", specifier = "==0.15.5" },
     { name = "ty", specifier = ">=0.0.12" },
     { name = "uv", specifier = ">=0.9.13" },
 ]

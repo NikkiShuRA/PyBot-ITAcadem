@@ -33,14 +33,14 @@ async def test_notification_runtime_smoke_resolves_facade_and_dispatcher(
         facade = await container.get(NotificationFacade)
 
         assert isinstance(bot, FakeBot)
-        assert isinstance(
-            dispatch_port, TaskIQNotificationDispatcher
-        ), "Notification dispatcher wiring drifted. Background notifications would stop using TaskIQ."
-        assert isinstance(
-            facade, NotificationFacade
-        ), "Notification facade is missing from the app container. Handlers would lose the use-case entrypoint."
-        assert (
-            facade._dispatch_port is dispatch_port
-        ), "Facade and dispatcher are no longer wired together. That usually points to a broken APP-scope setup."
+        assert isinstance(dispatch_port, TaskIQNotificationDispatcher), (
+            "Notification dispatcher wiring drifted. Background notifications would stop using TaskIQ."
+        )
+        assert isinstance(facade, NotificationFacade), (
+            "Notification facade is missing from the app container. Handlers would lose the use-case entrypoint."
+        )
+        assert facade._dispatch_port is dispatch_port, (
+            "Facade and dispatcher are no longer wired together. That usually points to a broken APP-scope setup."
+        )
     finally:
         await container.close()

@@ -64,9 +64,9 @@ async def test_taskiq_runtime_smoke_builds_singletons_and_wires_worker_hooks(
 
     assert broker is second_broker, "TaskIQ broker singleton drifted. Smoke check expected one shared broker instance."
     assert source is second_source, "TaskIQ schedule source should stay singleton so delayed jobs use one Redis source."
-    assert (
-        scheduler is second_scheduler
-    ), "TaskIQ scheduler singleton changed unexpectedly. Please re-check runtime wiring."
+    assert scheduler is second_scheduler, (
+        "TaskIQ scheduler singleton changed unexpectedly. Please re-check runtime wiring."
+    )
     assert broker.url == "redis://smoke-test:6379/7"
     assert source.url == "redis://smoke-test:6379/7"
     assert scheduler.broker is broker
@@ -94,18 +94,18 @@ async def test_taskiq_worker_lifecycle_smoke_initializes_and_closes_dishka_conta
 
     await taskiq_app._on_worker_startup(cast(Any, SimpleNamespace()))
 
-    assert (
-        taskiq_app._runtime_state.container is fake_container
-    ), "Worker startup did not keep the Dishka container alive. Background tasks would lose their dependencies."
+    assert taskiq_app._runtime_state.container is fake_container, (
+        "Worker startup did not keep the Dishka container alive. Background tasks would lose their dependencies."
+    )
     setup_container.assert_called_once_with()
     setup_dishka.assert_called_once_with(container=fake_container, broker=fake_broker)
 
     await taskiq_app._on_worker_shutdown(cast(Any, SimpleNamespace()))
 
     fake_container.close.assert_awaited_once()
-    assert (
-        taskiq_app._runtime_state.container is None
-    ), "Worker shutdown left the DI container hanging around. That usually points to an incomplete cleanup path."
+    assert taskiq_app._runtime_state.container is None, (
+        "Worker shutdown left the DI container hanging around. That usually points to an incomplete cleanup path."
+    )
 
 
 @pytest.mark.asyncio
@@ -135,12 +135,12 @@ def test_taskiq_entrypoint_smoke_exposes_broker_scheduler_and_registers_tasks(
     sys.modules.pop("pybot.infrastructure.taskiq.entrypoint", None)
     entrypoint = __import__("pybot.infrastructure.taskiq.entrypoint", fromlist=["broker", "scheduler"])
 
-    assert (
-        entrypoint.broker is fake_broker
-    ), "Public TaskIQ entrypoint lost the broker handle. `taskiq worker ...:broker` would stop seeing the runtime."
-    assert (
-        entrypoint.scheduler is fake_scheduler
-    ), "Public TaskIQ entrypoint lost the scheduler handle. `taskiq scheduler ...:scheduler` would stop booting."
-    assert (
-        imported_specs == ["pybot.infrastructure.taskiq.tasks"]
-    ), "Entrypoint did not register the tasks package on import. Worker startup would look healthy but no tasks would exist."
+    assert entrypoint.broker is fake_broker, (
+        "Public TaskIQ entrypoint lost the broker handle. `taskiq worker ...:broker` would stop seeing the runtime."
+    )
+    assert entrypoint.scheduler is fake_scheduler, (
+        "Public TaskIQ entrypoint lost the scheduler handle. `taskiq scheduler ...:scheduler` would stop booting."
+    )
+    assert imported_specs == ["pybot.infrastructure.taskiq.tasks"], (
+        "Entrypoint did not register the tasks package on import. Worker startup would look healthy but no tasks would exist."
+    )

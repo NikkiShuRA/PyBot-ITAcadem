@@ -75,9 +75,9 @@ async def test_send_notification_task_smoke_sends_trimmed_message() -> None:
 
     result = await _run_task(notification_port, NotifyDTO(user_id=111, message="  hello world  "))
 
-    assert (
-        result.status == "sent"
-    ), "Notification task stopped reporting successful delivery. Start from payload validation."
+    assert result.status == "sent", (
+        "Notification task stopped reporting successful delivery. Start from payload validation."
+    )
     assert result.message == "hello world"
     notification_port.send_message_mock.assert_awaited_once_with(NotifyDTO(user_id=111, message="hello world"))
 

@@ -35,9 +35,9 @@ async def test_notification_dispatcher_immediate_smoke_returns_task_id(
 
     result = await dispatcher.dispatch_message(101, "hello", TaskSchedule.immediate())
 
-    assert (
-        result == "task-42"
-    ), "Immediate dispatch lost the TaskIQ task id. Debugging queued jobs would become painful."
+    assert result == "task-42", (
+        "Immediate dispatch lost the TaskIQ task id. Debugging queued jobs would become painful."
+    )
     fake_task.kiq.assert_awaited_once_with(NotifyDTO(user_id=101, message="hello"))
 
 
