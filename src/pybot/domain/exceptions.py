@@ -3,7 +3,10 @@
 Все исключения наследуют от базового DomainError.
 """
 
+from datetime import timedelta
 from typing import Any
+
+from ..core.constants import TaskScheduleKind
 
 
 class DomainError(Exception):
@@ -240,3 +243,65 @@ class PointsValidationError(DomainError):
 
     def __init__(self, field: str, value: Any, reason: str) -> None:
         super().__init__(f"Ошибка валидации баллов '{field}': {reason}", details={"field": field, "value": value})
+
+
+class BroadcastAlreadyRunningError(RuntimeError):
+    """Raised when another broadcast is already in progress."""
+
+
+class TaskScheduleError(DomainError, ValueError):
+    """Base domain error for TaskSchedule invariants and field access."""
+
+
+class TaskScheduleFieldTypeError(TaskScheduleError):
+    def __init__(self, field_name: str, expected_type: str, actual_value: object) -> None:
+        actual_type = type(actual_value).__name__
+        super().__init__(
+            f"{field_name} must be {expected_type}, got {actual_type}",
+            details={"field": field_name, "expected_type": expected_type, "actual_type": actual_type},
+        )
+
+
+class TaskScheduleTimezoneAwareRequiredError(TaskScheduleError):
+    def __init__(self, field_name: str) -> None:
+        super().__init__(f"{field_name} must be timezone-aware", details={"field": field_name})
+
+
+class TaskScheduleIntervalNonPositiveError(TaskScheduleError):
+    def __init__(self, interval: timedelta) -> None:
+        super().__init__("interval must be greater than zero", details={"field": "interval", "value": interval})
+
+
+class TaskScheduleIntervalTooShortError(TaskScheduleError):
+    def __init__(self, interval: timedelta) -> None:
+        super().__init__("interval must be at least 1 second", details={"field": "interval", "value": interval})
+
+
+class TaskScheduleMissingFieldError(TaskScheduleError):
+    def __init__(self, kind: TaskScheduleKind, field_name: str) -> None:
+        super().__init__(
+            f"{kind.value} schedule requires {field_name}",
+            details={"kind": kind.value, "field": field_name},
+        )
+
+
+class TaskScheduleUnexpectedFieldsError(TaskScheduleError):
+    def __init__(self, kind: TaskScheduleKind, field_names: tuple[str, ...]) -> None:
+        fields_text = ", ".join(field_names)
+        super().__init__(
+            f"{kind.value} schedule contains unexpected fields: {fields_text}",
+            details={"kind": kind.value, "fields": field_names},
+        )
+
+
+class TaskScheduleFieldUnavailableError(TaskScheduleError):
+    def __init__(self, field_name: str, expected_kind: TaskScheduleKind, actual_kind: TaskScheduleKind) -> None:
+        super().__init__(
+            f"{field_name} is only available for {expected_kind.value.upper()} schedules",
+            details={"field": field_name, "expected_kind": expected_kind.value, "actual_kind": actual_kind.value},
+        )
+
+
+class TaskScheduleUnknownKindError(TaskScheduleError):
+    def __init__(self, kind: Any) -> None:
+        super().__init__(f"Unknown schedule kind: {kind}", details={"kind": kind})

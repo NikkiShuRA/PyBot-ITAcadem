@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 
+from ...dto import NotifyDTO
+
 
 class NotificationPort(ABC):
     """Outbound notifications contract for application services.
@@ -32,13 +34,12 @@ class NotificationPort(ABC):
         pass
 
     @abstractmethod
-    async def send_message(self, user_id: int, message_text: str) -> None:
+    async def send_message(self, message_data: NotifyDTO) -> None:
         """Send a direct message to a single recipient.
 
         Args:
-            user_id: Recipient identifier in current notification transport
-                semantics.
-            message_text: Notification text.
+            message_data: Validated notification payload. Recipient identifier
+                semantics depend on the transport implementation.
 
         Raises:
             NotificationTemporaryError: Transient delivery error, retry is allowed.

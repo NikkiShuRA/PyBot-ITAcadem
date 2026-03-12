@@ -10,6 +10,9 @@ from ..db.models.user_module import Level, UserLevel
 # from ..domain import Level
 
 
+## TODO Перевести весь код тут к application services, возможно выделив ещё и Репозиторий для уровней
+
+
 async def get_all_levels(db: AsyncSession) -> Sequence[Level]:
     """Получить все уровни из БД"""
     stmt = select(Level)

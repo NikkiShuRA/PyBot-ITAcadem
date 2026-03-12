@@ -35,7 +35,7 @@ quality-gate: # Full code quality gate (format check + lint + type check)
     just type-check
 
 type-check: # Run type checker (ty)
-    uv run ty check --python=.venv/ --output-format github --target-version 3.12 src/
+    uv run ty check --python=.venv/ --output-format github --target-version 3.12 src/ tests/
 
 test-coverage: # Run tests with coverage and show missing lines
     uv run pytest --cov=src/pybot --cov-report=term-missing --cov-report=xml

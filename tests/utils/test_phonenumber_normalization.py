@@ -49,8 +49,23 @@ class TestNormalizePhoneRU:
         with pytest.raises(ValueError):
             normalize_phone(None)
 
+    def test_rejects_string_that_becomes_empty_after_cleanup(self) -> None:
+        """Номер из шума должен падать после очистки, а не тихо проходить дальше."""
+        with pytest.raises(ValueError):
+            normalize_phone("() -")
+
     def test_non_strict_mode(self) -> None:
         """В non-strict режиме возможны номера."""
         # Работает в режиме is_possible_number
         result = normalize_phone("79124130102", strict=False)
         assert result == "+79124130102"
+
+    def test_parse_error_is_mapped_to_value_error(self) -> None:
+        """Некачественный ввод с формально подходящей длиной должен маппиться в единый ValueError."""
+        with pytest.raises(ValueError):
+            normalize_phone("+7+9124130102")
+
+    def test_strict_mode_rejects_structurally_correct_but_invalid_number(self) -> None:
+        """Строгий режим должен отбрасывать номер, который парсится, но не считается валидным."""
+        with pytest.raises(ValueError):
+            normalize_phone("70000000000", strict=True)

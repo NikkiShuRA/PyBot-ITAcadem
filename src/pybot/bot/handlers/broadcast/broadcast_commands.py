@@ -7,7 +7,7 @@ from dishka import FromDishka
 from ....core.config import settings
 from ....core.constants import RoleEnum
 from ....domain.exceptions import BroadcastMessageNotSpecifiedError
-from ....dto import CompetenceReadDTO
+from ....dto import BroadcastDTO, CompetenceBroadcastDTO, CompetenceReadDTO, RoleBroadcastDTO
 from ....services.broadcast import BroadcastService
 from ....services.competence import CompetenceService
 from ...filters import check_text_message_correction, create_chat_type_routers
@@ -94,18 +94,22 @@ async def broadcast_command(
         return
 
     if _extract_all_ping(target_token):
-        await broadcast_service.broadcast_for_all(broadcast_message)
+        await broadcast_service.broadcast_for_all(BroadcastDTO(broadcast_message=broadcast_message))
         return
 
     role = _extract_role(target_token)
     if role is not None:
-        await broadcast_service.broadcast_for_users_with_role(role.value, broadcast_message)
+        await broadcast_service.broadcast_for_users_with_role(
+            RoleBroadcastDTO(broadcast_message=broadcast_message, role_name=role.value)
+        )
         return
 
     competencies = await competence_service.get_all_competencies()
     competence = _extract_competence(target_token, competencies)
     if competence is not None:
-        await broadcast_service.broadcast_for_users_with_competence(competence.id, broadcast_message)
+        await broadcast_service.broadcast_for_users_with_competence(
+            CompetenceBroadcastDTO(broadcast_message=broadcast_message, competence_id=competence.id)
+        )
         return
 
     roles_list = ", ".join(role_item.value for role_item in RoleEnum)

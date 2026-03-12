@@ -33,6 +33,7 @@ class UserService:
         self.role_repository: RoleRepository = role_repository
         self.competence_repository: CompetenceRepository = competence_repository
 
+    # TODO Refactor убрать в utils
     @staticmethod
     def _normalize_competence_names(competence_names: Sequence[str]) -> list[str]:
         return list(dict.fromkeys(name.strip().lower() for name in competence_names if name.strip()))
@@ -143,6 +144,7 @@ class UserService:
         else:
             return None
 
+    # TODO: Удалить дублирующиеся методы
     async def add_user_role(
         self,
         telegram_id: int,
@@ -280,6 +282,7 @@ class UserService:
         return await map_orm_user_to_user_read_dto(user)
 
 
+# TODO Отрефакторить весь связанный с этой функцией код и удалить её
 async def get_user_by_telegram_id(db: AsyncSession, tg_id: int) -> UserReadDTO | None:
     """РџРѕР»СѓС‡РёС‚СЊ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РїРѕ Telegram ID"""
     result = await db.execute(select(User).where(User.telegram_id == tg_id))
@@ -290,6 +293,7 @@ async def get_user_by_telegram_id(db: AsyncSession, tg_id: int) -> UserReadDTO |
         return None
 
 
+# TODO Отрефакторить весь связанный с этой функцией код и удалить её
 async def create_user_profile(
     db: AsyncSession,
     *,
@@ -332,6 +336,7 @@ async def create_user_profile(
     return await map_orm_user_to_user_read_dto(user)
 
 
+# TODO Отрефакторить весь связанный с этой функцией код и удалить её
 async def update_user_points_by_id(
     db: AsyncSession,
     user_id: int,
@@ -358,7 +363,7 @@ async def update_user_points_by_id(
     return await map_orm_user_to_user_read_dto(user)
 
 
-#   !!!   РќСѓР¶РЅРѕ РґРѕСЂР°Р±РѕС‚Р°С‚СЊ
+# TODO Исправить тут коменты и отрефакторить это
 async def collect_user_profile(db: AsyncSession, user_read_dto: UserReadDTO) -> UserProfileReadDTO:
     """РЎРѕР±РёСЂР°РµС‚ РїСЂРѕС„РёР»СЊ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ"""
     levels_data = dict()

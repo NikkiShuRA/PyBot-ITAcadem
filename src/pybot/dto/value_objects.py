@@ -1,10 +1,23 @@
 from __future__ import annotations
 
+from datetime import datetime, timedelta
 from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, Field
+import pendulum
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic_extra_types.cron import CronStr
+from pydantic_extra_types.timezone_name import TimeZoneName
 
-from ..core.constants import LevelTypeEnum
+from ..core.constants import LevelTypeEnum, TaskScheduleKind
+from ..domain.exceptions import (
+    TaskScheduleFieldTypeError,
+    TaskScheduleFieldUnavailableError,
+    TaskScheduleIntervalNonPositiveError,
+    TaskScheduleIntervalTooShortError,
+    TaskScheduleMissingFieldError,
+    TaskScheduleTimezoneAwareRequiredError,
+    TaskScheduleUnexpectedFieldsError,
+)
 
 
 class BaseValueModel(BaseModel):
@@ -109,3 +122,121 @@ class Points(BaseValueModel):
             return self.adjust(-other.value)
 
         raise NotImplementedError(f"Subtraction not supported between Points and {type(other)}")
+
+
+class TaskSchedule(BaseValueModel):
+    model_config = ConfigDict(extra="forbid", frozen=True, arbitrary_types_allowed=True)
+
+    kind: TaskScheduleKind
+    run_at: pendulum.DateTime | None = None
+    interval: timedelta | None = None
+    cron: CronStr | None = None
+    timezone: TimeZoneName | None = None
+
+    @classmethod
+    def immediate(cls) -> TaskSchedule:
+        return cls(kind=TaskScheduleKind.IMMEDIATE)
+
+    @classmethod
+    def at(cls, run_at: datetime | pendulum.DateTime) -> TaskSchedule:
+        return cls.model_validate({"kind": TaskScheduleKind.AT, "run_at": run_at})
+
+    @classmethod
+    def every(cls, interval: timedelta) -> TaskSchedule:
+        return cls(kind=TaskScheduleKind.INTERVAL, interval=interval)
+
+    @classmethod
+    def cron_based(cls, cron: str, timezone: str = "UTC") -> TaskSchedule:
+        return cls.model_validate({"kind": TaskScheduleKind.CRON, "cron": cron, "timezone": timezone})
+
+    @field_validator("run_at", mode="before")
+    @classmethod
+    def validate_run_at(cls, value: object) -> pendulum.DateTime | None:
+        if value is None:
+            return None
+        if isinstance(value, pendulum.DateTime):
+            if value.tzinfo is None:
+                raise TaskScheduleTimezoneAwareRequiredError("run_at")
+            return value
+        if isinstance(value, datetime):
+            if value.tzinfo is None:
+                raise TaskScheduleTimezoneAwareRequiredError("run_at")
+            return pendulum.instance(value)
+
+        raise TaskScheduleFieldTypeError("run_at", "a datetime or pendulum.DateTime instance", value)
+
+    @field_validator("interval")
+    @classmethod
+    def validate_interval(cls, value: timedelta | None) -> timedelta | None:
+        if value is None:
+            return None
+        if value <= timedelta(0):
+            raise TaskScheduleIntervalNonPositiveError(value)
+        if value.total_seconds() < 1:
+            raise TaskScheduleIntervalTooShortError(value)
+        return value
+
+    @model_validator(mode="after")
+    def validate_shape(self) -> TaskSchedule:
+        match self.kind:
+            case TaskScheduleKind.IMMEDIATE:
+                self._validate_immediate_schedule()
+            case TaskScheduleKind.AT:
+                self._validate_at_schedule()
+            case TaskScheduleKind.INTERVAL:
+                self._validate_interval_schedule()
+            case TaskScheduleKind.CRON:
+                self._validate_cron_schedule()
+
+        return self
+
+    def _validate_immediate_schedule(self) -> None:
+        unexpected_fields = self._collect_present_fields("run_at", "interval", "cron", "timezone")
+        if unexpected_fields:
+            raise TaskScheduleUnexpectedFieldsError(TaskScheduleKind.IMMEDIATE, unexpected_fields)
+
+    def _validate_at_schedule(self) -> None:
+        if self.run_at is None:
+            raise TaskScheduleMissingFieldError(TaskScheduleKind.AT, "run_at")
+        unexpected_fields = self._collect_present_fields("interval", "cron", "timezone")
+        if unexpected_fields:
+            raise TaskScheduleUnexpectedFieldsError(TaskScheduleKind.AT, unexpected_fields)
+
+    def _validate_interval_schedule(self) -> None:
+        if self.interval is None:
+            raise TaskScheduleMissingFieldError(TaskScheduleKind.INTERVAL, "interval")
+        unexpected_fields = self._collect_present_fields("run_at", "cron", "timezone")
+        if unexpected_fields:
+            raise TaskScheduleUnexpectedFieldsError(TaskScheduleKind.INTERVAL, unexpected_fields)
+
+    def _validate_cron_schedule(self) -> None:
+        if self.cron is None:
+            raise TaskScheduleMissingFieldError(TaskScheduleKind.CRON, "cron")
+        unexpected_fields = self._collect_present_fields("run_at", "interval")
+        if unexpected_fields:
+            raise TaskScheduleUnexpectedFieldsError(TaskScheduleKind.CRON, unexpected_fields)
+        if self.timezone is None:
+            raise TaskScheduleMissingFieldError(TaskScheduleKind.CRON, "timezone")
+
+    def _collect_present_fields(self, *field_names: str) -> tuple[str, ...]:
+        return tuple(field_name for field_name in field_names if getattr(self, field_name) is not None)
+
+    def as_taskiq_datetime(self) -> pendulum.DateTime:
+        if self.run_at is None:
+            raise TaskScheduleFieldUnavailableError("run_at", TaskScheduleKind.AT, self.kind)
+        return self.run_at
+
+    def as_interval(self) -> timedelta:
+        if self.interval is None:
+            raise TaskScheduleFieldUnavailableError("interval", TaskScheduleKind.INTERVAL, self.kind)
+        return self.interval
+
+    def as_cron_expression(self) -> str:
+        if self.cron is None:
+            raise TaskScheduleFieldUnavailableError("cron", TaskScheduleKind.CRON, self.kind)
+        return str(self.cron)
+
+    def as_timezone_name(self) -> str:
+        if self.timezone is None:
+            raise TaskScheduleFieldUnavailableError("timezone", TaskScheduleKind.CRON, self.kind)
+        return str(self.timezone)
