@@ -9,6 +9,15 @@ from pydantic_extra_types.cron import CronStr
 from pydantic_extra_types.timezone_name import TimeZoneName
 
 from ..core.constants import LevelTypeEnum, TaskScheduleKind
+from ..domain.exceptions import (
+    TaskScheduleFieldTypeError,
+    TaskScheduleFieldUnavailableError,
+    TaskScheduleIntervalNonPositiveError,
+    TaskScheduleIntervalTooShortError,
+    TaskScheduleMissingFieldError,
+    TaskScheduleTimezoneAwareRequiredError,
+    TaskScheduleUnexpectedFieldsError,
+)
 
 
 class BaseValueModel(BaseModel):
@@ -115,7 +124,6 @@ class Points(BaseValueModel):
         raise NotImplementedError(f"Subtraction not supported between Points and {type(other)}")
 
 
-# TODO add domain errors
 class TaskSchedule(BaseValueModel):
     model_config = ConfigDict(extra="forbid", frozen=True, arbitrary_types_allowed=True)
 
@@ -148,14 +156,14 @@ class TaskSchedule(BaseValueModel):
             return None
         if isinstance(value, pendulum.DateTime):
             if value.tzinfo is None:
-                raise ValueError("run_at must be timezone-aware")
+                raise TaskScheduleTimezoneAwareRequiredError("run_at")
             return value
         if isinstance(value, datetime):
             if value.tzinfo is None:
-                raise ValueError("run_at must be timezone-aware")
+                raise TaskScheduleTimezoneAwareRequiredError("run_at")
             return pendulum.instance(value)
 
-        raise ValueError("run_at must be a datetime or pendulum.DateTime instance")
+        raise TaskScheduleFieldTypeError("run_at", "a datetime or pendulum.DateTime instance", value)
 
     @field_validator("interval")
     @classmethod
@@ -163,9 +171,9 @@ class TaskSchedule(BaseValueModel):
         if value is None:
             return None
         if value <= timedelta(0):
-            raise ValueError("interval must be greater than zero")
+            raise TaskScheduleIntervalNonPositiveError(value)
         if value.total_seconds() < 1:
-            raise ValueError("interval must be at least 1 second")
+            raise TaskScheduleIntervalTooShortError(value)
         return value
 
     @model_validator(mode="after")
@@ -183,30 +191,52 @@ class TaskSchedule(BaseValueModel):
         return self
 
     def _validate_immediate_schedule(self) -> None:
-        if any(value is not None for value in (self.run_at, self.interval, self.cron, self.timezone)):
-            raise ValueError("immediate schedule must not contain timing fields")
+        unexpected_fields = self._collect_present_fields("run_at", "interval", "cron", "timezone")
+        if unexpected_fields:
+            raise TaskScheduleUnexpectedFieldsError(TaskScheduleKind.IMMEDIATE, unexpected_fields)
 
     def _validate_at_schedule(self) -> None:
         if self.run_at is None:
-            raise ValueError("at schedule requires run_at")
-        if any(value is not None for value in (self.interval, self.cron, self.timezone)):
-            raise ValueError("at schedule must contain only run_at")
+            raise TaskScheduleMissingFieldError(TaskScheduleKind.AT, "run_at")
+        unexpected_fields = self._collect_present_fields("interval", "cron", "timezone")
+        if unexpected_fields:
+            raise TaskScheduleUnexpectedFieldsError(TaskScheduleKind.AT, unexpected_fields)
 
     def _validate_interval_schedule(self) -> None:
         if self.interval is None:
-            raise ValueError("interval schedule requires interval")
-        if any(value is not None for value in (self.run_at, self.cron, self.timezone)):
-            raise ValueError("interval schedule must contain only interval")
+            raise TaskScheduleMissingFieldError(TaskScheduleKind.INTERVAL, "interval")
+        unexpected_fields = self._collect_present_fields("run_at", "cron", "timezone")
+        if unexpected_fields:
+            raise TaskScheduleUnexpectedFieldsError(TaskScheduleKind.INTERVAL, unexpected_fields)
 
     def _validate_cron_schedule(self) -> None:
         if self.cron is None:
-            raise ValueError("cron schedule requires cron expression")
-        if self.run_at is not None or self.interval is not None:
-            raise ValueError("cron schedule must not contain run_at or interval")
+            raise TaskScheduleMissingFieldError(TaskScheduleKind.CRON, "cron")
+        unexpected_fields = self._collect_present_fields("run_at", "interval")
+        if unexpected_fields:
+            raise TaskScheduleUnexpectedFieldsError(TaskScheduleKind.CRON, unexpected_fields)
         if self.timezone is None:
-            raise ValueError("cron schedule requires timezone")
+            raise TaskScheduleMissingFieldError(TaskScheduleKind.CRON, "timezone")
+
+    def _collect_present_fields(self, *field_names: str) -> tuple[str, ...]:
+        return tuple(field_name for field_name in field_names if getattr(self, field_name) is not None)
 
     def as_taskiq_datetime(self) -> pendulum.DateTime:
         if self.run_at is None:
-            raise ValueError("run_at is only available for AT schedules")
+            raise TaskScheduleFieldUnavailableError("run_at", TaskScheduleKind.AT, self.kind)
         return self.run_at
+
+    def as_interval(self) -> timedelta:
+        if self.interval is None:
+            raise TaskScheduleFieldUnavailableError("interval", TaskScheduleKind.INTERVAL, self.kind)
+        return self.interval
+
+    def as_cron_expression(self) -> str:
+        if self.cron is None:
+            raise TaskScheduleFieldUnavailableError("cron", TaskScheduleKind.CRON, self.kind)
+        return str(self.cron)
+
+    def as_timezone_name(self) -> str:
+        if self.timezone is None:
+            raise TaskScheduleFieldUnavailableError("timezone", TaskScheduleKind.CRON, self.kind)
+        return str(self.timezone)

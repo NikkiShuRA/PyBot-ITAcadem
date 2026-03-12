@@ -1,9 +1,14 @@
 from dataclasses import dataclass
+from datetime import timedelta
 from typing import Literal
 
-from pydantic import Field, ValidationError, field_validator
+import pendulum
+from pydantic import ConfigDict, Field, field_validator
+from pydantic_extra_types.cron import CronStr
+from pydantic_extra_types.timezone_name import TimeZoneName
 
-from ..core import settings
+from ..core.constants import TaskScheduleKind
+from ..utils import normalize_message
 from .base_dto import BaseDTO
 
 NotificationStatus = Literal["sent", "failed_temporary", "failed_permanent"]
@@ -29,9 +34,9 @@ class NotifyDTO(BaseDTO):
     message: str
     user_id: int = Field(..., alias="user_id", ge=1)
 
-    @classmethod
     @field_validator("message")
-    def validate_message(cls, value: str) -> str:
+    @classmethod
+    def validate_message(cls, message: str) -> str:
         """
         Валидатор параметра message.
 
@@ -45,15 +50,52 @@ class NotifyDTO(BaseDTO):
             str: отформатированное значение параметра message.
 
         Raises:
-            ValidationError: если сообщение пустое или его длина превышает
+            ValueError: если сообщение пустое или его длина превышает
                 максимально допустимой длины.
         """
-        message = value.strip()
+        message = normalize_message(message)
+        return message
 
-        if not message:
-            raise ValidationError("Message cannot be empty")
 
-        if len(message) > settings.broadcast_max_text_length:
-            raise ValidationError(f"Message length cannot exceed {settings.broadcast_max_text_length} characters")
+@dataclass(frozen=True, slots=True)
+class NotificationLogEvent:
+    event_type: Literal["role_request_to_admin", "direct_message"]
+    recipient_user_id: int
+    message_text: str
+    request_id: int | None = None
+    requester_user_id: int | None = None
+    role_name: str | None = None
 
+
+class NotifyUserDTO(BaseDTO):
+    model_config = ConfigDict(from_attributes=True, extra="forbid", frozen=True, arbitrary_types_allowed=True)
+
+    user_id: int = Field(..., alias="user_id", ge=1)
+    message: str
+    kind: TaskScheduleKind
+    run_at: pendulum.DateTime | None = None
+    interval: timedelta | None = None
+    cron: CronStr | None = None
+    timezone: TimeZoneName | None = None
+
+    @field_validator("message")
+    @classmethod
+    def validate_message(cls, message: str) -> str:
+        """
+        Валидатор параметра message.
+
+        Проверяет, что сообщение не пустое и его длина не превышает
+        максимально допустимой длины.
+
+        Args:
+            value (str): значение параметра message.
+
+        Returns:
+            str: отформатированное значение параметра message.
+
+        Raises:
+            ValueError: если сообщение пустое или его длина превышает
+                максимально допустимой длины.
+        """
+        message = normalize_message(message)
         return message
