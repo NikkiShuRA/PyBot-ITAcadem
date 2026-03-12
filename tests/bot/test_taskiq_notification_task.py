@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from types import SimpleNamespace
-from typing import Any, cast
+from collections.abc import Awaitable
+from typing import Protocol, cast
 from unittest.mock import AsyncMock
 
 import pytest
-from dishka.integrations.taskiq import CONTAINER_NAME
+from pydantic import ValidationError
 
+from pybot.dto import NotificationTaskPayload, NotifyDTO
 from pybot.infrastructure.taskiq.tasks.notification import send_notification_task
 from pybot.services.ports import NotificationPermanentError, NotificationPort, NotificationTemporaryError
 
@@ -23,30 +24,62 @@ class NotificationPortSpy(NotificationPort):
     ) -> None:
         return None
 
-    async def send_message(self, user_id: int, message_text: str) -> None:
-        await self.send_message_mock(user_id=user_id, message_text=message_text)
+    async def send_message(self, message_data: NotifyDTO) -> None:
+        await self.send_message_mock(message_data)
 
 
-def _task() -> Any:
-    return cast(Any, send_notification_task)
+class DishkaContainer(Protocol):
+    async def get(
+        self,
+        dependency_type: type[NotificationPort],
+        *,
+        component: str | None = None,
+    ) -> NotificationPort: ...
+
+
+class TaskCallable(Protocol):
+    def __call__(
+        self,
+        *,
+        notification_data: NotifyDTO,
+        dishka_container: DishkaContainer,
+    ) -> Awaitable[NotificationTaskPayload]: ...
+
+
+class DishkaContainerStub:
+    def __init__(self, notification_port: NotificationPort) -> None:
+        self._notification_port = notification_port
+
+    async def get(
+        self,
+        dependency_type: type[NotificationPort],
+        *,
+        component: str | None = None,
+    ) -> NotificationPort:
+        assert dependency_type is NotificationPort
+        assert component in ("", None)
+        return self._notification_port
+
+
+async def _run_task(notification_port: NotificationPort, notification_data: NotifyDTO) -> NotificationTaskPayload:
+    dishka_container = DishkaContainerStub(notification_port)
+    task = cast(TaskCallable, send_notification_task)
+    task_call = task(notification_data=notification_data, dishka_container=dishka_container)
+    assert isinstance(task_call, Awaitable)
+    return await task_call
 
 
 @pytest.mark.asyncio
 async def test_send_notification_task_smoke_sends_trimmed_message() -> None:
     notification_port = NotificationPortSpy(AsyncMock())
-    dishka_container = SimpleNamespace(get=AsyncMock(return_value=notification_port))
 
-    result = await _task()(
-        user_id=111,
-        message="  hello world  ",
-        **{CONTAINER_NAME: dishka_container},
-    )
+    result = await _run_task(notification_port, NotifyDTO(user_id=111, message="  hello world  "))
 
     assert (
         result.status == "sent"
     ), "Notification task stopped reporting successful delivery. Start from payload validation."
     assert result.message == "hello world"
-    notification_port.send_message_mock.assert_awaited_once_with(user_id=111, message_text="hello world")
+    notification_port.send_message_mock.assert_awaited_once_with(NotifyDTO(user_id=111, message="hello world"))
 
 
 @pytest.mark.asyncio
@@ -54,13 +87,8 @@ async def test_send_notification_task_returns_temporary_failure_payload() -> Non
     notification_port = NotificationPortSpy(
         AsyncMock(side_effect=NotificationTemporaryError("network wobble", retry_after_seconds=1.0))
     )
-    dishka_container = SimpleNamespace(get=AsyncMock(return_value=notification_port))
 
-    result = await _task()(
-        user_id=222,
-        message="hello world",
-        **{CONTAINER_NAME: dishka_container},
-    )
+    result = await _run_task(notification_port, NotifyDTO(user_id=222, message="hello world"))
 
     assert result.status == "failed_temporary"
     assert result.user_id == 222
@@ -69,28 +97,13 @@ async def test_send_notification_task_returns_temporary_failure_payload() -> Non
 @pytest.mark.asyncio
 async def test_send_notification_task_returns_permanent_failure_payload() -> None:
     notification_port = NotificationPortSpy(AsyncMock(side_effect=NotificationPermanentError("blocked")))
-    dishka_container = SimpleNamespace(get=AsyncMock(return_value=notification_port))
 
-    result = await _task()(
-        user_id=333,
-        message="hello world",
-        **{CONTAINER_NAME: dishka_container},
-    )
+    result = await _run_task(notification_port, NotifyDTO(user_id=333, message="hello world"))
 
     assert result.status == "failed_permanent"
     assert result.message == "hello world"
 
 
-@pytest.mark.asyncio
-async def test_send_notification_task_rejects_blank_message_before_delivery_attempt() -> None:
-    notification_port = NotificationPortSpy(AsyncMock())
-    dishka_container = SimpleNamespace(get=AsyncMock(return_value=notification_port))
-
-    with pytest.raises(ValueError, match="Message cannot be empty"):
-        await _task()(
-            user_id=444,
-            message="   ",
-            **{CONTAINER_NAME: dishka_container},
-        )
-
-    notification_port.send_message_mock.assert_not_awaited()
+def test_notify_dto_rejects_blank_message_before_task_execution() -> None:
+    with pytest.raises(ValidationError, match="message must not be empty"):
+        NotifyDTO(user_id=444, message="   ")

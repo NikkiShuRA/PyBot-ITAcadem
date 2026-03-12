@@ -12,7 +12,7 @@ from pybot.bot.handlers.broadcast.broadcast_commands import (
     broadcast_command,
 )
 from pybot.domain.exceptions import BroadcastMessageNotSpecifiedError
-from pybot.dto import CompetenceReadDTO
+from pybot.dto import BroadcastDTO, CompetenceBroadcastDTO, CompetenceReadDTO, RoleBroadcastDTO
 
 
 def _build_message(text: str, user_id: int = 100_001) -> Message:
@@ -28,18 +28,18 @@ def _build_message(text: str, user_id: int = 100_001) -> Message:
 
 @dataclass(slots=True)
 class StubBroadcastService:
-    all_messages: list[str] = field(default_factory=list)
-    role_messages: list[tuple[str, str]] = field(default_factory=list)
-    competence_messages: list[tuple[int, str]] = field(default_factory=list)
+    all_messages: list[BroadcastDTO] = field(default_factory=list)
+    role_messages: list[RoleBroadcastDTO] = field(default_factory=list)
+    competence_messages: list[CompetenceBroadcastDTO] = field(default_factory=list)
 
-    async def broadcast_for_all(self, message: str) -> None:
-        self.all_messages.append(message)
+    async def broadcast_for_all(self, broadcast_data: BroadcastDTO) -> None:
+        self.all_messages.append(broadcast_data)
 
-    async def broadcast_for_users_with_role(self, role_name: str, message: str) -> None:
-        self.role_messages.append((role_name, message))
+    async def broadcast_for_users_with_role(self, broadcast_data: RoleBroadcastDTO) -> None:
+        self.role_messages.append(broadcast_data)
 
-    async def broadcast_for_users_with_competence(self, competence_id: int, message: str) -> None:
-        self.competence_messages.append((competence_id, message))
+    async def broadcast_for_users_with_competence(self, broadcast_data: CompetenceBroadcastDTO) -> None:
+        self.competence_messages.append(broadcast_data)
 
 
 @dataclass(slots=True)
@@ -83,7 +83,8 @@ async def test_broadcast_command_routes_to_all(monkeypatch: pytest.MonkeyPatch) 
         competence_service=competence_service,
     )
 
-    assert broadcast_service.all_messages == ["hello everyone"]
+    assert len(broadcast_service.all_messages) == 1
+    assert broadcast_service.all_messages[0].message == "hello everyone"
     assert broadcast_service.role_messages == []
     assert broadcast_service.competence_messages == []
     assert reply_mock.await_count == 0
@@ -104,7 +105,9 @@ async def test_broadcast_command_routes_to_role(monkeypatch: pytest.MonkeyPatch)
     )
 
     assert broadcast_service.all_messages == []
-    assert broadcast_service.role_messages == [("Admin", "hello role")]
+    assert len(broadcast_service.role_messages) == 1
+    assert broadcast_service.role_messages[0].role_name == "Admin"
+    assert broadcast_service.role_messages[0].message == "hello role"
     assert broadcast_service.competence_messages == []
     assert reply_mock.await_count == 0
 
@@ -130,7 +133,9 @@ async def test_broadcast_command_routes_to_competence(monkeypatch: pytest.Monkey
 
     assert broadcast_service.all_messages == []
     assert broadcast_service.role_messages == []
-    assert broadcast_service.competence_messages == [(1, "hello competence")]
+    assert len(broadcast_service.competence_messages) == 1
+    assert broadcast_service.competence_messages[0].competence_id == 1
+    assert broadcast_service.competence_messages[0].message == "hello competence"
     assert reply_mock.await_count == 0
 
 

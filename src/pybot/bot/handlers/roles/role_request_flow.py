@@ -16,6 +16,7 @@ from ....domain.exceptions import (
     RoleRequestRejectedError,
     UserNotFoundError,
 )
+from ....dto import NotifyDTO
 from ....services.ports import NotificationPort
 from ....services.role_request import RoleRequestService
 from ...filters import check_text_message_correction, create_chat_type_routers
@@ -100,32 +101,44 @@ async def accept_role_request(
     try:
         await role_request_service.change_request_status(callback_data.request_id, RequestStatus.APPROVED)
     except UserNotFoundError:
-        await notification_service.send_message(callback_query.from_user.id, "User was not found.")
+        await notification_service.send_message(
+            NotifyDTO(message="User was not found.", user_id=callback_query.from_user.id)
+        )
         answer_text = "User not found"
         lock_buttons = True
     except RoleNotFoundError:
-        await notification_service.send_message(callback_query.from_user.id, "Role was not found.")
+        await notification_service.send_message(
+            NotifyDTO(message="Role was not found.", user_id=callback_query.from_user.id)
+        )
         answer_text = "Role not found"
         lock_buttons = True
     except RoleRequestNotFoundError:
-        await notification_service.send_message(callback_query.from_user.id, "Role request was not found.")
+        await notification_service.send_message(
+            NotifyDTO(message="Role request was not found.", user_id=callback_query.from_user.id)
+        )
         answer_text = "Request not found"
         lock_buttons = True
     except RoleRequestAlreadyProcessedError:
-        await notification_service.send_message(callback_query.from_user.id, "Role request has already been processed.")
+        await notification_service.send_message(
+            NotifyDTO(message="Role request has already been processed.", user_id=callback_query.from_user.id)
+        )
         answer_text = "Already processed"
         lock_buttons = True
     except RoleAlreadyAssignedError:
-        await notification_service.send_message(callback_query.from_user.id, "User already has this role.")
+        await notification_service.send_message(
+            NotifyDTO(message="User already has this role.", user_id=callback_query.from_user.id)
+        )
         answer_text = "Already assigned"
         lock_buttons = True
     except Exception:
         await notification_service.send_message(
-            callback_query.from_user.id, "Unexpected error. Please try again later."
+            NotifyDTO(message="Unexpected error. Please try again later.", user_id=callback_query.from_user.id)
         )
         logger.exception("Unexpected error in accept_role_request")
     else:
-        await notification_service.send_message(callback_query.from_user.id, "✅ Role request approved.")
+        await notification_service.send_message(
+            NotifyDTO(message="✅ Role request approved.", user_id=callback_query.from_user.id)
+        )
         answer_text = "✅ Approved"
         lock_buttons = True
     finally:
@@ -146,28 +159,38 @@ async def reject_role_request(
     try:
         await role_request_service.change_request_status(callback_data.request_id, RequestStatus.REJECTED)
     except UserNotFoundError:
-        await notification_service.send_message(callback_query.from_user.id, "User was not found.")
+        await notification_service.send_message(
+            NotifyDTO(message="User was not found.", user_id=callback_query.from_user.id)
+        )
         answer_text = "User not found"
         lock_buttons = True
     except RoleNotFoundError:
-        await notification_service.send_message(callback_query.from_user.id, "Role was not found.")
+        await notification_service.send_message(
+            NotifyDTO(message="Role was not found.", user_id=callback_query.from_user.id)
+        )
         answer_text = "Role not found"
         lock_buttons = True
     except RoleRequestNotFoundError:
-        await notification_service.send_message(callback_query.from_user.id, "Role request was not found.")
+        await notification_service.send_message(
+            NotifyDTO(message="Role request was not found.", user_id=callback_query.from_user.id)
+        )
         answer_text = "Request not found"
         lock_buttons = True
     except RoleRequestAlreadyProcessedError:
-        await notification_service.send_message(callback_query.from_user.id, "Role request has already been processed.")
+        await notification_service.send_message(
+            NotifyDTO(message="Role request has already been processed.", user_id=callback_query.from_user.id)
+        )
         answer_text = "Already processed"
         lock_buttons = True
     except Exception:
         await notification_service.send_message(
-            callback_query.from_user.id, "Unexpected error. Please try again later."
+            NotifyDTO(message="Unexpected error. Please try again later.", user_id=callback_query.from_user.id)
         )
         logger.exception("Unexpected error in reject_role_request")
     else:
-        await notification_service.send_message(callback_query.from_user.id, "❌ Role request rejected.")
+        await notification_service.send_message(
+            NotifyDTO(message="❌ Role request rejected.", user_id=callback_query.from_user.id)
+        )
         answer_text = "❌ Rejected"
         lock_buttons = True
     finally:

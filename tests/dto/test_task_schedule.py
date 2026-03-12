@@ -7,7 +7,7 @@ from pydantic_extra_types.cron import CronStr
 from pydantic_extra_types.timezone_name import TimeZoneName
 
 from pybot.core.constants import TaskScheduleKind
-from pybot.dto.value_objects import TaskSchedule
+from pybot.dto.value_objects import TaskSchedule, TaskScheduleFieldUnavailableError
 
 
 def test_task_schedule_immediate_has_no_timing_fields() -> None:
@@ -58,3 +58,8 @@ def test_task_schedule_cron_based_rejects_invalid_timezone() -> None:
 def test_task_schedule_cron_based_rejects_invalid_cron_expression() -> None:
     with pytest.raises(ValidationError, match="Cron expression must contain 5 space separated components"):
         TaskSchedule.cron_based("0 9 * *", timezone="UTC")
+
+
+def test_task_schedule_interval_accessor_raises_domain_error_for_wrong_kind() -> None:
+    with pytest.raises(TaskScheduleFieldUnavailableError, match="interval is only available for INTERVAL schedules"):
+        TaskSchedule.immediate().as_interval()

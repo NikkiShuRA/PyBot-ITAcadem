@@ -3,6 +3,7 @@ from __future__ import annotations
 from dishka.integrations.taskiq import FromDishka, inject
 
 from ....core import logger
+from ....dto import BroadcastDTO
 from ....services.broadcast import BroadcastService
 from ..taskiq_app import get_taskiq_broker
 
@@ -22,7 +23,7 @@ async def broadcast_for_all_task(
     что и aiogram-хендлеры, но через отдельный request-scope DI-контейнера.
     """
 
-    result = await service.broadcast_for_all(message)
+    result = await service.broadcast_for_all(BroadcastDTO(broadcast_message=message))
 
     payload = {
         "attempted": result.attempted,

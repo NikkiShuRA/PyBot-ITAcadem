@@ -13,6 +13,7 @@ from ..domain.exceptions import (
     RoleRequestRejectedError,
     UserNotFoundError,
 )
+from ..dto import NotifyDTO
 from ..dto.role_dto import CreateRoleRequestDTO
 from ..infrastructure import RoleRepository, RoleRequestRepository, UserRepository
 from ..services.ports import NotificationPort
@@ -108,7 +109,10 @@ class RoleRequestService:
         self.db.add(request)
         await self.db.commit()
         status_text = _render_role_request_status_text(request.status)
+
         await self.notification_service.send_message(
-            user_id=user.telegram_id,
-            message_text=f"Ваша заявка на роль {request.role.name} была {status_text}.",
+            NotifyDTO(
+                message=f"Ваша заявка на роль {request.role.name} была {status_text}.",
+                user_id=user.telegram_id,
+            )
         )

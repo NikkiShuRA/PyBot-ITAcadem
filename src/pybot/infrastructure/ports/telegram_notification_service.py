@@ -15,6 +15,7 @@ from aiogram.exceptions import (
 from ...bot.keyboards.role_request_keyboard import get_admin_decision_kb
 from ...core import logger
 from ...core.config import settings
+from ...dto import NotifyDTO
 from ...services.ports import NotificationPermanentError, NotificationPort, NotificationTemporaryError
 
 
@@ -42,16 +43,10 @@ class TelegramNotificationService(NotificationPort):
             role_name: Requested role name.
 
         Raises:
-            ValueError: If admin Telegram id is not configured.
-            Exception: Any Telegram API error is re-raised after logging.
+            NotificationTemporaryError: Transient Telegram delivery failure.
+            NotificationPermanentError: Non-retryable Telegram delivery failure.
         """
         admin_tg_id = settings.role_request_admin_tg_id
-        if isinstance(admin_tg_id, bool) or not isinstance(admin_tg_id, int) or admin_tg_id <= 0:
-            logger.error(
-                "Invalid ROLE_REQUEST_ADMIN_TG_ID configuration: {admin_tg_id}",
-                admin_tg_id=admin_tg_id,
-            )
-            raise ValueError("ROLE_REQUEST_ADMIN_TG_ID must be configured and greater than 0")
 
         mention = f"<a href='tg://user?id={requester_user_id}'>user {requester_user_id}</a>"
         text = f"Новый запрос роли\n\nRequest ID: {request_id}\nРоль: {role_name}\nПользователь: {mention}"
@@ -63,7 +58,44 @@ class TelegramNotificationService(NotificationPort):
                 parse_mode="HTML",
                 reply_markup=get_admin_decision_kb(request_id),
             )
-        except Exception:
+        except TelegramRetryAfter as exc:
+            logger.warning(
+                "Telegram retry-after while sending message | user_id={user_id} retry_after={retry_after}",
+                user_id=requester_user_id,
+                retry_after=exc.retry_after,
+            )
+            raise NotificationTemporaryError(
+                message="Telegram rate limit encountered",
+                retry_after_seconds=float(exc.retry_after),
+            ) from exc
+        except (TelegramNetworkError, TelegramServerError, RestartingTelegram) as exc:
+            logger.warning(
+                "Temporary Telegram failure while sending message | user_id={user_id} error={error}",
+                user_id=requester_user_id,
+                error=str(exc),
+            )
+            raise NotificationTemporaryError(message="Temporary Telegram delivery failure") from exc
+        except (
+            TelegramBadRequest,
+            TelegramForbiddenError,
+            TelegramUnauthorizedError,
+            TelegramNotFound,
+            TelegramEntityTooLarge,
+        ) as exc:
+            logger.warning(
+                "Permanent Telegram failure while sending message | user_id={user_id} error={error}",
+                user_id=requester_user_id,
+                error=str(exc),
+            )
+            raise NotificationPermanentError(message="Permanent Telegram delivery failure") from exc
+        except TelegramAPIError as exc:
+            logger.warning(
+                "Telegram API error while sending message | user_id={user_id} error={error}",
+                user_id=requester_user_id,
+                error=str(exc),
+            )
+            raise NotificationPermanentError(message="Telegram API delivery failure") from exc
+        except Exception as exc:
             logger.exception(
                 "Failed to send role request notification | "
                 "admin_tg_id={admin_tg_id} request_id={request_id} "
@@ -73,27 +105,20 @@ class TelegramNotificationService(NotificationPort):
                 requester_user_id=requester_user_id,
                 role_name=role_name,
             )
-            raise
+            raise NotificationPermanentError(message="Unexpected notification delivery failure") from exc
 
-    async def send_message(self, user_id: int, message_text: str) -> None:
+    async def send_message(self, message_data: NotifyDTO) -> None:
         """Send a direct Telegram message.
 
         Args:
-            user_id: Recipient Telegram ``telegram_id``.
-            message_text: Outgoing message text.
+            message_data: Validated direct-notification payload.
 
         Raises:
-            ValueError: If user id is invalid or text is blank.
-            Exception: Any Telegram API error is re-raised after logging.
+            NotificationTemporaryError: Transient Telegram delivery failure.
+            NotificationPermanentError: Non-retryable Telegram delivery failure.
         """
-        if user_id <= 0:
-            raise ValueError("user_id must be greater than 0")
-
-        cleaned_text = message_text.strip()
-        if not cleaned_text:
-            raise ValueError("message_text must not be empty")
-
         try:
+            cleaned_text, user_id = message_data.message, message_data.user_id
             await self.bot.send_message(chat_id=user_id, text=cleaned_text)
         except TelegramRetryAfter as exc:
             logger.warning(

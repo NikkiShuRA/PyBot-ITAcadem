@@ -18,30 +18,26 @@ async def send_notification_task(
     *,
     notification_port: FromDishka[NotificationPort],
 ) -> NotificationTaskPayload:
-    """TaskIQ task to send a notification to a user through a notification port.
+    """Send a validated notification payload through the configured port.
 
     Args:
-        user_id: The Telegram user ID of the recipient.
-        message: The notification message to be sent.
+        notification_data: Validated notification payload to deliver.
         notification_port: The notification port to use for sending the notification.
 
     Returns:
-        NotificationTaskPayload: A payload with the status of the notification delivery.
+        NotificationTaskPayload: Delivery status for a single attempt.
     """
     user_id, message = notification_data.user_id, notification_data.message
 
     try:
         logger.info("Начинаю отправку сообщения пользователю")
-        await notification_port.send_message(user_id=user_id, message_text=message)
+        await notification_port.send_message(notification_data)
         logger.info("Завершаю отправку сообщения пользователю")
     except NotificationTemporaryError:
         logger.warning("Notification temporary delivery failure for user_id={user_id}", user_id=user_id)
         return NotificationTaskPayload(status="failed_temporary", user_id=user_id, message=message)
     except NotificationPermanentError:
         logger.warning("Notification permanent delivery failure for user_id={user_id}", user_id=user_id)
-        return NotificationTaskPayload(status="failed_permanent", user_id=user_id, message=message)
-    except Exception:
-        logger.exception("Notification unexpected delivery failure for user_id={user_id}", user_id=user_id)
         return NotificationTaskPayload(status="failed_permanent", user_id=user_id, message=message)
     else:
         return NotificationTaskPayload(status="sent", user_id=user_id, message=message)

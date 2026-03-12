@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from aiogram.types import InlineKeyboardMarkup
 from dishka import Provider, Scope, provide
 
+from pybot.dto import NotifyDTO
 from pybot.services.ports import NotificationPort
 
 __test__ = False
@@ -26,11 +27,11 @@ class FakeNotificationPort(NotificationPort):
             )
         )
 
-    async def send_message(self, user_id: int, message_text: str) -> None:
+    async def send_message(self, message_data: NotifyDTO) -> None:
         self.direct_messages.append(
             DirectMessageNotificationRecord(
-                user_id=user_id,
-                message_text=message_text,
+                user_id=message_data.user_id,
+                message_text=message_data.message,
             )
         )
 
