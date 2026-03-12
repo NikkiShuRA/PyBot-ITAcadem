@@ -2,6 +2,27 @@
 
 <!-- version list -->
 
+## v0.15.1 (2026-03-03)
+
+### Bug Fixes
+
+- Исправил ошибку конфигурации, через создания подкласса с отдельными настройками проставленными на
+  локальные настройки для теста ([#74](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/74),
+  [`43019e5`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/43019e51af4c8029253bd7dca5ef4ada4e1cd74c))
+
+- Исправил прямую зависимость теста от .env
+  ([#74](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/74),
+  [`43019e5`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/43019e51af4c8029253bd7dca5ef4ada4e1cd74c))
+
+- Полностью убрал прямую работу с нулевым значением поля для id админа для запроса к нему
+  ([#74](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/74),
+  [`43019e5`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/43019e51af4c8029253bd7dca5ef4ada4e1cd74c))
+
+- Убрал временное значение по-умолчанию для поля admin telegram id
+  ([#74](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/74),
+  [`43019e5`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/43019e51af4c8029253bd7dca5ef4ada4e1cd74c))
+
+
 ## v0.15.0 (2026-02-28)
 
 ### Chores
