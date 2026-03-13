@@ -46,7 +46,7 @@ class RoleMiddleware(BaseMiddleware):
             db = await request_container.get(AsyncSession)
             repo: UserRepository = await request_container.get(UserRepository)
 
-            has_permission = await repo.get_all_user_roles_by_pk(
+            has_permission = await repo.find_all_user_roles_by_pk(
                 db=db,
                 user_id=user_db_id,
             )

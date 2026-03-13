@@ -71,7 +71,7 @@ class StubUserService:
     add_error: ValueError | None = None
     remove_error: ValueError | None = None
 
-    async def get_user_by_telegram_id(self, tg_id: int) -> UserReadDTO | None:
+    async def find_user_by_telegram_id(self, tg_id: int) -> UserReadDTO | None:
         return self.users_by_tg.get(tg_id)
 
     async def get_user(self, user_id: int) -> UserReadDTO | None:
@@ -95,7 +95,7 @@ class StubUserService:
             raise ValueError("User not found")
         return user
 
-    async def get_user_competencies(self, user_id: int) -> Sequence[CompetenceReadDTO]:
+    async def find_user_competencies(self, user_id: int) -> Sequence[CompetenceReadDTO]:
         self.show_calls.append(user_id)
         return self.competencies_by_user_id.get(user_id, [])
 

@@ -154,6 +154,7 @@ class User(Base):
         for competence in competencies:
             self.add_competence(competence)
 
+    # TODO Мне кажется или вторая ветка логики тут не имеет смысла..?
     def remove_competence(self, competence: Competence) -> None:
         """Remove competence from user."""
         target_id = competence.id

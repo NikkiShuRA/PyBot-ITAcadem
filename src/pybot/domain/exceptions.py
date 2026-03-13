@@ -3,6 +3,7 @@
 Все исключения наследуют от базового DomainError.
 """
 
+from collections.abc import Sequence
 from datetime import timedelta
 from typing import Any
 
@@ -305,3 +306,27 @@ class TaskScheduleFieldUnavailableError(TaskScheduleError):
 class TaskScheduleUnknownKindError(TaskScheduleError):
     def __init__(self, kind: Any) -> None:
         super().__init__(f"Unknown schedule kind: {kind}", details={"kind": kind})
+
+
+class CompetenceNotFoundError(DomainError, ValueError):
+    def __init__(
+        self,
+        *,
+        missing_names: Sequence[str] | None = None,
+        missing_ids: Sequence[int] | None = None,
+    ) -> None:
+        if missing_names is not None:
+            super().__init__(
+                f"Competence names not found: {list(missing_names)}",
+                details={"missing_names": list(missing_names)},
+            )
+            return
+
+        if missing_ids is not None:
+            super().__init__(
+                f"Competence ids not found: {list(missing_ids)}",
+                details={"missing_ids": list(missing_ids)},
+            )
+            return
+
+        super().__init__("Competence was not found")

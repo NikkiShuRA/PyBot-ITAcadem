@@ -103,7 +103,7 @@ async def test_get_all_users_with_role_filters_and_raises_on_empty(db_session) -
 
 
 @pytest.mark.asyncio
-async def test_get_all_user_competencies_returns_user_competencies(db_session) -> None:
+async def test_find_all_user_competencies_returns_user_competencies(db_session) -> None:
     # Given
     repo = UserRepository()
     user = await create_user(db_session, spec=UserSpec(telegram_id=500_040))
@@ -114,7 +114,7 @@ async def test_get_all_user_competencies_returns_user_competencies(db_session) -
     await db_session.commit()
 
     # When
-    competencies = await repo.get_all_user_competencies(db_session, user.id)
+    competencies = await repo.find_all_user_competencies(db_session, user.id)
 
     # Then
     assert [competence.name for competence in competencies] == ["Python", "SQL"]

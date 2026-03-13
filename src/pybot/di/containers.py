@@ -20,6 +20,7 @@ from ..infrastructure import (
 )
 from ..infrastructure.ports import LoggingNotificationService, TelegramNotificationService
 from ..infrastructure.taskiq.taskiq_notification_dispatcher import TaskIQNotificationDispatcher
+from ..services import LevelService
 from ..services.broadcast import BroadcastService
 from ..services.competence import CompetenceService
 from ..services.health import HealthService, SessionExecutor
@@ -139,6 +140,10 @@ class ServiceProvider(Provider):
         competence_repository: CompetenceRepository,
     ) -> CompetenceService:
         return CompetenceService(db, competence_repository)
+
+    @provide(scope=Scope.REQUEST)
+    def level_service(self, db: AsyncSession, level_repository: LevelRepository) -> LevelService:
+        return LevelService(level_repository, db)
 
 
 class HealthProvider(Provider):

@@ -29,7 +29,7 @@ async def cmd_profile_private(
     db: FromDishka[AsyncSession],
 ) -> None:
     if message.from_user:
-        user = await user_service.get_user_by_telegram_id(message.from_user.id)
+        user = await user_service.find_user_by_telegram_id(message.from_user.id)
     else:
         await message.answer(
             "Произошла ошибка при обработке пользователя.",

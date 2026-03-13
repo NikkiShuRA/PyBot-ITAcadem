@@ -29,7 +29,7 @@ async def cmd_start_private(
         await message.answer("Ошибка обработки пользователя.")
         return
 
-    user = await user_service.get_user_by_telegram_id(message.from_user.id)  # UserReadDTO | None
+    user = await user_service.find_user_by_telegram_id(message.from_user.id)  # UserReadDTO | None
 
     if user:
         await show_profile(message, db, user)

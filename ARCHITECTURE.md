@@ -186,7 +186,7 @@ async def bad_handler(message: Message, db: AsyncSession):
 # ХОРОШО
 @handler
 async def good_handler(message: Message, user_service: FromDishka[UserService]):
-    user = await user_service.get_user_by_telegram_id(message.from_user.id)
+    user = await user_service.find_user_by_telegram_id(message.from_user.id)
 ```
 
 Domain Layer не знает о сессии:

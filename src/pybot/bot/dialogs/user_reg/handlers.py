@@ -57,7 +57,7 @@ async def _handle_contact_input(
         return
 
     phone: str = contact.phone_number
-    user = await user_service.get_user_by_phone(phone)
+    user = await user_service.find_user_by_phone(phone)
     if user:
         await message.answer(
             f"Найден существующий профиль. Твой ID: {user.id}",
@@ -143,10 +143,6 @@ async def _on_patronymic_input_impl(
         return
 
     user = await user_service.register_student(user_data)
-    if not user:
-        await message.answer("Внутренняя ошибка. Пожалуйста, начните заново: /start")
-        await manager.done()
-        return
 
     logger.info("User created: {user}", user=user)
     await message.answer(f"✅ Профиль создан. Добро пожаловать, {user.first_name}!")
@@ -167,10 +163,6 @@ async def on_patronymic_skip(
         return
 
     user = await user_service.register_student(user_data)
-    if user is None:
-        await callback.answer("Внутренняя ошибка. Пожалуйста, начните заново: /start")
-        await manager.done()
-        return
 
     logger.info("User created: {user}", user=user)
     if callback.message is not None:
