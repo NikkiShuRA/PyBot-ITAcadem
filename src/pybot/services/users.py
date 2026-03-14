@@ -1,10 +1,9 @@
 from collections.abc import Sequence
 
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..core.config import settings
-from ..core.constants import LevelTypeEnum, RoleEnum
+from ..core.constants import RoleEnum
 from ..db.models.user_module import User
 from ..domain.exceptions import (
     CompetenceNotFoundError,
@@ -12,16 +11,14 @@ from ..domain.exceptions import (
     RoleNotFoundError,
     UserNotFoundError,
 )
-from ..dto import CompetenceReadDTO, UserCreateDTO, UserLevelReadDTO, UserProfileReadDTO, UserReadDTO
+from ..dto import CompetenceReadDTO, UserCreateDTO, UserReadDTO
 from ..infrastructure.competence_repository import CompetenceRepository
 from ..infrastructure.level_repository import LevelRepository
 from ..infrastructure.role_repository import RoleRepository
 from ..infrastructure.user_repository import UserRepository
 from ..mappers.competence_mappers import map_orm_competencies_to_competence_read_dtos
-from ..mappers.level_mappers import map_orm_level_to_level_read_dto
 from ..mappers.user_mappers import map_orm_user_to_user_read_dto
 from ..utils import normalize_competence_names
-from .levels import get_next_level, get_user_current_level
 
 
 class UserService:
@@ -240,53 +237,3 @@ class UserService:
 
         await self.db.commit()
         return await map_orm_user_to_user_read_dto(user)
-
-
-async def update_user_points_by_id(
-    db: AsyncSession,
-    user_id: int,
-    points_value: int,
-    points_type: LevelTypeEnum,
-) -> UserReadDTO:
-    result = await db.execute(select(User).where(User.id == user_id))
-    user = result.scalar_one_or_none()
-    if user is None:
-        raise ValueError(f"Пользователь с ID {user_id} не найден.")
-
-    if points_type == LevelTypeEnum.ACADEMIC:
-        user.academic_points += points_value
-        user.academic_points = max(user.academic_points, 0)
-    elif points_type == LevelTypeEnum.REPUTATION:
-        user.reputation_points += points_value
-        user.reputation_points = max(user.reputation_points, 0)
-    else:
-        raise ValueError("Неизвестный тип баллов.")
-
-    await db.commit()
-    await db.refresh(user)
-    return await map_orm_user_to_user_read_dto(user)
-
-
-async def collect_user_profile(db: AsyncSession, user_read_dto: UserReadDTO) -> UserProfileReadDTO:
-    levels_data: dict[LevelTypeEnum, UserLevelReadDTO] = {}
-    for level_system in LevelTypeEnum:
-        orm_current_level_res = await get_user_current_level(db, user_read_dto.id, level_system)
-        if orm_current_level_res is None:
-            raise ValueError(f"Уровень пользователя (id:{user_read_dto.id}) не был найден")
-
-        _, orm_current_level = orm_current_level_res
-        dto_current_level = await map_orm_level_to_level_read_dto(orm_current_level)
-
-        orm_next_level = await get_next_level(db, orm_current_level, level_system)
-        if orm_next_level is None:
-            dto_next_level = dto_current_level
-        else:
-            dto_next_level = await map_orm_level_to_level_read_dto(orm_next_level)
-
-        levels_data[level_system] = UserLevelReadDTO(
-            system=level_system,
-            current_level=dto_current_level,
-            next_level=dto_next_level,
-        )
-
-    return UserProfileReadDTO(user=user_read_dto, level_info=levels_data)

@@ -9,9 +9,6 @@ from ..db.models.user_module import Level, UserLevel
 
 
 class LevelRepository:
-    async def get_all_levels(self, db: AsyncSession) -> Sequence[Level]:
-        return await self.find_all_levels(db)
-
     async def find_all_levels(self, db: AsyncSession) -> Sequence[Level]:
         stmt = select(Level)
         result = await db.execute(stmt)
@@ -22,16 +19,10 @@ class LevelRepository:
         result = await db.execute(stmt)
         return result.scalars().all()
 
-    async def get_all_by_type(self, db: AsyncSession, points_type: str) -> Sequence[Level]:
-        return await self.find_all_by_type(db, points_type)
-
     async def find_initial_levels(self, db: AsyncSession) -> Sequence[Level]:
         stmt = select(Level).where(Level.required_points == 0)
         result = await db.execute(stmt)
         return result.scalars().all()
-
-    async def get_initial_levels(self, db: AsyncSession) -> Sequence[Level]:
-        return await self.find_initial_levels(db)
 
     async def level_exists(self, db: AsyncSession) -> bool:
         stmt = select(Level).limit(1)

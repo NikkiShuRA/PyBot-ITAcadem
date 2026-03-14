@@ -4,14 +4,12 @@ from aiogram.types import Message
 from aiogram_dialog import DialogManager
 from aiogram_dialog.api.entities.modes import StartMode
 from dishka.integrations.aiogram import FromDishka
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from ....bot.dialogs.user_reg.states import CreateProfileSG
+from ....services import UserProfileService
 from ....services.users import UserService
 from ...filters import create_chat_type_routers
-from ...keyboards.auth import request_contact_kb
 from ...texts import HELP_GROUP, HELP_PRIVATE, INFO_GLOBAL
-from ..profile.grand_profile import show_profile
 
 start_private_router, start_group_router, start_global_router = create_chat_type_routers("start")
 
@@ -23,7 +21,7 @@ async def cmd_start_private(
     message: Message,
     dialog_manager: DialogManager,
     user_service: FromDishka[UserService],
-    db: FromDishka[AsyncSession],
+    user_profile_service: FromDishka[UserProfileService],
 ) -> None:
     if not message.from_user:
         await message.answer("Ошибка обработки пользователя.")
@@ -32,13 +30,10 @@ async def cmd_start_private(
     user = await user_service.find_user_by_telegram_id(message.from_user.id)  # UserReadDTO | None
 
     if user:
-        await show_profile(message, db, user)
+        await user_profile_service.manage_profile(user)
         return
-    else:
-        await message.answer(
-            "Пожалуйста, отправьте свой контакт, используя кнопку ниже.", reply_markup=request_contact_kb
-        )
-        await dialog_manager.start(CreateProfileSG.contact, mode=StartMode.RESET_STACK)
+
+    await dialog_manager.start(CreateProfileSG.contact, mode=StartMode.RESET_STACK)
 
 
 # /start - в групповом чате

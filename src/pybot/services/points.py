@@ -1,7 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..core import logger
-from ..core.constants import LevelTypeEnum
 from ..db.models import Valuation
 from ..domain.exceptions import UserNotFoundError
 from ..domain.services.level_calculator import LevelCalculator
@@ -30,7 +29,7 @@ class PointsService:
         except UserNotFoundError as err:
             raise UserNotFoundError(user_id=dto.recipient_id) from err
 
-        all_levels = await self.level_repository.get_all_by_type(self.db, dto.points.point_type)
+        all_levels = await self.level_repository.find_all_by_type(self.db, dto.points.point_type)
         _, new_score = user.change_user_points(dto.points.value, dto.points.point_type)
         new_level = self.level_calculator.calculate_level(new_score, all_levels)
 
@@ -53,31 +52,6 @@ class PointsService:
         )
 
         self.db.add(valuation)
-        self.db.add(user)
-        await self.db.commit()
-
-        return await map_orm_user_to_user_read_dto(user)
-
-    async def update_user_points_by_id(
-        self,
-        user_id: int,
-        points_value: int,
-        points_type: LevelTypeEnum,
-    ) -> UserReadDTO:
-        try:
-            user = await self.user_repository.get_by_id(self.db, user_id)
-        except UserNotFoundError as err:
-            raise UserNotFoundError(user_id=user_id) from err
-
-        if points_type == LevelTypeEnum.ACADEMIC:
-            user.academic_points += points_value
-            user.academic_points = max(user.academic_points, 0)
-        elif points_type == LevelTypeEnum.REPUTATION:
-            user.reputation_points += points_value
-            user.reputation_points = max(user.reputation_points, 0)
-        else:
-            raise ValueError("Неизвестный тип баллов.")
-
         self.db.add(user)
         await self.db.commit()
 

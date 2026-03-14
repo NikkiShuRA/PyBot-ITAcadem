@@ -1,4 +1,5 @@
 import re
+from functools import lru_cache
 
 import phonenumbers
 from phonenumbers import PhoneNumberFormat
@@ -9,6 +10,7 @@ MIN_PHONE_LENGTH = 10
 MAX_PHONE_LENGTH = 15
 
 
+@lru_cache(maxsize=512)
 def normalize_phone(phone: str | None, strict: bool = True) -> str:
     """
     Нормализует телефон РФ в E.164 (+79XXXXXXXXX).

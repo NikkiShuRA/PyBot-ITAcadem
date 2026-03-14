@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 import fill_point_db
 from src.pybot.core.constants import LevelTypeEnum
-from src.pybot.dto import CompetenceReadDTO, UserCreateDTO, UserReadDTO
+from src.pybot.dto import AdjustUserPointsDTO, CompetenceReadDTO, UserCreateDTO, UserReadDTO
 from src.pybot.dto.value_objects import Points
 
 
@@ -108,15 +108,10 @@ class FakeGenerateUsersService(fill_point_db.UserService):
 
 class FakeGenerateUsersPointsService(fill_point_db.PointsService):
     def __init__(self, updated_user: UserReadDTO) -> None:
-        self.update_user_points_by_id_mock = AsyncMock(return_value=updated_user)
+        self.change_points_mock = AsyncMock(return_value=updated_user)
 
-    async def update_user_points_by_id(
-        self,
-        user_id: int,
-        points_value: int,
-        points_type: LevelTypeEnum,
-    ) -> UserReadDTO:
-        return await self.update_user_points_by_id_mock(user_id, points_value, points_type)
+    async def change_points(self, dto: AdjustUserPointsDTO) -> UserReadDTO:
+        return await self.change_points_mock(dto)
 
 
 @pytest.mark.asyncio
@@ -214,5 +209,52 @@ async def test_generate_users_data_uses_services_for_registration_and_points(
     assert created_dto.phone == "+79991234567"
     assert created_dto.tg_id == fill_point_db.MIN_TELEGRAM_ID
 
-    assert fake_points_service.update_user_points_by_id_mock.await_count == 2
+    assert fake_points_service.change_points_mock.await_count == 2
+    academic_dto = fake_points_service.change_points_mock.await_args_list[0].args[0]
+    reputation_dto = fake_points_service.change_points_mock.await_args_list[1].args[0]
+    assert academic_dto.recipient_id == 42
+    assert academic_dto.giver_id == 42
+    assert academic_dto.points == Points(value=5, point_type=LevelTypeEnum.ACADEMIC)
+    assert academic_dto.reason == fill_point_db.SEED_POINTS_REASON
+    assert reputation_dto.points == Points(value=5, point_type=LevelTypeEnum.REPUTATION)
     fake_user_service.add_user_competencies_mock.assert_awaited_once_with(42, [7])
+
+
+@pytest.mark.asyncio
+async def test_generate_users_data_skips_zero_points_adjustments(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake_user = UserReadDTO(
+        id=42,
+        first_name="РРІР°РЅ",
+        last_name="РРІР°РЅРѕРІ",
+        patronymic="РРІР°РЅРѕРІРёС‡",
+        telegram_id=fill_point_db.MIN_TELEGRAM_ID,
+        academic_points=Points(value=0, point_type=LevelTypeEnum.ACADEMIC),
+        reputation_points=Points(value=0, point_type=LevelTypeEnum.REPUTATION),
+        join_date=date(2026, 3, 13),
+    )
+    fake_user_service = FakeGenerateUsersService(fake_user)
+    fake_points_service = FakeGenerateUsersPointsService(fake_user)
+
+    monkeypatch.setattr(
+        fill_point_db,
+        "fake",
+        type(
+            "FakeFaker",
+            (),
+            {
+                "first_name": staticmethod(lambda: "РРІР°РЅ"),
+                "last_name": staticmethod(lambda: "РРІР°РЅРѕРІ"),
+                "middle_name": staticmethod(lambda: "РРІР°РЅРѕРІРёС‡"),
+                "phone_number": staticmethod(lambda: "+7 (999) 123-45-67"),
+                "boolean": staticmethod(lambda chance_of_getting_true=80: True),
+            },
+        )(),
+    )
+    monkeypatch.setattr(fill_point_db.random, "choice", lambda seq: seq[0])
+    monkeypatch.setattr(fill_point_db.random, "randrange", lambda start, stop, step: 0)
+
+    await fill_point_db.generate_users_data(fake_user_service, fake_points_service, [], 1)
+
+    fake_points_service.change_points_mock.assert_not_awaited()

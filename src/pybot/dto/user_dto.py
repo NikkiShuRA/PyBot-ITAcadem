@@ -107,7 +107,6 @@ class UserLevelReadDTO(BaseDTO):
     DTO для отображения прогресса уровня пользователя.
     """
 
-    system: LevelTypeEnum  ## TODO Какой тогда систем, если у нас уровни в очках, надо как-то уточнить?
     current_level: LevelReadDTO
     next_level: LevelReadDTO
 
