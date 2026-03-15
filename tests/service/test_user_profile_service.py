@@ -5,6 +5,7 @@ from dishka import AsyncContainer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pybot.core.constants import LevelTypeEnum
+from pybot.domain.exceptions import LevelNotFoundError
 from pybot.mappers.user_mappers import map_orm_user_to_user_read_dto
 from pybot.services import UserProfileService
 from tests.factories.model_factories import UserSpec, attach_user_level, create_level, create_user
@@ -103,7 +104,7 @@ async def test_manage_profile_raises_when_some_level_track_is_missing(
     user_read = await map_orm_user_to_user_read_dto(user)
 
     # Act / Assert
-    with pytest.raises(ValueError, match="не был найден"):
+    with pytest.raises(LevelNotFoundError, match="Уровень не найден"):
         await user_profile_service.manage_profile(user_read)
 
     assert notification_port.direct_messages == []
