@@ -69,7 +69,7 @@ class UserService:
         try:
             user = await self.user_repository.get_by_id(self.db, user_id)
         except UserNotFoundError as err:
-            raise UserNotFoundError from err
+            raise UserNotFoundError(user_id) from err
         else:
             return await map_orm_user_to_user_read_dto(user)
 
@@ -211,7 +211,7 @@ class UserService:
             found_ids = {competence.id for competence in competencies}
             missing_ids = [competence_id for competence_id in normalized_ids if competence_id not in found_ids]
             if missing_ids:
-                raise ValueError(f"Competence ids not found: {missing_ids}")
+                raise CompetenceNotFoundError(missing_ids=missing_ids)
             user.remove_competencies(competencies)
 
         await self.db.commit()

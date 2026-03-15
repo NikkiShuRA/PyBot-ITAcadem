@@ -9,7 +9,6 @@ from ....services.users import UserService
 from ...dialogs.user_reg.states import CreateProfileSG
 from ...filters import create_chat_type_routers
 
-# !!! Сомнительный нейминг файла и функции, ты начисляешь пользователю профиль?
 user_profile_private_router, user_profile_group_router, user_profile_global_router = create_chat_type_routers(
     "user_profile"
 )

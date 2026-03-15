@@ -148,12 +148,10 @@ class ServiceProvider(Provider):
     @provide(scope=Scope.REQUEST)
     def user_profile_service(
         self,
-        db: AsyncSession,
-        user_service: UserService,
         level_service: LevelService,
         notification_port: NotificationPort,
     ) -> UserProfileService:
-        return UserProfileService(db, user_service, level_service, notification_port)
+        return UserProfileService(level_service, notification_port)
 
 
 class HealthProvider(Provider):

@@ -1,18 +1,16 @@
 import textwrap
 from dataclasses import dataclass
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from pybot import NotifyDTO
 
 from ...core.constants import LevelTypeEnum
+from ...domain.exceptions import LevelNotFoundError
 from ...dto import UserLevelReadDTO, UserProfileReadDTO, UserReadDTO
 from ...dto.value_objects import Points
 from ...mappers.level_mappers import map_orm_level_to_level_read_dto
 from ...utils import progress_bar
 from ..levels import LevelService
 from ..ports import NotificationPort
-from ..users import UserService
 
 
 @dataclass(frozen=True, slots=True)
@@ -31,13 +29,9 @@ class ProfileMessagePO:
 class UserProfileService:
     def __init__(
         self,
-        db: AsyncSession,
-        user_service: UserService,
         level_service: LevelService,
         notification_port: NotificationPort,
     ) -> None:
-        self.db = db
-        self.user_service = user_service
         self.level_service = level_service
         self.notification_port = notification_port
 
@@ -46,7 +40,7 @@ class UserProfileService:
         for level_system in LevelTypeEnum:
             orm_current_level_res = await self.level_service.find_user_current_level(user_read_dto.id, level_system)
             if orm_current_level_res is None:
-                raise ValueError(f"Уровень пользователя (id:{user_read_dto.id}) не был найден")
+                raise LevelNotFoundError(user_read_dto.id)
 
             _, orm_current_level = orm_current_level_res
             dto_current_level = await map_orm_level_to_level_read_dto(orm_current_level)
