@@ -2,6 +2,7 @@ from aiogram.filters import Command
 from aiogram.types import Message
 from dishka import FromDishka
 
+from ....domain.exceptions import UserNotFoundError
 from ....services.users import UserService
 from ...filters import create_chat_type_routers
 
@@ -18,9 +19,9 @@ async def cmd_ping(
         await message.answer("Hello, anonymous user!")
         return
 
-    user = await user_service.get_user(user_id)
-
-    if user is None:
+    try:
+        user = await user_service.get_user(user_id)
+    except UserNotFoundError:
         await message.answer("Hello, anonymous user!")
         return
 

@@ -26,7 +26,7 @@ async def _get_target_user_id_from_mention(message: Message, user_service: UserS
     for entity in message.entities:
         if entity.type == "text_mention" and entity.user is not None:
             awarded_id = entity.user.id
-            mentioned_user = await user_service.get_user_by_telegram_id(awarded_id)
+            mentioned_user = await user_service.find_user_by_telegram_id(awarded_id)
 
             if mentioned_user is not None:
                 await message.reply(f"Вы выбрали пользователя (text_mention) {mentioned_user.first_name}.")
@@ -50,7 +50,7 @@ async def _get_target_user_id_from_text(message: Message, user_service: UserServ
         return None
 
     user_parsed_id: int = int(match.group(1))
-    user_from_id: UserReadDTO | None = await user_service.get_user_by_telegram_id(user_parsed_id)
+    user_from_id: UserReadDTO | None = await user_service.find_user_by_telegram_id(user_parsed_id)
 
     if user_from_id is None:
         await message.reply(

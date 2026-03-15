@@ -32,13 +32,14 @@ class UserActivityMiddleware(BaseMiddleware):
 
         try:
             async with container() as request_container:
-                db = await request_container.get(AsyncSession)
+                db: AsyncSession = await request_container.get(AsyncSession)
                 repo: UserRepository = await request_container.get(UserRepository)
-                db_user = await repo.get_user_by_telegram_id(db, tg_id=user.id)
+                # TODO Лучше заменить на application service
+                db_user = await repo.find_user_by_telegram_id(db, tg_id=user.id)
                 if db_user:
                     await repo.update_user_last_active(db=db, user_id=db_user.id)
                     data["user_id"] = db_user.id  # Добавляем user_id для отвязки логики в сервисах от telegram id
-                    data["user_roles"] = set(await repo.get_user_roles(db=db, user_id=db_user.id))
+                    data["user_roles"] = set(await repo.find_user_roles(db=db, user_id=db_user.id))
                     await db.commit()
 
         except Exception:

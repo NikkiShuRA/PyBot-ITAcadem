@@ -10,29 +10,27 @@ from faker import Faker
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.pybot import create_user_profile, update_user_points_by_id
 from src.pybot.core.constants import LevelTypeEnum, RoleEnum
 from src.pybot.core.logger import setup_logger
-from src.pybot.db.database import SessionLocal, engine
 from src.pybot.db.models import Level, Role
-from src.pybot.dto import CompetenceCreateDTO, CompetenceReadDTO, UserCreateDTO
-from src.pybot.infrastructure.competence_repository import CompetenceRepository
-from src.pybot.infrastructure.level_repository import LevelRepository
-from src.pybot.infrastructure.role_repository import RoleRepository
-from src.pybot.infrastructure.user_repository import UserRepository
+from src.pybot.di.containers import setup_container
+from src.pybot.dto import AdjustUserPointsDTO, CompetenceCreateDTO, CompetenceReadDTO, UserCreateDTO
+from src.pybot.dto.value_objects import Points
 from src.pybot.services.competence import CompetenceService
+from src.pybot.services.levels import LevelService
+from src.pybot.services.points import PointsService
 from src.pybot.services.users import UserService
 
 logger = setup_logger()
 fake = Faker("ru_RU")
 
-# --- Конфигурация скрипта ---
 NUM_FAKE_USERS = 50
 NUM_LEVELS_PER_TYPE = 15
 MAX_POINTS_RANGE = 1050
 POINT_STEPS = [5, 10]
 MIN_TELEGRAM_ID = 1000000000
 MAX_COMPETENCIES_PER_USER = 3
+SEED_POINTS_REASON = "Seed data bootstrap"
 COMPETENCIES_SEED: tuple[tuple[str, str], ...] = (
     ("Python", "Разработка на Python"),
     ("SQL", "Работа с реляционными базами данных"),
@@ -49,8 +47,6 @@ class PhoneNumberLength(enum.Enum):
 
 
 class UserDataDict(TypedDict):
-    """Типизированный словарь для данных пользователя"""
-
     first_name: str
     last_name: str
     patronymic: str | None
@@ -58,297 +54,347 @@ class UserDataDict(TypedDict):
     tg_id: int
     academic_points: int
     reputation_points: int
-
-
-async def level_exists(session: AsyncSession) -> bool:
-    """Проверяет, существуют ли уровни в базе данных."""
-    stmt = select(Level).limit(1)
-    result = await session.execute(stmt)
-    return result.scalar_one_or_none() is not None
-
-
-async def get_all_levels(session: AsyncSession) -> Sequence[Level]:
-    """Получает все уровни из базы данных."""
-    stmt = select(Level)
-    result = await session.execute(stmt)
-    return result.scalars().all()
+    competence_ids: list[int]
 
 
 def calculate_xp(n: int) -> int:
-    """Рассчитывает необходимое количество опыта (XP) для уровня N."""
     if n <= 0:
         return 0
     return 50 * n * (n - 1)
 
 
-async def generate_levels_data(session: AsyncSession) -> Sequence[Level]:
-    """Генерирует и добавляет уровни в БД (если их там еще нет)."""
-    logger.info("Начинаем генерацию уровней...")
+async def generate_levels_data(session: AsyncSession, level_service: LevelService) -> Sequence[Level]:
+    logger.info("Starting level generation")
 
-    if await level_exists(session):
-        logger.info("Уровни уже существуют в БД. Пропускаем генерацию.")
-        return await get_all_levels(session)
+    if await level_service.level_exists():
+        logger.info("Levels already exist, skipping generation")
+        return await level_service.find_all_levels()
 
-    levels_to_add = []
+    levels_to_add: list[Level] = []
 
     for level_num in range(1, NUM_LEVELS_PER_TYPE + 1):
         required_xp = calculate_xp(level_num)
 
-        academic_level = Level(
-            name=f"Уровень {level_num}",
-            description=f"Требуется {required_xp} академических баллов для достижения этого уровня.",
-            required_points=required_xp,
-            level_type=LevelTypeEnum.ACADEMIC,
+        levels_to_add.append(
+            Level(
+                name=f"Уровень {level_num}",
+                description=f"Требуется {required_xp} академических баллов для достижения этого уровня.",
+                required_points=required_xp,
+                level_type=LevelTypeEnum.ACADEMIC,
+            )
         )
-        levels_to_add.append(academic_level)
-
-        reputation_level = Level(
-            name=f"Уровень {level_num}",
-            description=f"Требуется {required_xp} репутационных баллов для достижения этого уровня.",
-            required_points=required_xp,
-            level_type=LevelTypeEnum.REPUTATION,
+        levels_to_add.append(
+            Level(
+                name=f"Уровень {level_num}",
+                description=f"Требуется {required_xp} репутационных баллов для достижения этого уровня.",
+                required_points=required_xp,
+                level_type=LevelTypeEnum.REPUTATION,
+            )
         )
-        levels_to_add.append(reputation_level)
 
     session.add_all(levels_to_add)
     await session.commit()
-    logger.info(f"Сгенерировано и добавлено {len(levels_to_add)} уровней в базу данных.")
-
+    logger.info("Added %s levels", len(levels_to_add))
     return levels_to_add
 
 
 def _sanitize_phone_number(phone_raw: str) -> str:
-    """Преобразует телефонный номер в стандартный формат."""
-    phone_cleaned: str = "".join(filter(str.isdigit, phone_raw))
+    phone_cleaned = "".join(filter(str.isdigit, phone_raw))
 
     if phone_cleaned.startswith("8"):
         phone_cleaned = "7" + phone_cleaned[1:]
     elif len(phone_cleaned) == PhoneNumberLength.SHORTENED_FORMAT.value and not phone_cleaned.startswith("7"):
         phone_cleaned = "7" + phone_cleaned
 
-    if len(phone_cleaned) > int(PhoneNumberLength.AVERAGE_FORMAT.value):
+    if len(phone_cleaned) > PhoneNumberLength.AVERAGE_FORMAT.value:
         phone_cleaned = phone_cleaned[-11:]
 
-    # Если номер слишком короткий, берём новый из генератора
-    if len(phone_cleaned) < int(PhoneNumberLength.SHORTENED_FORMAT.value):
+    if len(phone_cleaned) < PhoneNumberLength.SHORTENED_FORMAT.value:
         return "+" + "".join(filter(str.isdigit, fake.phone_number()))
 
     return "+" + phone_cleaned
 
 
 async def generate_users_data(
-    session: AsyncSession,
     user_service: UserService,
+    points_service: PointsService,
     competencies: Sequence[CompetenceReadDTO],
     num_users: int,
 ) -> None:
-    """Генерирует и добавляет фейковых пользователей в базу данных."""
-    logger.info(f"Начинаем генерацию {num_users} фейковых пользователей...")
+    logger.info("Starting generation of %s fake users", num_users)
 
+    users_data = _generate_fake_users_data(competencies, num_users)
+    successfully_created = 0
+    failed_count = 0
+    created_users: list[tuple[int, UserDataDict]] = []
+
+    for idx, user_data in enumerate(users_data, 1):
+        try:
+            user_id = await _register_seed_user(user_service, user_data, idx, len(users_data))
+            if user_id is None:
+                failed_count += 1
+                continue
+
+            created_users.append((user_id, user_data))
+        except Exception as exc:
+            failed_count += 1
+            logger.error(
+                "Failed to create user %s (%s %s): %s",
+                idx,
+                user_data["first_name"],
+                user_data["last_name"],
+                exc,
+                exc_info=True,
+            )
+
+    created_user_ids = [user_id for user_id, _ in created_users]
+    for idx, (user_id, user_data) in enumerate(created_users, 1):
+        try:
+            await _seed_registered_user(
+                user_service=user_service,
+                points_service=points_service,
+                created_user_ids=created_user_ids,
+                user_id=user_id,
+                user_data=user_data,
+            )
+            successfully_created += 1
+            logger.debug("User %s seeded successfully (id=%s)", idx, user_id)
+        except Exception as exc:
+            failed_count += 1
+            logger.error(
+                "Failed to seed user %s (%s %s): %s",
+                idx,
+                user_data["first_name"],
+                user_data["last_name"],
+                exc,
+                exc_info=True,
+            )
+    logger.success("Successfully created %s users. Errors: %s", successfully_created, failed_count)
+
+
+def _generate_fake_users_data(competencies: Sequence[CompetenceReadDTO], num_users: int) -> list[UserDataDict]:
     users_data: list[UserDataDict] = []
     used_telegram_ids: set[int] = set()
     used_phones: set[str] = set()
     current_telegram_id_seed = MIN_TELEGRAM_ID
 
-    # Шаг 1: Подготавливаем данные
     for _ in range(num_users):
-        first_name: str = fake.first_name()
-        last_name: str = fake.last_name()
-        patronymic: str | None = fake.middle_name() if fake.boolean(chance_of_getting_true=80) else None
+        user_data, current_telegram_id_seed = _build_fake_user_data(
+            competencies=competencies,
+            used_telegram_ids=used_telegram_ids,
+            used_phones=used_phones,
+            current_telegram_id_seed=current_telegram_id_seed,
+        )
+        users_data.append(user_data)
 
-        # Генерируем уникальный Telegram ID
-        while current_telegram_id_seed in used_telegram_ids:
-            current_telegram_id_seed += 1
-        telegram_id: int = current_telegram_id_seed
-        used_telegram_ids.add(telegram_id)
+    return users_data
+
+
+def _build_fake_user_data(
+    *,
+    competencies: Sequence[CompetenceReadDTO],
+    used_telegram_ids: set[int],
+    used_phones: set[str],
+    current_telegram_id_seed: int,
+) -> tuple[UserDataDict, int]:
+    first_name = fake.first_name()
+    last_name = fake.last_name()
+    patronymic = fake.middle_name() if fake.boolean(chance_of_getting_true=80) else None
+
+    while current_telegram_id_seed in used_telegram_ids:
         current_telegram_id_seed += 1
+    telegram_id = current_telegram_id_seed
+    used_telegram_ids.add(telegram_id)
+    next_telegram_id_seed = current_telegram_id_seed + 1
 
-        # Генерируем и нормализуем телефон
-        phone_number: str = _sanitize_phone_number(fake.phone_number())
+    phone_number = _sanitize_phone_number(fake.phone_number())
+    if phone_number in used_phones:
+        phone_number = _sanitize_phone_number(fake.phone_number())
+    used_phones.add(phone_number)
 
-        # Проверка уникальности телефона
-        if phone_number in used_phones:
-            phone_number = _sanitize_phone_number(fake.phone_number())
-
-        used_phones.add(phone_number)
-
-        academic_points: int = random.randrange(  # noqa: S311
-            0,
-            MAX_POINTS_RANGE + 1,
-            random.choice(POINT_STEPS),  # noqa: S311
-        )
-        reputation_points: int = random.randrange(  # noqa: S311
-            0,
-            MAX_POINTS_RANGE + 1,
-            random.choice(POINT_STEPS),  # noqa: S311
-        )
-
-        user_entry: UserDataDict = {
+    return (
+        {
             "first_name": first_name,
             "last_name": last_name,
             "patronymic": patronymic,
             "phone": phone_number,
             "tg_id": telegram_id,
-            "academic_points": academic_points,
-            "reputation_points": reputation_points,
-        }
-        users_data.append(user_entry)
+            "academic_points": random.randrange(0, MAX_POINTS_RANGE + 1, random.choice(POINT_STEPS)),  # noqa: S311
+            "reputation_points": random.randrange(0, MAX_POINTS_RANGE + 1, random.choice(POINT_STEPS)),  # noqa: S311
+            "competence_ids": _pick_competence_ids(competencies),
+        },
+        next_telegram_id_seed,
+    )
 
-    # Шаг 2: Создаём пользователей с обработкой ошибок
-    successfully_created = 0
-    failed_count = 0
 
-    for idx, user_data in enumerate(users_data, 1):
-        try:
-            logger.debug(
-                f"Создание пользователя {idx}/{len(users_data)}: {user_data['first_name']} {user_data['last_name']}"
-            )
+def _pick_competence_ids(competencies: Sequence[CompetenceReadDTO]) -> list[int]:
+    if not competencies:
+        return []
 
-            user = await create_user_profile(
-                db=session,
-                data=UserCreateDTO(
-                    first_name=user_data["first_name"],
-                    last_name=user_data["last_name"],
-                    patronymic=user_data["patronymic"],
-                    phone=user_data["phone"],
-                    tg_id=user_data["tg_id"],
-                ),
-            )
+    selected_count = random.randint(1, min(MAX_COMPETENCIES_PER_USER, len(competencies)))  # noqa: S311
+    return random.sample([competence.id for competence in competencies], selected_count)
 
-            if not user or not user.id:
-                logger.error(f"Пользователь {idx} не имеет ID после создания")
-                failed_count += 1
-                continue
 
-            # Обновляем баллы
-            await update_user_points_by_id(
-                db=session,
-                user_id=user.id,
-                points_value=user_data["academic_points"],
-                points_type=LevelTypeEnum.ACADEMIC,
-            )
+async def _register_seed_user(
+    user_service: UserService,
+    user_data: UserDataDict,
+    idx: int,
+    total_users: int,
+) -> int | None:
+    logger.debug(
+        "Creating user %s/%s: %s %s",
+        idx,
+        total_users,
+        user_data["first_name"],
+        user_data["last_name"],
+    )
 
-            await update_user_points_by_id(
-                db=session,
-                user_id=user.id,
-                points_value=user_data["reputation_points"],
-                points_type=LevelTypeEnum.REPUTATION,
-            )
+    user = await user_service.register_student(
+        UserCreateDTO(
+            first_name=user_data["first_name"],
+            last_name=user_data["last_name"],
+            patronymic=user_data["patronymic"],
+            phone=user_data["phone"],
+            tg_id=user_data["tg_id"],
+        )
+    )
 
-            if competencies:
-                selected_count = random.randint(1, min(MAX_COMPETENCIES_PER_USER, len(competencies)))  # noqa: S311
-                selected_competence_ids = random.sample(
-                    [competence.id for competence in competencies],
-                    selected_count,
-                )
-                await user_service.add_user_competencies(user.id, selected_competence_ids)
+    if not user.id:
+        logger.error("User %s does not have an id after creation", idx)
+        return None
 
-            successfully_created += 1
-            logger.debug(f"✓ Пользователь {idx} успешно создан (ID: {user.id})")
+    logger.debug("User %s registered successfully (id=%s)", idx, user.id)
+    return user.id
 
-        except Exception as e:
-            failed_count += 1
-            logger.error(
-                f"✗ Ошибка при создании пользователя {idx} ({user_data['first_name']} {user_data['last_name']}): {e}",
-                exc_info=True,
-            )
-            continue
 
-    await session.commit()
-    logger.success(f"Успешно создано {successfully_created} пользователей. Ошибок: {failed_count}")
+async def _seed_registered_user(
+    *,
+    user_service: UserService,
+    points_service: PointsService,
+    created_user_ids: Sequence[int],
+    user_id: int,
+    user_data: UserDataDict,
+) -> None:
+    giver_id = _select_seed_giver_id(created_user_ids, user_id)
+    await _apply_seed_points(
+        points_service=points_service,
+        recipient_id=user_id,
+        giver_id=giver_id,
+        points_value=user_data["academic_points"],
+        points_type=LevelTypeEnum.ACADEMIC,
+    )
+    await _apply_seed_points(
+        points_service=points_service,
+        recipient_id=user_id,
+        giver_id=giver_id,
+        points_value=user_data["reputation_points"],
+        points_type=LevelTypeEnum.REPUTATION,
+    )
+
+    if user_data["competence_ids"]:
+        await user_service.add_user_competencies(user_id, user_data["competence_ids"])
+
+
+def _select_seed_giver_id(created_user_ids: Sequence[int], recipient_id: int) -> int:
+    if len(created_user_ids) <= 1:
+        return recipient_id
+
+    recipient_index = created_user_ids.index(recipient_id)
+    return created_user_ids[(recipient_index + 1) % len(created_user_ids)]
+
+
+async def _apply_seed_points(
+    *,
+    points_service: PointsService,
+    recipient_id: int,
+    giver_id: int,
+    points_value: int,
+    points_type: LevelTypeEnum,
+) -> None:
+    if points_value == 0:
+        return
+
+    await points_service.change_points(
+        AdjustUserPointsDTO(
+            recipient_id=recipient_id,
+            giver_id=giver_id,
+            points=Points(value=points_value, point_type=points_type),
+            reason=SEED_POINTS_REASON,
+        )
+    )
 
 
 async def get_all_roles(session: AsyncSession) -> Sequence[Role]:
-    """Получает все роли из базы данных."""
     stmt = select(Role)
     result = await session.execute(stmt)
     return result.scalars().all()
 
 
 async def role_exists(session: AsyncSession) -> bool:
-    """Проверяет, существуют ли роли в базе данных."""
     stmt = select(Role).limit(1)
     result = await session.execute(stmt)
     return result.scalar_one_or_none() is not None
 
 
 async def add_roles_data(session: AsyncSession) -> Sequence[Role]:
-    """Добавляет роли в БД (если их там еще нет) из RoleEnum."""
-    logger.info("Начинаем генерацию ролей...")
+    logger.info("Starting role generation")
 
     if await role_exists(session):
-        logger.info("Роли уже существуют в БД. Пропускаем генерацию.")
+        logger.info("Roles already exist, skipping generation")
         return await get_all_roles(session)
 
-    roles_to_add = []
-
-    for role_obj in RoleEnum:
-        role = Role(
-            name=f"{role_obj.value}",
-        )
-        roles_to_add.append(role)
-        logger.info(f"Добавлена роль: {role.name}")
-
+    roles_to_add = [Role(name=role_obj.value) for role_obj in RoleEnum]
     session.add_all(roles_to_add)
     await session.commit()
-    logger.info(f"Добавлено {len(roles_to_add)} ролей в базу данных.")
+    logger.info("Added %s roles", len(roles_to_add))
     return roles_to_add
 
 
 async def add_competencies_data(competence_service: CompetenceService) -> Sequence[CompetenceReadDTO]:
-    """Добавляет компетенции в БД (если их там еще нет)."""
-    logger.info("Начинаем генерацию компетенций...")
+    logger.info("Starting competence generation")
 
     existing = await competence_service.get_all_competencies()
     if existing:
-        logger.info("Компетенции уже существуют в БД. Пропускаем генерацию.")
+        logger.info("Competencies already exist, skipping generation")
         return existing
 
     created: list[CompetenceReadDTO] = []
     for name, description in COMPETENCIES_SEED:
-        competence = await competence_service.create_competence(CompetenceCreateDTO(name=name, description=description))
-        created.append(competence)
+        created.append(
+            await competence_service.create_competence(CompetenceCreateDTO(name=name, description=description))
+        )
 
-    logger.info(f"Добавлено {len(created)} компетенций в базу данных.")
+    logger.info("Added %s competencies", len(created))
     return created
 
 
 async def fill_database() -> None:
-    """Основная функция для заполнения базы данных фейковыми данными."""
-    logger.info("Запуск скрипта заполнения базы данных...")
+    logger.info("Starting database seed script")
 
-    async with SessionLocal() as session:
-        try:
-            competence_repository = CompetenceRepository()
-            competence_service = CompetenceService(session, competence_repository)
-            user_service = UserService(
-                session,
-                UserRepository(),
-                LevelRepository(),
-                RoleRepository(),
-                competence_repository,
-            )
-            # 1️⃣ Генерация и добавление уровней
-            await generate_levels_data(session)
+    container = await setup_container()
+    try:
+        async with container() as request_container:
+            session = await request_container.get(AsyncSession)
+            competence_service = await request_container.get(CompetenceService)
+            level_service = await request_container.get(LevelService)
+            points_service = await request_container.get(PointsService)
+            user_service = await request_container.get(UserService)
 
-            # 2️⃣ Добавление ролей
-            await add_roles_data(session)
-
-            # 3️⃣ Генерация и добавление пользователей
-            competencies = await add_competencies_data(competence_service)
-            await generate_users_data(session, user_service, competencies, NUM_FAKE_USERS)
-
-            logger.success("Заполнение базы данных успешно завершено!")
-        except Exception as e:
-            await session.rollback()
-            logger.error(f"Ошибка во время заполнения базы данных: {e}", exc_info=True)
-            logger.warning("Заполнение базы данных было отменено (rollback).")
-        finally:
-            await engine.dispose()
+            try:
+                await generate_levels_data(session, level_service)
+                await add_roles_data(session)
+                competencies = await add_competencies_data(competence_service)
+                await generate_users_data(user_service, points_service, competencies, NUM_FAKE_USERS)
+                logger.success("Database seeding finished successfully")
+            except Exception as exc:
+                await session.rollback()
+                logger.error("Database seeding failed: %s", exc, exc_info=True)
+                logger.warning("Database seeding was rolled back")
+    finally:
+        await container.close()
 
 
 if __name__ == "__main__":
-    # Устанавливаем корректный путь для импорта
     project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     if project_root not in sys.path:
         sys.path.insert(0, project_root)

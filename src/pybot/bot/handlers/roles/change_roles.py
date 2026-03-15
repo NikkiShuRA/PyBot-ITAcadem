@@ -39,7 +39,7 @@ async def _get_target_user_id_from_mention(
         if entity.type == "text_mention" and entity.user is not None:
             awarded_id = entity.user.id
             try:
-                mentioned_user = await user_service.get_user_by_telegram_id(awarded_id)
+                mentioned_user = await user_service.find_user_by_telegram_id(awarded_id)
                 if mentioned_user is None:
                     await message.reply("❌ Пользователь не найден в системе.")
                     return None
@@ -189,10 +189,6 @@ async def handle_remove_role(
             tg_id=target_id,
             role_name=role.value,
         )
-
-        if not updated_user:
-            await message.reply(f"❌ Пользователь {target_id} не имеет роли {role.value}")
-            return
 
         await message.reply(
             f"✅ Роль {role.value} пользователя {updated_user.first_name} "

@@ -120,8 +120,8 @@ async def _handle_points_command(
         await message.reply(str(err))
         return
 
-    recipient_user: UserReadDTO | None = await user_service.get_user_by_telegram_id(target_user_id)
-    giver_user: UserReadDTO | None = await user_service.get_user_by_telegram_id(message.from_user.id)
+    recipient_user: UserReadDTO | None = await user_service.find_user_by_telegram_id(target_user_id)
+    giver_user: UserReadDTO | None = await user_service.find_user_by_telegram_id(message.from_user.id)
 
     if recipient_user is None or giver_user is None:
         logger.warning("Не удалось определить пользователей для операции с баллами")

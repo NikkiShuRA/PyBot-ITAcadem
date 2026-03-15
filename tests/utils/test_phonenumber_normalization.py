@@ -69,3 +69,14 @@ class TestNormalizePhoneRU:
         """Строгий режим должен отбрасывать номер, который парсится, но не считается валидным."""
         with pytest.raises(ValueError):
             normalize_phone("70000000000", strict=True)
+
+    def test_repeated_calls_use_lru_cache(self) -> None:
+        normalize_phone.cache_clear()
+
+        first = normalize_phone("+79124130102")
+        second = normalize_phone("+79124130102")
+        cache_info = normalize_phone.cache_info()
+
+        assert first == second == "+79124130102"
+        assert cache_info.hits == 1
+        assert cache_info.misses == 1

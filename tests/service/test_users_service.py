@@ -42,7 +42,7 @@ async def test_register_student_success_creates_profile_levels_and_role(
     assert created.telegram_id == dto.tg_id
     assert created.first_name == dto.first_name
 
-    user_roles = await service.get_user_roles(created.id)
+    user_roles = await service.find_user_roles(created.id)
     assert "Student" in user_roles
 
     levels_stmt = select(UserLevel).where(UserLevel.user_id == created.id)
@@ -101,7 +101,7 @@ async def test_register_student_assigns_admin_role_for_configured_telegram_ids(
     created = await service.register_student(dto)
 
     # Then
-    roles = await service.get_user_roles(created.id)
+    roles = await service.find_user_roles(created.id)
     assert sorted(roles) == ["Admin", "Student"]
 
 
@@ -144,7 +144,7 @@ async def test_register_student_does_not_assign_admin_role_for_non_configured_te
     created = await service.register_student(dto)
 
     # Then
-    roles = await service.get_user_roles(created.id)
+    roles = await service.find_user_roles(created.id)
     assert roles == ["Student"]
 
 
@@ -168,20 +168,20 @@ async def test_remove_user_role_removes_existing_role_and_returns_dto(
     # Then
     assert result is not None
     assert result.id == user.id
-    roles = await service.get_user_roles(user.id)
+    roles = await service.find_user_roles(user.id)
     assert "Mentor" not in roles
     assert "Student" in roles
 
 
 @pytest.mark.asyncio
-async def test_get_user_by_telegram_id_returns_none_for_unknown_user(
+async def test_find_user_by_telegram_id_returns_none_for_unknown_user(
     dishka_request_container,
 ) -> None:
     # Given
     service = await dishka_request_container.get(UserService)
 
     # When
-    result = await service.get_user_by_telegram_id(telegram_id := 123_456_789)
+    result = await service.find_user_by_telegram_id(telegram_id := 123_456_789)
 
     # Then
     assert result is None, f"Expected no user for telegram id={telegram_id}"
@@ -203,7 +203,7 @@ async def test_add_user_role_raises_when_user_not_found(
 
 
 @pytest.mark.asyncio
-async def test_get_user_roles_returns_all_assigned_roles(
+async def test_find_user_roles_returns_all_assigned_roles(
     dishka_request_container,
 ) -> None:
     # Given
@@ -217,7 +217,7 @@ async def test_get_user_roles_returns_all_assigned_roles(
     await db.commit()
 
     # When
-    roles = await service.get_user_roles(user.id)
+    roles = await service.find_user_roles(user.id)
 
     # Then
     assert sorted(roles) == ["Admin", "Student"]
@@ -332,7 +332,7 @@ async def test_add_user_competencies_raises_for_unknown_competence_id(
 
 
 @pytest.mark.asyncio
-async def test_get_user_competencies_returns_read_dto_list(dishka_request_container) -> None:
+async def test_find_user_competencies_returns_read_dto_list(dishka_request_container) -> None:
     db = await dishka_request_container.get(AsyncSession)
     service = await dishka_request_container.get(UserService)
     user = await create_user(db, spec=UserSpec(telegram_id=700_017))
@@ -342,7 +342,7 @@ async def test_get_user_competencies_returns_read_dto_list(dishka_request_contai
     await attach_user_competence(db, user=user, competence=sql_competence)
     await db.commit()
 
-    competencies = await service.get_user_competencies(user.id)
+    competencies = await service.find_user_competencies(user.id)
 
     assert [competence.name for competence in competencies] == ["Python", "SQL"]
 

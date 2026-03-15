@@ -155,7 +155,7 @@ async def _resolve_target_user_for_command(
 ) -> tuple[UserReadDTO, str | None]:
     target_tg_id, target_source = await _resolve_target_user_telegram_id(message)
     if target_tg_id is not None:
-        target_user = await user_service.get_user_by_telegram_id(target_tg_id)
+        target_user = await user_service.find_user_by_telegram_id(target_tg_id)
         if target_user is None:
             raise UserNotFoundError(telegram_id=target_tg_id)
         return target_user, target_source
@@ -167,9 +167,10 @@ async def _resolve_target_user_for_command(
         raise UserNotFoundError()
 
     if fallback_user_id is not None:
-        target_user = await user_service.get_user(fallback_user_id)
-        if target_user is None:
-            raise UserNotFoundError(user_id=fallback_user_id)
+        try:
+            target_user = await user_service.get_user(fallback_user_id)
+        except UserNotFoundError as err:
+            raise UserNotFoundError(user_id=fallback_user_id) from err
         return target_user, None
 
     if required:
@@ -290,7 +291,7 @@ async def handle_show_competences(
         return
 
     try:
-        competencies = await user_service.get_user_competencies(target_user.id)
+        competencies = await user_service.find_user_competencies(target_user.id)
     except UserNotFoundError:
         await message.reply("Пользователь не найден.")
         return

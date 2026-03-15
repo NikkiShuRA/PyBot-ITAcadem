@@ -47,7 +47,7 @@ class StubUserService:
     existing_user: SupportsUserId | None = None
     phone_queries: list[str] = field(default_factory=list)
 
-    async def get_user_by_phone(self, phone: str) -> SupportsUserId | None:
+    async def find_user_by_phone(self, phone: str) -> SupportsUserId | None:
         self.phone_queries.append(phone)
         return self.existing_user
 

@@ -45,10 +45,10 @@ class RoleRequestService:
         self.notification_service: NotificationPort = notification_service
 
     async def check_requesting_user(self, user_id: int, user_role: str) -> bool:
-        user = await self.user_repository.get_by_id(self.db, user_id)
-
-        if user is None:
-            raise UserNotFoundError(user_id)
+        try:
+            user = await self.user_repository.get_by_id(self.db, user_id)
+        except UserNotFoundError as err:
+            raise UserNotFoundError(user_id) from err
 
         role_check = await self.role_repository.get_role_by_name(self.db, user_role)
 
@@ -82,9 +82,10 @@ class RoleRequestService:
         request = RoleRequest(user_id=user_id, role_id=role_object.id)
         self.db.add(request)
 
-        user = await self.user_repository.get_by_id(self.db, user_id)
-        if user is None:
-            raise UserNotFoundError(user_id)
+        try:
+            user = await self.user_repository.get_by_id(self.db, user_id)
+        except UserNotFoundError as err:
+            raise UserNotFoundError(user_id) from err
 
         await self.db.commit()
         await self.notification_service.send_role_request_to_admin(request.id, user.telegram_id, role)
@@ -97,9 +98,10 @@ class RoleRequestService:
             raise RoleRequestNotFoundError()
         if request.status != RequestStatus.PENDING:
             raise RoleRequestAlreadyProcessedError()
-        user = await self.user_repository.get_by_id(self.db, request.user_id)
-        if user is None:
-            raise UserNotFoundError()
+        try:
+            user = await self.user_repository.get_by_id(self.db, request.user_id)
+        except UserNotFoundError as err:
+            raise UserNotFoundError() from err
         role_name = request.role.name
         if new_status == RequestStatus.APPROVED and await self.user_repository.has_role(self.db, user.id, role_name):
             raise RoleAlreadyAssignedError(user_id=user.id, role_name=role_name)

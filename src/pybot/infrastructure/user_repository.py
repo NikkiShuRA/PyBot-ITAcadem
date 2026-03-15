@@ -22,9 +22,9 @@ class UserRepository:
 
     async def get_by_id(
         self,
-        db: AsyncSession,  # ← Сессия передается СЮДА
+        db: AsyncSession,
         id_: int,
-    ) -> User | None:
+    ) -> User:
         stmt = (
             select(User)
             .options(
@@ -46,7 +46,7 @@ class UserRepository:
         self,
         db: AsyncSession,
         tg_id: int,
-    ) -> User | None:
+    ) -> User:
         stmt = (
             select(User)
             .where(User.telegram_id == tg_id)
@@ -88,7 +88,7 @@ class UserRepository:
 
         return users
 
-    async def get_all_user_competencies(self, db: AsyncSession, user_id: int) -> Sequence[Competence]:
+    async def find_all_user_competencies(self, db: AsyncSession, user_id: int) -> Sequence[Competence]:
         stmt = (
             select(Competence)
             .select_from(UserCompetence)
@@ -114,12 +114,12 @@ class UserRepository:
 
         return users
 
-    async def get_all_user_roles_by_pk(self, db: AsyncSession, user_id: int) -> set[str]:
+    async def find_all_user_roles_by_pk(self, db: AsyncSession, user_id: int) -> set[str]:
         stmt = select(Role.name).select_from(UserRole).join(Role).where(UserRole.user_id == user_id)
         result = await db.execute(stmt)
         return set(result.scalars().all())
 
-    async def get_user_by_phone(
+    async def find_user_by_phone(
         self,
         db: AsyncSession,
         phone: str,
@@ -130,8 +130,15 @@ class UserRepository:
 
         return user
 
-    async def get_user_by_telegram_id(self, db: AsyncSession, tg_id: int) -> User | None:
+    async def find_user_by_telegram_id(self, db: AsyncSession, tg_id: int) -> User | None:
         stmt = select(User).where(User.telegram_id == tg_id)
+        result = await db.execute(stmt)
+        user = result.scalar_one_or_none()
+
+        return user
+
+    async def find_user_by_id(self, db: AsyncSession, user_id: int) -> User | None:
+        stmt = select(User).where(User.id == user_id)
         result = await db.execute(stmt)
         user = result.scalar_one_or_none()
 
@@ -175,14 +182,14 @@ class UserRepository:
         result = await db.execute(stmt)
         return result.scalar_one_or_none() is not None
 
-    async def get_user_roles(
+    async def find_user_roles(
         self,
         db: AsyncSession,
         user_id: int,
     ) -> Sequence[str]:
-        stmt = select(Role.name).select_from(UserRole).join(Role).where(UserRole.user_id == user_id)
-        result = await db.execute(stmt)
-        return result.scalars().all()
+        roles_stmt = select(Role.name).join(UserRole).where(UserRole.user_id == user_id)
+        roles_result = await db.execute(roles_stmt)
+        return roles_result.scalars().all()
 
     async def update_user_last_active(
         self,
