@@ -47,9 +47,6 @@ dev = [
     "pytest-aiogram>=0.1.0",
 ]
 
-[tool.uv]
-required-version = "==0.9.13"
-
 [tool.ruff]
 exclude = [
     ".bzr",
