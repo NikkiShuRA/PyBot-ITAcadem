@@ -9,6 +9,7 @@ HELP_PRIVATE = textwrap.dedent(
     /help - показать это сообщение
     /info - информация о проекте
     /ping - проверка доступности бота (Student/Admin)
+    /showcompetences [@user|id|reply] - показать компетенции пользователя
 
     Команды администратора:
     /broadcast @all <текст> - рассылка всем пользователям
@@ -20,7 +21,6 @@ HELP_PRIVATE = textwrap.dedent(
     /removerole @user <Student|Mentor|Admin> "причина" - снять роль
     /addcompetence @user Python,SQL - добавить компетенции
     /removecompetence @user Python,SQL - убрать компетенции
-    /showcompetences [@user|id|reply] - показать компетенции пользователя
     """
 ).strip()
 
@@ -31,6 +31,7 @@ HELP_GROUP = textwrap.dedent(
     /help - показать это сообщение
     /info - информация о проекте
     /ping - проверка доступности бота (Student/Admin)
+    /showcompetences [@user|id|reply] - показать компетенции пользователя
 
     Команды администратора:
     /academic_points @user <число> "причина" - изменить академические баллы
@@ -39,7 +40,6 @@ HELP_GROUP = textwrap.dedent(
     /removerole @user <Student|Mentor|Admin> "причина" - снять роль
     /addcompetence @user Python,SQL - добавить компетенции
     /removecompetence @user Python,SQL - убрать компетенции
-    /showcompetences [@user|id|reply] - показать компетенции пользователя
 
     Примечание:
     /broadcast доступна только в личном чате с ботом.

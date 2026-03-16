@@ -32,8 +32,9 @@ class DishkaContainer(Protocol):
     async def get(
         self,
         dependency_type: type[NotificationPort],
-        *,
+        *args: object,
         component: str | None = None,
+        **kwargs: object,
     ) -> NotificationPort: ...
 
 
@@ -53,11 +54,18 @@ class DishkaContainerStub:
     async def get(
         self,
         dependency_type: type[NotificationPort],
-        *,
+        *args: object,
         component: str | None = None,
+        **kwargs: object,
     ) -> NotificationPort:
         assert dependency_type is NotificationPort
-        assert component in ("", None)
+        resolved_component = component
+        if args:
+            resolved_component = args[0]
+        elif "component" in kwargs:
+            resolved_component = kwargs["component"]
+
+        assert resolved_component in ("", None)
         return self._notification_port
 
 
