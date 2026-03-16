@@ -271,7 +271,7 @@ async def handle_remove_competence(
 
 @change_competence_global_router.message(
     Command("showcompetences"),
-    flags={"role": "Admin", "rate_limit": "moderate"},
+    flags={"rate_limit": "moderate"},
 )
 async def handle_show_competences(
     message: Message,
