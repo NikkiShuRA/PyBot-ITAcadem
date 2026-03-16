@@ -1,0 +1,88 @@
+---
+- name: Validate required deploy variables
+  ansible.builtin.assert:
+    that:
+      - deploy_path is defined
+      - deploy_compose_src is defined
+      - app_env_src is defined
+      - image_repository is defined
+      - image_tag is defined
+    fail_msg: "deploy_path, deploy_compose_src, app_env_src, image_repository, and image_tag are required."
+
+- name: Create application directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "{{ deploy_path }}"
+    - "{{ deploy_path }}/backups"
+
+- name: Copy production compose file
+  ansible.builtin.copy:
+    src: "{{ deploy_compose_src }}"
+    dest: "{{ deploy_path }}/docker-compose.prod.yml"
+    mode: "0644"
+
+- name: Copy production environment file
+  ansible.builtin.copy:
+    src: "{{ app_env_src }}"
+    dest: "{{ deploy_path }}/.env"
+    mode: "0600"
+
+- name: Log in to GHCR when deploy credentials are provided
+  ansible.builtin.shell: |
+    set -eu
+    echo "{{ registry_token }}" | docker login ghcr.io --username "{{ registry_username }}" --password-stdin
+  args:
+    executable: /bin/sh
+  no_log: true
+  when:
+    - registry_username is defined
+    - registry_username | length > 0
+    - registry_token is defined
+    - registry_token | length > 0
+
+- name: Back up SQLite database volume when present
+  ansible.builtin.shell: |
+    set -eu
+    if docker volume inspect pybot_data_prod >/dev/null 2>&1; then
+      docker run --rm \
+        -v pybot_data_prod:/data \
+        -v "{{ deploy_path }}/backups:/backup" \
+        alpine:3.20 \
+        sh -c 'if [ -f /data/pybot_itacadem.db ]; then cp /data/pybot_itacadem.db /backup/pybot_itacadem-$(date +%Y%m%d%H%M%S).db; fi'
+    fi
+  args:
+    executable: /bin/sh
+  changed_when: false
+
+- name: Pull production images
+  ansible.builtin.shell: |
+    set -eu
+    APP_IMAGE={{ image_repository }}:{{ image_tag }} docker compose -f docker-compose.prod.yml pull
+  args:
+    chdir: "{{ deploy_path }}"
+    executable: /bin/sh
+
+- name: Run one-shot database migrations
+  ansible.builtin.shell: |
+    set -eu
+    APP_IMAGE={{ image_repository }}:{{ image_tag }} docker compose -f docker-compose.prod.yml --profile migration run --rm migrate
+  args:
+    chdir: "{{ deploy_path }}"
+    executable: /bin/sh
+
+- name: Apply production compose
+  ansible.builtin.shell: |
+    set -eu
+    APP_IMAGE={{ image_repository }}:{{ image_tag }} docker compose -f docker-compose.prod.yml up -d --remove-orphans
+  args:
+    chdir: "{{ deploy_path }}"
+    executable: /bin/sh
+
+- name: Show compose status after deploy
+  ansible.builtin.command:
+    cmd: docker compose -f docker-compose.prod.yml ps
+    chdir: "{{ deploy_path }}"
+  changed_when: false

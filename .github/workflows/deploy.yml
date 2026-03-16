@@ -1,0 +1,143 @@
+name: CD - Build and Deploy
+
+on:
+  workflow_run:
+    workflows:
+      - CI - Code Quality
+    types:
+      - completed
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      packages: write
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+      DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+      DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+      DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+      PROD_ENV_FILE: ${{ secrets.PROD_ENV_FILE }}
+      GHCR_DEPLOY_USERNAME: ${{ secrets.GHCR_DEPLOY_USERNAME }}
+      GHCR_DEPLOY_TOKEN: ${{ secrets.GHCR_DEPLOY_TOKEN }}
+
+    steps:
+      - name: Checkout target commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Validate required deploy secrets
+        run: |
+          set -eu
+          for var in DEPLOY_HOST DEPLOY_USER DEPLOY_KNOWN_HOSTS PROD_ENV_FILE; do
+            if [ -z "${!var}" ]; then
+              echo "Missing required secret: $var" >&2
+              exit 1
+            fi
+          done
+          if [ -z "${{ secrets.DEPLOY_SSH_KEY }}" ]; then
+            echo "Missing required secret: DEPLOY_SSH_KEY" >&2
+            exit 1
+          fi
+
+      - name: Prepare deployment metadata
+        id: prep
+        run: |
+          set -eu
+          image_repo="ghcr.io/${GITHUB_REPOSITORY}"
+          image_repo="$(printf '%s' "$image_repo" | tr '[:upper:]' '[:lower:]')"
+          deploy_port="${DEPLOY_PORT:-22}"
+          deploy_path="${DEPLOY_PATH:-/opt/pybot}"
+          image_tag="${{ github.event.workflow_run.head_sha }}"
+          {
+            echo "image_repo=$image_repo"
+            echo "deploy_port=$deploy_port"
+            echo "deploy_path=$deploy_path"
+            echo "image_tag=$image_tag"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GHCR for image push
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push production image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ steps.prep.outputs.image_repo }}:${{ steps.prep.outputs.image_tag }}
+            ${{ steps.prep.outputs.image_repo }}:main
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Ansible
+        run: python -m pip install --upgrade pip ansible-core
+
+      - name: Prepare SSH
+        run: |
+          set -eu
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > "$HOME/.ssh/id_ed25519"
+          chmod 600 "$HOME/.ssh/id_ed25519"
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 644 "$HOME/.ssh/known_hosts"
+
+      - name: Prepare deploy inventory and vars
+        run: |
+          set -eu
+          printf '%s\n' "$PROD_ENV_FILE" > "$RUNNER_TEMP/prod.env"
+          cat > "$RUNNER_TEMP/inventory.ini" <<EOF
+          [pybot]
+          production ansible_host=${DEPLOY_HOST} ansible_user=${DEPLOY_USER} ansible_port=${{ steps.prep.outputs.deploy_port }} ansible_ssh_private_key_file=${HOME}/.ssh/id_ed25519
+          EOF
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          payload = {
+              "deploy_path": os.environ["DEPLOY_PATH"] or "${{ steps.prep.outputs.deploy_path }}",
+              "deploy_compose_src": str(Path(os.environ["GITHUB_WORKSPACE"]) / "docker-compose.prod.yml"),
+              "app_env_src": str(Path(os.environ["RUNNER_TEMP"]) / "prod.env"),
+              "image_repository": "${{ steps.prep.outputs.image_repo }}",
+              "image_tag": "${{ steps.prep.outputs.image_tag }}",
+              "registry_username": os.environ.get("GHCR_DEPLOY_USERNAME", ""),
+              "registry_token": os.environ.get("GHCR_DEPLOY_TOKEN", ""),
+          }
+          Path(os.environ["RUNNER_TEMP"], "deploy-vars.json").write_text(
+              json.dumps(payload),
+              encoding="utf-8",
+          )
+          PY
+
+      - name: Run production deploy
+        run: |
+          set -eu
+          ansible-playbook ansible/playbooks/deploy.yml \
+            -i "$RUNNER_TEMP/inventory.ini" \
+            --extra-vars "@$RUNNER_TEMP/deploy-vars.json"

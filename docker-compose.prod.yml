@@ -1,0 +1,73 @@
+x-app-base: &app-base
+  image: ${APP_IMAGE:?APP_IMAGE must be set for production deploys}
+  env_file:
+    - .env
+  environment:
+    DATABASE_URL: ${DATABASE_URL:-sqlite+aiosqlite:///./data/pybot_itacadem.db}
+    AUTO_SEED_DB: ${AUTO_SEED_DB:-false}
+    FSM_STORAGE_BACKEND: ${FSM_STORAGE_BACKEND:-redis}
+    REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+  volumes:
+    - pybot_data:/app/data
+
+x-app-service: &app-service
+  <<: *app-base
+  restart: unless-stopped
+  depends_on:
+    redis:
+      condition: service_healthy
+
+services:
+  bot:
+    <<: *app-service
+    container_name: pybot-bot
+    command: ["python", "run.py"]
+
+  taskiq-worker:
+    <<: *app-service
+    container_name: pybot-taskiq-worker
+    command:
+      [
+        "taskiq",
+        "worker",
+        "src.pybot.infrastructure.taskiq.entrypoint:broker",
+        "--workers",
+        "1",
+      ]
+
+  taskiq-scheduler:
+    <<: *app-service
+    container_name: pybot-taskiq-scheduler
+    command:
+      [
+        "taskiq",
+        "scheduler",
+        "src.pybot.infrastructure.taskiq.entrypoint:scheduler",
+        "--skip-first-run",
+      ]
+
+  migrate:
+    <<: *app-base
+    container_name: pybot-migrate
+    profiles: ["migration"]
+    restart: "no"
+    command: ["alembic", "upgrade", "head"]
+
+  redis:
+    image: redis:7-alpine
+    container_name: pybot-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pybot_data:
+    name: pybot_data_prod
+  redis_data:
+    name: pybot_redis_data_prod
