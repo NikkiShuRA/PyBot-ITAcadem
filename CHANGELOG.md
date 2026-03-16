@@ -2,6 +2,33 @@
 
 <!-- version list -->
 
+## v0.16.1 (2026-03-15)
+
+### Bug Fixes
+
+- Исправил логику теста ([#82](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/82),
+  [`69679fa`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/69679fa1e271bfc5595ceb3d63a594339da4ff5e))
+
+### Refactoring
+
+- Выделение профильного сервиса и выравнивание контрактов lookup
+  ([#82](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/82),
+  [`69679fa`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/69679fa1e271bfc5595ceb3d63a594339da4ff5e))
+
+- Исправил интерфейс в сервисах User-а, чтобы это лучше отражало их реальное поведение, также создал
+  ADR по этому процессу, и обновил тесты
+  ([#82](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/82),
+  [`69679fa`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/69679fa1e271bfc5595ceb3d63a594339da4ff5e))
+
+- Отрефакторил логику профиля, seed-скрипт, уровней и логики баллов, а также добавил кэширование для
+  pure f(x) ([#82](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/82),
+  [`69679fa`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/69679fa1e271bfc5595ceb3d63a594339da4ff5e))
+
+- Улучшил UserService и добавил Domain Errors
+  ([#82](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/82),
+  [`69679fa`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/69679fa1e271bfc5595ceb3d63a594339da4ff5e))
+
+
 ## v0.16.0 (2026-03-12)
 
 ### Bug Fixes
