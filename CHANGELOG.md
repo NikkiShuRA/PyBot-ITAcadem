@@ -2,6 +2,61 @@
 
 <!-- version list -->
 
+## v0.17.0 (2026-03-16)
+
+### Bug Fixes
+
+- Изменить проблемы с версией uv ([#83](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/83),
+  [`10738d6`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/10738d6e7757c9859d8b5f1ae2d402dbd0d47b78))
+
+- Исправил логику теста ([#83](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/83),
+  [`10738d6`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/10738d6e7757c9859d8b5f1ae2d402dbd0d47b78))
+
+- Исправил ошибки в зависимостях в uv.lock
+  ([#83](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/83),
+  [`10738d6`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/10738d6e7757c9859d8b5f1ae2d402dbd0d47b78))
+
+- Исправил ошибочные тесты, а также убрал последствия неверного следа при фиксах, связанные с
+  версией uv ([#83](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/83),
+  [`10738d6`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/10738d6e7757c9859d8b5f1ae2d402dbd0d47b78))
+
+- Исправление проблем с uv, которые ломают CI-pipeline
+  ([#83](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/83),
+  [`10738d6`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/10738d6e7757c9859d8b5f1ae2d402dbd0d47b78))
+
+### Chores
+
+- **deployment**: Повысил безопасность локального делпоя, а также начал делать фундамент для
+  автоматизированного деплоя на внешний сервер
+  ([#83](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/83),
+  [`10738d6`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/10738d6e7757c9859d8b5f1ae2d402dbd0d47b78))
+
+- **test**: Добавил тесты для важных handler-ов aiogram, и элементов aiogram-dialog
+  ([#83](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/83),
+  [`10738d6`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/10738d6e7757c9859d8b5f1ae2d402dbd0d47b78))
+
+### Features
+
+- Добавил production-деплой и улучшил сервисные сценарии бота
+  ([#83](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/83),
+  [`10738d6`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/10738d6e7757c9859d8b5f1ae2d402dbd0d47b78))
+
+### Refactoring
+
+- Исправил интерфейс в сервисах User-а, чтобы это лучше отражало их реальное поведение, также создал
+  ADR по этому процессу, и обновил тесты
+  ([#83](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/83),
+  [`10738d6`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/10738d6e7757c9859d8b5f1ae2d402dbd0d47b78))
+
+- Отрефакторил логику профиля, seed-скрипт, уровней и логики баллов, а также добавил кэширование для
+  pure f(x) ([#83](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/83),
+  [`10738d6`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/10738d6e7757c9859d8b5f1ae2d402dbd0d47b78))
+
+- Улучшил UserService и добавил Domain Errors
+  ([#83](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/83),
+  [`10738d6`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/10738d6e7757c9859d8b5f1ae2d402dbd0d47b78))
+
+
 ## v0.16.1 (2026-03-15)
 
 ### Bug Fixes
