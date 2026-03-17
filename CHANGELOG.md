@@ -2,6 +2,23 @@
 
 <!-- version list -->
 
+## v0.17.2 (2026-03-17)
+
+### Bug Fixes
+
+- Исправил некорректную финальную проверку на работоспособность docker compose
+  ([`dbd8b2c`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/dbd8b2c293e13d704dd2d23efbc74499178fa7b2))
+
+### Chores
+
+- **deployment**: Добавил изменения под автоматизированный деплой на выделенный VDS
+  ([`70047af`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/70047af642df234a5112a7a03fe336c5e5aae0c9))
+
+- **deployment**: Добавил изменения под автоматизированный деплой на выделенный VDS
+  ([#85](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/85),
+  [`9984f01`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/9984f0164992ed2f1631e68cdc6cfafac9480721))
+
+
 ## v0.17.1 (2026-03-16)
 
 ### Bug Fixes
