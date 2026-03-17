@@ -60,29 +60,37 @@
 - name: Pull production images
   ansible.builtin.shell: |
     set -eu
-    APP_IMAGE={{ image_repository }}:{{ image_tag }} docker compose -f docker-compose.prod.yml pull
+    docker compose -f docker-compose.prod.yml pull
   args:
     chdir: "{{ deploy_path }}"
     executable: /bin/sh
+  environment:
+    APP_IMAGE: "{{ image_repository }}:{{ image_tag }}"
 
 - name: Run one-shot database migrations
   ansible.builtin.shell: |
     set -eu
-    APP_IMAGE={{ image_repository }}:{{ image_tag }} docker compose -f docker-compose.prod.yml --profile migration run --rm migrate
+    docker compose -f docker-compose.prod.yml --profile migration run --rm migrate
   args:
     chdir: "{{ deploy_path }}"
     executable: /bin/sh
+  environment:
+    APP_IMAGE: "{{ image_repository }}:{{ image_tag }}"
 
 - name: Apply production compose
   ansible.builtin.shell: |
     set -eu
-    APP_IMAGE={{ image_repository }}:{{ image_tag }} docker compose -f docker-compose.prod.yml up -d --remove-orphans
+    docker compose -f docker-compose.prod.yml up -d --remove-orphans
   args:
     chdir: "{{ deploy_path }}"
     executable: /bin/sh
+  environment:
+    APP_IMAGE: "{{ image_repository }}:{{ image_tag }}"
 
 - name: Show compose status after deploy
   ansible.builtin.command:
     cmd: docker compose -f docker-compose.prod.yml ps
     chdir: "{{ deploy_path }}"
+  environment:
+    APP_IMAGE: "{{ image_repository }}:{{ image_tag }}"
   changed_when: false
