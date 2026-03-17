@@ -15,7 +15,7 @@ This repository now includes a production deployment skeleton that extends the e
 3. `CD - Build and Deploy` starts from `workflow_run`.
 4. GitHub Actions builds a Docker image and pushes it to GHCR.
 5. GitHub Actions runs Ansible against the target server.
-6. Ansible installs Docker if needed, copies `docker-compose.prod.yml` and `.env`, runs a one-shot migration container, and then starts the runtime services.
+6. Ansible copies `docker-compose.prod.yml` and `.env` into the deploy user's workspace, runs a one-shot migration container, and then starts the runtime services.
 
 ## Why production uses a separate compose file
 
@@ -41,18 +41,25 @@ Configure these in the `production` environment or repository secrets:
 Optional secrets:
 
 - `DEPLOY_PORT` - SSH port, defaults to `22`
-- `DEPLOY_PATH` - application directory on the server, defaults to `/opt/pybot`
+- `DEPLOY_PATH` - application directory on the server, defaults to `/home/ilya/pybot`
 - `GHCR_DEPLOY_USERNAME` - username for pulling private GHCR images on the server
 - `GHCR_DEPLOY_TOKEN` - token for pulling private GHCR images on the server
 
 ## Expected server shape
 
-The included Ansible bootstrap currently targets Debian/Ubuntu hosts and installs:
+The regular CD deploy assumes:
 
-- `docker.io`
-- `docker-compose-plugin`
+- Docker is already installed on the server
+- the deploy user can run Docker commands without `sudo`
+- the deploy path is writable by the deploy user
 
-The app is deployed into `/opt/pybot` by default and keeps persistent data in named Docker volumes:
+An optional bootstrap playbook is still available for Debian/Ubuntu hosts:
+
+- [`ansible/playbooks/bootstrap.yml`](/e:/StudBot/PyBot_ITAcadem/ansible/playbooks/bootstrap.yml#L1)
+- it installs `docker.io` and `docker-compose-plugin`
+- it is intentionally separate from the normal CD path so routine deploys do not mutate shared server infrastructure
+
+The app is deployed into `/home/ilya/pybot` by default and keeps persistent data in named Docker volumes:
 
 - `pybot_data_prod`
 - `pybot_redis_data_prod`
@@ -66,6 +73,16 @@ That means:
 - Redis stays internal to the Docker network
 - the bot does not reserve any host port
 - health API will also stay internal unless you explicitly add a `ports` mapping later
+
+## Safety for Shared Servers
+
+The normal CD flow is intentionally non-root:
+
+- it does not install packages during routine deploys
+- it does not change system services during routine deploys
+- it only writes inside the configured deploy path and uses Docker commands available to the deploy user
+
+This separation is meant to reduce the risk of affecting unrelated projects hosted on the same server.
 
 ## Migrations
 

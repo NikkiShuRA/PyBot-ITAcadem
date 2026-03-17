@@ -1,14 +1,6 @@
----
-- name: Bootstrap Docker host
-  hosts: pybot
-  become: true
-  gather_facts: true
-  roles:
-    - role: docker_host
-
 - name: Deploy PyBot application
   hosts: pybot
-  become: true
+  become: false
   gather_facts: true
   roles:
     - role: pybot_deploy

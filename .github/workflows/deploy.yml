@@ -59,7 +59,7 @@ jobs:
           image_repo="ghcr.io/${GITHUB_REPOSITORY}"
           image_repo="$(printf '%s' "$image_repo" | tr '[:upper:]' '[:lower:]')"
           deploy_port="${DEPLOY_PORT:-22}"
-          deploy_path="${DEPLOY_PATH:-/opt/pybot}"
+          deploy_path="${DEPLOY_PATH:-/home/ilya/pybot}"
           image_tag="${{ github.event.workflow_run.head_sha }}"
           {
             echo "image_repo=$image_repo"
