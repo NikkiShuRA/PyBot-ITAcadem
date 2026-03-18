@@ -16,6 +16,7 @@ This repository now includes a production deployment skeleton that extends the e
 4. GitHub Actions builds a Docker image and pushes it to GHCR.
 5. GitHub Actions runs Ansible against the target server.
 6. Ansible copies `docker-compose.prod.yml` and `.env` into the deploy user's workspace, runs a one-shot migration container, optionally runs a one-shot seed container, and then starts the runtime services.
+7. Ansible runs a post-deploy smoke-check: it verifies the core containers are running and, when enabled, probes the health API readiness endpoint from inside the bot container.
 
 ## Why production uses a separate compose file
 
@@ -86,6 +87,16 @@ The normal CD flow is intentionally non-root:
 - it only writes inside the configured deploy path and uses Docker commands available to the deploy user
 
 This separation is meant to reduce the risk of affecting unrelated projects hosted on the same server.
+
+## Post-Deploy Smoke Check
+
+The deploy role performs a lightweight smoke-check after `docker compose up -d`:
+
+- verifies that `pybot-bot`, `pybot-taskiq-worker`, `pybot-taskiq-scheduler`, and `pybot-redis` are running;
+- waits for Redis health to become `healthy` when a healthcheck exists;
+- if `HEALTH_API_ENABLED=true`, calls `GET /ready` from inside the bot container.
+
+This complements CI tests by validating the deployed runtime on the real server instead of rerunning the same test suite.
 
 ## Migrations
 
