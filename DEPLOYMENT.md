@@ -15,7 +15,7 @@ This repository now includes a production deployment skeleton that extends the e
 3. `CD - Build and Deploy` starts from `workflow_run`.
 4. GitHub Actions builds a Docker image and pushes it to GHCR.
 5. GitHub Actions runs Ansible against the target server.
-6. Ansible copies `docker-compose.prod.yml` and `.env` into the deploy user's workspace, runs a one-shot migration container, and then starts the runtime services.
+6. Ansible copies `docker-compose.prod.yml` and `.env` into the deploy user's workspace, runs a one-shot migration container, optionally runs a one-shot seed container, and then starts the runtime services.
 
 ## Why production uses a separate compose file
 
@@ -44,6 +44,7 @@ Optional secrets:
 - `DEPLOY_PATH` - application directory on the server, defaults to `/home/ilya/pybot`
 - `GHCR_DEPLOY_USERNAME` - username for pulling private GHCR images on the server
 - `GHCR_DEPLOY_TOKEN` - token for pulling private GHCR images on the server
+- `RUN_SEED_ON_DEPLOY` - set to `true` only for the initial deploy when you need to run `fill_point_db.py`
 
 ## Expected server shape
 
@@ -96,6 +97,14 @@ That service is attached to the `migration` profile, so:
 - it is not started by a plain `docker compose up -d` against the production compose file;
 - local development remains unchanged because the regular `docker-compose.yml` still uses the original startup flow.
 
+## Seed
+
+Production seed data is handled by the dedicated `seed` service in `docker-compose.prod.yml`.
+
+- it is disabled by default;
+- it runs only when `RUN_SEED_ON_DEPLOY=true` is passed from GitHub Secrets into the deploy workflow;
+- it is intended for first deploys or controlled reinitialization, not for every rollout.
+
 ## Recommended production `.env` baseline
 
 At minimum, set:
@@ -110,6 +119,11 @@ At minimum, set:
 - `AUTO_SEED_DB=false`
 - `LOG_LEVEL=INFO`
 - `HEALTH_API_ENABLED=false`
+
+Important:
+
+- if you use SQLite in production, keep `DATABASE_URL` under `./data/...`
+- paths like `sqlite+aiosqlite:///./pybot_itacadem.db` will place the database outside the mounted volume and break one-shot migration/seed containers
 
 ## Next hardening steps
 

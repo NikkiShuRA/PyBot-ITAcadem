@@ -53,6 +53,13 @@ services:
     restart: "no"
     command: ["alembic", "upgrade", "head"]
 
+  seed:
+    <<: *app-base
+    container_name: pybot-seed
+    profiles: ["seed"]
+    restart: "no"
+    command: ["python", "fill_point_db.py"]
+
   redis:
     image: redis:7-alpine
     container_name: pybot-redis

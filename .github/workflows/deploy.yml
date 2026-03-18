@@ -31,6 +31,7 @@ jobs:
       PROD_ENV_FILE: ${{ secrets.PROD_ENV_FILE }}
       GHCR_DEPLOY_USERNAME: ${{ secrets.GHCR_DEPLOY_USERNAME }}
       GHCR_DEPLOY_TOKEN: ${{ secrets.GHCR_DEPLOY_TOKEN }}
+      RUN_SEED_ON_DEPLOY: ${{ secrets.RUN_SEED_ON_DEPLOY }}
 
     steps:
       - name: Checkout target commit
@@ -128,6 +129,7 @@ jobs:
               "image_tag": "${{ steps.prep.outputs.image_tag }}",
               "registry_username": os.environ.get("GHCR_DEPLOY_USERNAME", ""),
               "registry_token": os.environ.get("GHCR_DEPLOY_TOKEN", ""),
+              "run_seed_on_deploy": os.environ.get("RUN_SEED_ON_DEPLOY", ""),
           }
           Path(os.environ["RUNNER_TEMP"], "deploy-vars.json").write_text(
               json.dumps(payload),

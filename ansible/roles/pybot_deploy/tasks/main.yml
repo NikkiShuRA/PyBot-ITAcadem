@@ -38,6 +38,30 @@
     create: true
     mode: "0600"
 
+- name: Validate production SQLite path is volume-backed
+  ansible.builtin.shell: |
+    set -eu
+    db_url="$(grep '^DATABASE_URL=' .env | cut -d= -f2- || true)"
+    if [ -z "$db_url" ]; then
+      exit 0
+    fi
+    case "$db_url" in
+      sqlite+aiosqlite:///./data/*)
+        exit 0
+        ;;
+      sqlite+aiosqlite:///*)
+        echo "Production SQLite DATABASE_URL must point to ./data/... so migrations and runtime share the mounted volume." >&2
+        exit 1
+        ;;
+      *)
+        exit 0
+        ;;
+    esac
+  args:
+    chdir: "{{ deploy_path }}"
+    executable: /bin/sh
+  changed_when: false
+
 - name: Log in to GHCR when deploy credentials are provided
   ansible.builtin.shell: |
     set -eu
@@ -84,6 +108,17 @@
     executable: /bin/sh
   environment:
     APP_IMAGE: "{{ image_repository }}:{{ image_tag }}"
+
+- name: Run one-shot seed step when explicitly requested
+  ansible.builtin.shell: |
+    set -eu
+    docker compose -f docker-compose.prod.yml --profile seed run --rm seed
+  args:
+    chdir: "{{ deploy_path }}"
+    executable: /bin/sh
+  environment:
+    APP_IMAGE: "{{ image_repository }}:{{ image_tag }}"
+  when: run_seed_on_deploy | default(false) | bool
 
 - name: Apply production compose
   ansible.builtin.shell: |
