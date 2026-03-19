@@ -5,18 +5,31 @@ This repository now includes a production deployment skeleton that extends the e
 ## What was added
 
 - `docker-compose.prod.yml` for immutable image-based production deploys
-- `.github/workflows/deploy.yml` for build + push + deploy after successful CI on `main`
+- `.github/workflows/deploy.yml` for build + push + deploy after successful CI on `main`, plus manual recovery redeploys from GitHub Actions
 - `ansible/` with a minimal bootstrap/deploy playbook and roles
+
+The CI workflow also validates the Docker build, both Compose manifests, and the `fill_point_db.py` CLI help entrypoint before code reaches production deploy.
 
 ## Deployment flow
 
-1. A push reaches `main`.
-2. Existing CI runs and must finish successfully.
-3. `CD - Build and Deploy` starts from `workflow_run`.
+1. A push reaches `main`, or an operator manually starts the production workflow from GitHub Actions on `main`.
+2. Existing CI runs and must finish successfully for the automatic path.
+3. `CD - Build and Deploy` starts either from `workflow_run` or `workflow_dispatch`.
 4. GitHub Actions builds a Docker image and pushes it to GHCR.
 5. GitHub Actions runs Ansible against the target server.
 6. Ansible copies `docker-compose.prod.yml` and `.env` into the deploy user's workspace, runs a one-shot migration container, optionally runs a one-shot seed container, and then starts the runtime services.
 7. Ansible runs a post-deploy smoke-check: it verifies the core containers are running and, when enabled, probes the health API readiness endpoint from inside the bot container.
+
+## Manual redeploy
+
+If you need to redeploy the current `main` release without creating an empty commit:
+
+1. Open `Actions` in GitHub.
+2. Choose `CD - Build and Deploy`.
+3. Click `Run workflow`.
+4. Run it from the `main` branch.
+
+This is useful for recovery, token rotation, or controlled re-runs after infrastructure-side fixes.
 
 ## Why production uses a separate compose file
 
@@ -68,6 +81,8 @@ The app is deployed into `/home/ilya/pybot` by default and keeps persistent data
 
 The deploy also persists the currently released image reference as `APP_IMAGE` inside the server-side `.env`, so routine manual commands like `docker compose ps` and `docker compose logs` work without extra exports.
 
+When SQLite is used in production, the backup step now derives the backup target from `DATABASE_URL` as long as it points under `./data/...`, so backup behavior stays aligned with the configured database filename.
+
 ## Notes about ports
 
 `docker-compose.prod.yml` does not publish any host ports.
@@ -77,6 +92,8 @@ That means:
 - Redis stays internal to the Docker network
 - the bot does not reserve any host port
 - health API will also stay internal unless you explicitly add a `ports` mapping later
+
+Production services also use strict Docker log rotation limits to reduce disk growth on shared servers.
 
 ## Safety for Shared Servers
 

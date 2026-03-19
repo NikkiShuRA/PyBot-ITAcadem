@@ -182,3 +182,5 @@ cython_debug/
 
 #Database files
 *.db
+
+*.tmp

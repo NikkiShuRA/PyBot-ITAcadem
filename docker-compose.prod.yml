@@ -9,6 +9,11 @@ x-app-base: &app-base
     REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
   volumes:
     - pybot_data:/app/data
+  logging:
+    driver: json-file
+    options:
+      max-size: "5m"
+      max-file: "3"
 
 x-app-service: &app-service
   <<: *app-base
@@ -65,6 +70,11 @@ services:
     container_name: pybot-redis
     restart: unless-stopped
     command: ["redis-server", "--appendonly", "yes"]
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
     volumes:
       - redis_data:/data
     healthcheck:

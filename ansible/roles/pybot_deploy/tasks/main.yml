@@ -78,12 +78,33 @@
 - name: Back up SQLite database volume when present
   ansible.builtin.shell: |
     set -eu
+    db_url="$(grep '^DATABASE_URL=' "{{ deploy_path }}/.env" | cut -d= -f2- || true)"
+    case "$db_url" in
+      sqlite+aiosqlite:///./data/*)
+        db_path="${db_url#sqlite+aiosqlite:///./data/}"
+        ;;
+      *)
+        exit 0
+        ;;
+    esac
+
     if docker volume inspect pybot_data_prod >/dev/null 2>&1; then
       docker run --rm \
         -v pybot_data_prod:/data \
         -v "{{ deploy_path }}/backups:/backup" \
+        -e DB_PATH="$db_path" \
         alpine:3.20 \
-        sh -c 'if [ -f /data/pybot_itacadem.db ]; then cp /data/pybot_itacadem.db /backup/pybot_itacadem-$(date +%Y%m%d%H%M%S).db; fi'
+        sh -eu -c '
+          db_name="$(basename "$DB_PATH")"
+          timestamp="$(date +%Y%m%d%H%M%S)"
+          case "$db_name" in
+            *.db) backup_name="${db_name%.db}-$timestamp.db" ;;
+            *) backup_name="${db_name}-$timestamp.bak" ;;
+          esac
+          if [ -f "/data/$DB_PATH" ]; then
+            cp "/data/$DB_PATH" "/backup/$backup_name"
+          fi
+        '
     fi
   args:
     executable: /bin/sh
