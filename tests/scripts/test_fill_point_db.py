@@ -1,5 +1,9 @@
 import asyncio
 import inspect
+import os
+from pathlib import Path
+import subprocess
+import sys
 from collections.abc import Coroutine, Sequence
 from datetime import date
 from unittest.mock import AsyncMock, Mock
@@ -9,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 import fill_point_db
 from src.pybot.core.constants import LevelTypeEnum
-from src.pybot.dto import AdjustUserPointsDTO, CompetenceReadDTO, UserCreateDTO, UserReadDTO
+from src.pybot.dto import AdjustUserPointsDTO, CompetenceCreateDTO, CompetenceReadDTO, UserCreateDTO, UserReadDTO
 from src.pybot.dto.value_objects import Points
 
 
@@ -145,6 +149,28 @@ class FakeFaker:
         return True
 
 
+def build_runtime_dependencies(
+    *,
+    setup_container: AsyncMock | None = None,
+) -> fill_point_db.RuntimeDependencies:
+    return fill_point_db.RuntimeDependencies(
+        level_type_enum=LevelTypeEnum,
+        role_enum=fill_point_db.RoleEnum,
+        level_model=fill_point_db.Level,
+        role_model=fill_point_db.Role,
+        setup_container=setup_container or AsyncMock(),
+        adjust_user_points_dto_cls=AdjustUserPointsDTO,
+        competence_create_dto_cls=CompetenceCreateDTO,
+        competence_read_dto_cls=CompetenceReadDTO,
+        user_create_dto_cls=UserCreateDTO,
+        points_cls=Points,
+        competence_service_cls=fill_point_db.CompetenceService,
+        level_service_cls=fill_point_db.LevelService,
+        points_service_cls=fill_point_db.PointsService,
+        user_service_cls=fill_point_db.UserService,
+    )
+
+
 def test_build_seed_config_preserves_default_runtime_behavior() -> None:
     cli_config = fill_point_db.FillDatabaseCLIConfig()
 
@@ -229,6 +255,26 @@ def test_main_uses_tyro_cli_and_asyncio_run(monkeypatch: pytest.MonkeyPatch) -> 
     assert observed["runtime_config"] == expected_runtime_config
 
 
+def test_fill_point_db_help_does_not_require_runtime_env(tmp_path: Path) -> None:
+    script_path = Path(fill_point_db.__file__).resolve()
+    runtime_env = os.environ.copy()
+    for key in ("BOT_TOKEN", "BOT_TOKEN_TEST", "ROLE_REQUEST_ADMIN_TG_ID", "DATABASE_URL"):
+        runtime_env.pop(key, None)
+
+    result = subprocess.run(  # noqa: S603
+        [sys.executable, str(script_path), "--help"],  # noqa: S607
+        capture_output=True,
+        check=False,
+        cwd=tmp_path,
+        env=runtime_env,
+        text=True,
+    )
+
+    assert result.returncode == 0
+    assert "Public CLI configuration for database seed generation." in result.stdout
+    assert "BOT_TOKEN" not in result.stderr
+
+
 @pytest.mark.asyncio
 async def test_fill_database_uses_dishka_container_and_closes_it(monkeypatch: pytest.MonkeyPatch) -> None:
     fake_session = FakeFillDatabaseSession()
@@ -253,7 +299,12 @@ async def test_fill_database_uses_dishka_container_and_closes_it(monkeypatch: py
     add_competencies_data = AsyncMock(return_value=competencies)
     generate_users_data = AsyncMock()
 
-    monkeypatch.setattr(fill_point_db, "setup_container", setup_container)
+    monkeypatch.setattr(
+        fill_point_db,
+        "_get_runtime_dependencies",
+        Mock(return_value=build_runtime_dependencies(setup_container=setup_container)),
+    )
+    monkeypatch.setattr(fill_point_db, "_get_runtime_logger", Mock(return_value=Mock()))
     monkeypatch.setattr(fill_point_db, "generate_levels_data", generate_levels_data)
     monkeypatch.setattr(fill_point_db, "add_roles_data", add_roles_data)
     monkeypatch.setattr(fill_point_db, "add_competencies_data", add_competencies_data)
@@ -292,7 +343,12 @@ async def test_fill_database_skips_disabled_seed_steps(monkeypatch: pytest.Monke
     add_competencies_data = AsyncMock()
     generate_users_data = AsyncMock()
 
-    monkeypatch.setattr(fill_point_db, "setup_container", AsyncMock(return_value=fake_container))
+    monkeypatch.setattr(
+        fill_point_db,
+        "_get_runtime_dependencies",
+        Mock(return_value=build_runtime_dependencies(setup_container=AsyncMock(return_value=fake_container))),
+    )
+    monkeypatch.setattr(fill_point_db, "_get_runtime_logger", Mock(return_value=Mock()))
     monkeypatch.setattr(fill_point_db, "generate_levels_data", generate_levels_data)
     monkeypatch.setattr(fill_point_db, "add_roles_data", add_roles_data)
     monkeypatch.setattr(fill_point_db, "add_competencies_data", add_competencies_data)
@@ -337,6 +393,7 @@ async def test_generate_users_data_uses_services_for_registration_and_points(
     fake_user_service = FakeGenerateUsersService(fake_user)
     fake_points_service = FakeGenerateUsersPointsService(fake_user)
 
+    monkeypatch.setattr(fill_point_db, "_get_runtime_dependencies", Mock(return_value=build_runtime_dependencies()))
     monkeypatch.setattr(fill_point_db, "_build_faker", lambda _: FakeFaker())
     monkeypatch.setattr(fill_point_db.random, "choice", lambda seq: seq[0])
     monkeypatch.setattr(fill_point_db.random, "randrange", lambda start, stop, step: step)
@@ -387,6 +444,7 @@ async def test_generate_users_data_skips_zero_points_adjustments(
     fake_user_service = FakeGenerateUsersService(fake_user)
     fake_points_service = FakeGenerateUsersPointsService(fake_user)
 
+    monkeypatch.setattr(fill_point_db, "_get_runtime_dependencies", Mock(return_value=build_runtime_dependencies()))
     monkeypatch.setattr(fill_point_db, "_build_faker", lambda _: FakeFaker())
     monkeypatch.setattr(fill_point_db.random, "choice", lambda seq: seq[0])
     monkeypatch.setattr(fill_point_db.random, "randrange", lambda start, stop, step: 0)
@@ -404,6 +462,7 @@ async def test_add_competencies_data_uses_selected_preset(
     competence_service = AsyncMock()
     competence_service.get_all_competencies = AsyncMock(return_value=[])
     competence_service.create_competence = AsyncMock(return_value=created_competence)
+    monkeypatch.setattr(fill_point_db, "_get_runtime_dependencies", Mock(return_value=build_runtime_dependencies()))
     monkeypatch.setitem(
         fill_point_db._COMPETENCE_PRESETS,
         fill_point_db.CompetencePreset.PROFESSIONALS,
@@ -426,7 +485,9 @@ async def test_add_competencies_data_uses_selected_preset(
 
 
 @pytest.mark.asyncio
-async def test_add_competencies_data_skips_empty_preset() -> None:
+async def test_add_competencies_data_skips_empty_preset(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     competence_service = AsyncMock()
     competence_service.get_all_competencies = AsyncMock(return_value=[])
     competence_service.create_competence = AsyncMock()
@@ -434,6 +495,7 @@ async def test_add_competencies_data_skips_empty_preset() -> None:
         competencies_preset=fill_point_db.CompetencePreset.NONE,
     )
 
+    monkeypatch.setattr(fill_point_db, "_get_runtime_dependencies", Mock(return_value=build_runtime_dependencies()))
     result = await fill_point_db.add_competencies_data(competence_service, config)
 
     competence_service.create_competence.assert_not_awaited()

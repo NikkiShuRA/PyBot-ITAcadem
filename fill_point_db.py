@@ -4,32 +4,147 @@ The script uses tyro as its public CLI while preserving the current async
 Dishka-based bootstrap flow behind a dedicated runtime configuration object.
 """
 
+from __future__ import annotations
+
 import asyncio
 import enum
 import os
 import random
 import sys
-from collections.abc import Sequence
+from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass
-from typing import Literal, TypedDict
+from functools import lru_cache
+from importlib import import_module
+from typing import TYPE_CHECKING, Literal, TypedDict
 
 import tyro
 from faker import Faker
+from loguru import logger as loguru_logger
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.pybot.core.constants import LevelTypeEnum, RoleEnum
-from src.pybot.core.logger import setup_logger
-from src.pybot.db.models import Level, Role
-from src.pybot.di.containers import setup_container
-from src.pybot.dto import AdjustUserPointsDTO, CompetenceCreateDTO, CompetenceReadDTO, UserCreateDTO
-from src.pybot.dto.value_objects import Points
-from src.pybot.services.competence import CompetenceService
-from src.pybot.services.levels import LevelService
-from src.pybot.services.points import PointsService
-from src.pybot.services.users import UserService
+if TYPE_CHECKING:
+    from loguru import Logger
 
-logger = setup_logger()
+    from src.pybot.core.constants import LevelTypeEnum, RoleEnum
+    from src.pybot.db.models import Level, Role
+    from src.pybot.dto import AdjustUserPointsDTO, CompetenceCreateDTO, CompetenceReadDTO, UserCreateDTO
+    from src.pybot.dto.value_objects import Points
+    from src.pybot.services.competence import CompetenceService
+    from src.pybot.services.levels import LevelService
+    from src.pybot.services.points import PointsService
+    from src.pybot.services.users import UserService
+else:
+
+    class LevelTypeEnum(enum.StrEnum):
+        ACADEMIC = "academic"
+        REPUTATION = "reputation"
+
+    class RoleEnum(enum.StrEnum):
+        STUDENT = "Student"
+        MENTOR = "Mentor"
+        ADMIN = "Admin"
+
+    class Level:
+        pass
+
+    class Role:
+        pass
+
+    class AdjustUserPointsDTO:
+        pass
+
+    class CompetenceCreateDTO:
+        pass
+
+    class CompetenceReadDTO:
+        id: int
+
+    class UserCreateDTO:
+        pass
+
+    class Points:
+        value: int
+        point_type: LevelTypeEnum
+
+        def __init__(self, *args: object, **kwargs: object) -> None:
+            del args, kwargs
+            raise RuntimeError("fill_point_db runtime dependencies are not loaded")
+
+    class CompetenceService:
+        pass
+
+    class LevelService:
+        pass
+
+    class PointsService:
+        pass
+
+    class UserService:
+        pass
+
+
+logger = loguru_logger
+
+
+@dataclass(frozen=True, slots=True)
+class RuntimeDependencies:
+    """Application runtime dependencies required only for actual seed execution."""
+
+    level_type_enum: type[LevelTypeEnum]
+    role_enum: type[RoleEnum]
+    level_model: type[Level]
+    role_model: type[Role]
+    setup_container: Callable[[], Awaitable[object]]
+    adjust_user_points_dto_cls: type[AdjustUserPointsDTO]
+    competence_create_dto_cls: type[CompetenceCreateDTO]
+    competence_read_dto_cls: type[CompetenceReadDTO]
+    user_create_dto_cls: type[UserCreateDTO]
+    points_cls: type[Points]
+    competence_service_cls: type[CompetenceService]
+    level_service_cls: type[LevelService]
+    points_service_cls: type[PointsService]
+    user_service_cls: type[UserService]
+
+
+@lru_cache(maxsize=1)
+def _get_runtime_dependencies() -> RuntimeDependencies:
+    """Load and cache runtime-only application dependencies."""
+
+    constants_module = import_module("src.pybot.core.constants")
+    db_models_module = import_module("src.pybot.db.models")
+    containers_module = import_module("src.pybot.di.containers")
+    dto_module = import_module("src.pybot.dto")
+    value_objects_module = import_module("src.pybot.dto.value_objects")
+    competence_service_module = import_module("src.pybot.services.competence")
+    level_service_module = import_module("src.pybot.services.levels")
+    points_service_module = import_module("src.pybot.services.points")
+    user_service_module = import_module("src.pybot.services.users")
+
+    return RuntimeDependencies(
+        level_type_enum=constants_module.LevelTypeEnum,
+        role_enum=constants_module.RoleEnum,
+        level_model=db_models_module.Level,
+        role_model=db_models_module.Role,
+        setup_container=containers_module.setup_container,
+        adjust_user_points_dto_cls=dto_module.AdjustUserPointsDTO,
+        competence_create_dto_cls=dto_module.CompetenceCreateDTO,
+        competence_read_dto_cls=dto_module.CompetenceReadDTO,
+        user_create_dto_cls=dto_module.UserCreateDTO,
+        points_cls=value_objects_module.Points,
+        competence_service_cls=competence_service_module.CompetenceService,
+        level_service_cls=level_service_module.LevelService,
+        points_service_cls=points_service_module.PointsService,
+        user_service_cls=user_service_module.UserService,
+    )
+
+
+@lru_cache(maxsize=1)
+def _get_runtime_logger() -> Logger | object:
+    """Create the configured application logger lazily for runtime execution."""
+
+    logger_module = import_module("src.pybot.core.logger")
+    return logger_module.setup_logger()
 
 
 @dataclass(frozen=True, slots=True)
@@ -306,6 +421,7 @@ async def generate_levels_data(
         Existing or newly created levels.
     """
 
+    runtime = _get_runtime_dependencies()
     logger.info("Starting level generation")
 
     if await level_service.level_exists():
@@ -318,19 +434,19 @@ async def generate_levels_data(
         required_xp = calculate_xp(level_num)
 
         levels_to_add.append(
-            Level(
+            runtime.level_model(
                 name=f"Уровень {level_num}",
                 description=f"Требуется {required_xp} академических баллов для достижения этого уровня.",
                 required_points=required_xp,
-                level_type=LevelTypeEnum.ACADEMIC,
+                level_type=runtime.level_type_enum.ACADEMIC,
             )
         )
         levels_to_add.append(
-            Level(
+            runtime.level_model(
                 name=f"Уровень {level_num}",
                 description=f"Требуется {required_xp} репутационных баллов для достижения этого уровня.",
                 required_points=required_xp,
-                level_type=LevelTypeEnum.REPUTATION,
+                level_type=runtime.level_type_enum.REPUTATION,
             )
         )
 
@@ -570,8 +686,9 @@ async def _register_seed_user(
         user_data["last_name"],
     )
 
+    runtime = _get_runtime_dependencies()
     user = await user_service.register_student(
-        UserCreateDTO(
+        runtime.user_create_dto_cls(
             first_name=user_data["first_name"],
             last_name=user_data["last_name"],
             patronymic=user_data["patronymic"],
@@ -606,19 +723,26 @@ async def _seed_registered_user(
         config: Seed configuration.
     """
 
+    runtime = _get_runtime_dependencies()
     giver_id = _select_seed_giver_id(created_user_ids, user_id)
     await _apply_seed_points(
         points_service=services.points_service,
         recipient_id=user_id,
         giver_id=giver_id,
-        points=Points(value=user_data["academic_points"], point_type=LevelTypeEnum.ACADEMIC),
+        points=runtime.points_cls(
+            value=user_data["academic_points"],
+            point_type=runtime.level_type_enum.ACADEMIC,
+        ),
         reason=config.seed_points_reason,
     )
     await _apply_seed_points(
         points_service=services.points_service,
         recipient_id=user_id,
         giver_id=giver_id,
-        points=Points(value=user_data["reputation_points"], point_type=LevelTypeEnum.REPUTATION),
+        points=runtime.points_cls(
+            value=user_data["reputation_points"],
+            point_type=runtime.level_type_enum.REPUTATION,
+        ),
         reason=config.seed_points_reason,
     )
 
@@ -665,8 +789,9 @@ async def _apply_seed_points(
     if points.value == 0:
         return
 
+    runtime = _get_runtime_dependencies()
     await points_service.change_points(
-        AdjustUserPointsDTO(
+        runtime.adjust_user_points_dto_cls(
             recipient_id=recipient_id,
             giver_id=giver_id,
             points=points,
@@ -685,7 +810,8 @@ async def get_all_roles(session: AsyncSession) -> Sequence[Role]:
         Stored role entities.
     """
 
-    stmt = select(Role)
+    runtime = _get_runtime_dependencies()
+    stmt = select(runtime.role_model)
     result = await session.execute(stmt)
     return result.scalars().all()
 
@@ -700,7 +826,8 @@ async def role_exists(session: AsyncSession) -> bool:
         `True` when roles are already present in the database.
     """
 
-    stmt = select(Role).limit(1)
+    runtime = _get_runtime_dependencies()
+    stmt = select(runtime.role_model).limit(1)
     result = await session.execute(stmt)
     return result.scalar_one_or_none() is not None
 
@@ -715,13 +842,14 @@ async def add_roles_data(session: AsyncSession) -> Sequence[Role]:
         Existing or newly created role entities.
     """
 
+    runtime = _get_runtime_dependencies()
     logger.info("Starting role generation")
 
     if await role_exists(session):
         logger.info("Roles already exist, skipping generation")
         return await get_all_roles(session)
 
-    roles_to_add = [Role(name=role_obj.value) for role_obj in RoleEnum]
+    roles_to_add = [runtime.role_model(name=role_obj.value) for role_obj in runtime.role_enum]
     session.add_all(roles_to_add)
     await session.commit()
     logger.info("Added %s roles", len(roles_to_add))
@@ -742,6 +870,7 @@ async def add_competencies_data(
         Existing or newly created competence DTOs.
     """
 
+    runtime = _get_runtime_dependencies()
     logger.info("Starting competence generation")
 
     existing = await competence_service.get_all_competencies()
@@ -758,7 +887,7 @@ async def add_competencies_data(
     for competence in competencies_seed:
         created.append(
             await competence_service.create_competence(
-                CompetenceCreateDTO(name=competence.name, description=competence.description)
+                runtime.competence_create_dto_cls(name=competence.name, description=competence.description)
             )
         )
 
@@ -774,17 +903,20 @@ async def fill_database(config: FillDatabaseConfig | None = None) -> None:
             behavior when omitted.
     """
 
+    _ensure_project_root_on_path()
+    runtime = _get_runtime_dependencies()
+    runtime_logger = _get_runtime_logger()
     seed_config = config or FillDatabaseConfig()
-    logger.info("Starting database seed script")
+    runtime_logger.info("Starting database seed script")
 
-    container = await setup_container()
+    container = await runtime.setup_container()
     try:
         async with container() as request_container:
             session = await request_container.get(AsyncSession)
-            competence_service = await request_container.get(CompetenceService)
-            level_service = await request_container.get(LevelService)
-            points_service = await request_container.get(PointsService)
-            user_service = await request_container.get(UserService)
+            competence_service = await request_container.get(runtime.competence_service_cls)
+            level_service = await request_container.get(runtime.level_service_cls)
+            points_service = await request_container.get(runtime.points_service_cls)
+            user_service = await request_container.get(runtime.user_service_cls)
 
             try:
                 competencies: Sequence[CompetenceReadDTO] = []
@@ -792,28 +924,28 @@ async def fill_database(config: FillDatabaseConfig | None = None) -> None:
                 if seed_config.seed_levels:
                     await generate_levels_data(session, level_service, seed_config)
                 else:
-                    logger.info("Skipping level generation by config")
+                    runtime_logger.info("Skipping level generation by config")
 
                 if seed_config.seed_roles:
                     await add_roles_data(session)
                 else:
-                    logger.info("Skipping role generation by config")
+                    runtime_logger.info("Skipping role generation by config")
 
                 if seed_config.seed_competencies:
                     competencies = await add_competencies_data(competence_service, seed_config)
                 else:
-                    logger.info("Skipping competence generation by config")
+                    runtime_logger.info("Skipping competence generation by config")
 
                 if seed_config.seed_fake_users:
                     await generate_users_data(user_service, points_service, competencies, seed_config)
                 else:
-                    logger.info("Skipping fake user generation by config")
+                    runtime_logger.info("Skipping fake user generation by config")
 
-                logger.success("Database seeding finished successfully")
+                runtime_logger.success("Database seeding finished successfully")
             except Exception as exc:
                 await session.rollback()
-                logger.error("Database seeding failed: %s", exc, exc_info=True)
-                logger.warning("Database seeding was rolled back")
+                runtime_logger.error("Database seeding failed: %s", exc, exc_info=True)
+                runtime_logger.warning("Database seeding was rolled back")
     finally:
         await container.close()
 
