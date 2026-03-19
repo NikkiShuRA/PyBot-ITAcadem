@@ -75,7 +75,7 @@ async def test_send_role_request_to_admin_sends_message_with_keyboard(
     _expect(kwargs.get("chat_id") == ADMIN_TG_ID, "Admin chat id mismatch")
     _expect(kwargs.get("parse_mode") == "HTML", "Parse mode mismatch")
     text = str(kwargs.get("text"))
-    _expect(f"Request ID: {REQUEST_ID}" in text, "Request id missing in text")
+    _expect(f"Номер запроса: {REQUEST_ID}" in text, "Request id missing in text")
     _expect(f"tg://user?id={REQUESTER_USER_ID}" in text, "Mention link missing in text")
 
     expected_markup = get_admin_decision_kb(REQUEST_ID)

@@ -10,6 +10,11 @@ import pytest
 from aiogram.types import Chat, Contact, Message, ReplyKeyboardRemove, User
 
 from pybot.bot.dialogs.user_reg.handlers import _handle_contact_input
+from pybot.bot.texts import (
+    REGISTRATION_CONTACT_ACCEPTED,
+    REGISTRATION_CONTACT_EMPTY,
+    registration_existing_profile,
+)
 
 
 def _build_message(
@@ -77,7 +82,7 @@ async def test_on_contact_input_removes_keyboard_and_moves_to_next_step(
     assert answer_mock.await_count == 1
     await_args = answer_mock.await_args
     assert await_args is not None
-    assert await_args.args[0] == "Контакт получен. Продолжаем регистрацию."
+    assert await_args.args[0] == REGISTRATION_CONTACT_ACCEPTED
     assert isinstance(await_args.kwargs.get("reply_markup"), ReplyKeyboardRemove)
 
 
@@ -105,7 +110,7 @@ async def test_on_contact_input_removes_keyboard_for_existing_user_and_finishes(
     assert answer_mock.await_count == 1
     await_args = answer_mock.await_args
     assert await_args is not None
-    assert await_args.args[0] == "Найден существующий профиль. Твой ID: 42"
+    assert await_args.args[0] == registration_existing_profile(42)
     assert isinstance(await_args.kwargs.get("reply_markup"), ReplyKeyboardRemove)
 
 
@@ -133,5 +138,5 @@ async def test_on_contact_input_with_empty_contact_keeps_keyboard_and_does_not_a
     assert answer_mock.await_count == 1
     await_args = answer_mock.await_args
     assert await_args is not None
-    assert await_args.args[0] == "Контакт не может быть пустым. Попробуйте снова."
+    assert await_args.args[0] == REGISTRATION_CONTACT_EMPTY
     assert "reply_markup" not in await_args.kwargs

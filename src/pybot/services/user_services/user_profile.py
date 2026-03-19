@@ -1,6 +1,6 @@
-import textwrap
 from dataclasses import dataclass
 
+from ...bot.texts import profile_message, profile_section
 from ...core.constants import LevelTypeEnum
 from ...domain.exceptions import LevelNotFoundError
 from ...dto import NotifyDTO, UserLevelReadDTO, UserProfileReadDTO, UserReadDTO
@@ -59,9 +59,10 @@ class UserProfileService:
     async def _handle_points_data(
         self, user_profile_read: UserProfileReadDTO, point_type: LevelTypeEnum
     ) -> tuple[Points, UserLevelReadDTO, Points, Points]:
-
         current_progress = getattr(
-            user_profile_read.user, f"{point_type.value}_points", Points(value=0, point_type=point_type)
+            user_profile_read.user,
+            f"{point_type.value}_points",
+            Points(value=0, point_type=point_type),
         )
         user_level = user_profile_read.level_info[point_type]
         current_points = current_progress - user_level.current_level.required_points
@@ -70,34 +71,31 @@ class UserProfileService:
         return current_progress, user_level, current_points, next_points
 
     async def _create_profile_message(self, user_profile_data: ProfileMessagePO) -> str:
-        ms = textwrap.dedent(
-            f"""
-                👋 Доброго времени суток, {user_profile_data.user.first_name}!
-
-                📚 Академический уровень
-                {user_profile_data.academic_level.current_level.name}
-                {
-                progress_bar(
-                    user_profile_data.academic_current_points.value, user_profile_data.academic_next_points.value
-                )
-            }
-                Общий счёт: {user_profile_data.academic_progress}
-
-                ⭐ Репутационный уровень
-                {user_profile_data.reputation_level.current_level.name}
-                {
-                progress_bar(
-                    user_profile_data.reputation_current_points.value, user_profile_data.reputation_next_points.value
-                )
-            }
-                Общий счёт: {user_profile_data.reputation_progress}
-
-                🔄️ Обновить профиль — /profile
-                ❓ Вспомнить или узнать возможности бота — /help
-            """
+        academic_progress_bar = progress_bar(
+            user_profile_data.academic_current_points.value,
+            user_profile_data.academic_next_points.value,
         )
-
-        return ms
+        reputation_progress_bar = progress_bar(
+            user_profile_data.reputation_current_points.value,
+            user_profile_data.reputation_next_points.value,
+        )
+        academic_section = profile_section(
+            title="📘 Академический уровень",
+            level_name=user_profile_data.academic_level.current_level.name,
+            progress_bar=academic_progress_bar,
+            points=user_profile_data.academic_progress,
+        )
+        reputation_section = profile_section(
+            title="⭐ Репутационный уровень",
+            level_name=user_profile_data.reputation_level.current_level.name,
+            progress_bar=reputation_progress_bar,
+            points=user_profile_data.reputation_progress,
+        )
+        return profile_message(
+            first_name=user_profile_data.user.first_name,
+            academic_section=academic_section,
+            reputation_section=reputation_section,
+        )
 
     async def manage_profile(self, user_read: UserReadDTO) -> None:
         user_profile = await self._collect_user_profile(user_read)
@@ -115,7 +113,7 @@ class UserProfileService:
             reputation_next_points,
         ) = await self._handle_points_data(user_profile, LevelTypeEnum.REPUTATION)
 
-        ms = await self._create_profile_message(
+        message_text = await self._create_profile_message(
             ProfileMessagePO(
                 user=user_profile.user,
                 academic_progress=academic_progress,
@@ -129,4 +127,6 @@ class UserProfileService:
             )
         )
 
-        await self.notification_port.send_message(NotifyDTO(message=ms, user_id=user_profile.user.telegram_id))
+        await self.notification_port.send_message(
+            NotifyDTO(message=message_text, user_id=user_profile.user.telegram_id)
+        )

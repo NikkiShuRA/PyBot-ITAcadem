@@ -10,6 +10,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from pybot.bot.handlers.roles.role_request_flow import accept_role_request, reject_role_request
 from pybot.bot.keyboards.role_request_keyboard import RoleRequestCB
+from pybot.bot.texts import (
+    ROLE_REQUEST_ADMIN_ALREADY_PROCESSED,
+    ROLE_REQUEST_ADMIN_APPROVED,
+    ROLE_REQUEST_ADMIN_REJECTED,
+    ROLE_REQUEST_NOTIFY_ALREADY_PROCESSED,
+    ROLE_REQUEST_NOTIFY_APPROVED,
+    ROLE_REQUEST_NOTIFY_REJECTED,
+)
 from pybot.core.constants import RequestStatus
 from pybot.db.models import RoleRequest
 from pybot.services.role_request import RoleRequestService
@@ -74,10 +82,10 @@ async def test_accept_role_request_happy_path_updates_status_and_locks_buttons(
     assert updated.status == RequestStatus.APPROVED
     assert await role_request_service.user_repository.has_role(db, user_id=user.id, role_name=role.name) is True
 
-    answer_mock.assert_awaited_once_with("✅ Approved")
+    answer_mock.assert_awaited_once_with(ROLE_REQUEST_ADMIN_APPROVED)
     edit_reply_markup_mock.assert_awaited_once_with(reply_markup=None)
     assert any(
-        item.user_id == 920_001 and item.message_text == "✅ Role request approved."
+        item.user_id == 920_001 and item.message_text == ROLE_REQUEST_NOTIFY_APPROVED
         for item in notification_service.direct_messages
     )
 
@@ -114,10 +122,10 @@ async def test_accept_role_request_already_processed_locks_buttons_and_reports_s
     updated = (await db.execute(select(RoleRequest).where(RoleRequest.id == request.id))).scalar_one()
     assert updated.status == RequestStatus.APPROVED
 
-    answer_mock.assert_awaited_once_with("Already processed")
+    answer_mock.assert_awaited_once_with(ROLE_REQUEST_ADMIN_ALREADY_PROCESSED)
     edit_reply_markup_mock.assert_awaited_once_with(reply_markup=None)
     assert any(
-        item.user_id == 920_003 and item.message_text == "Role request has already been processed."
+        item.user_id == 920_003 and item.message_text == ROLE_REQUEST_NOTIFY_ALREADY_PROCESSED
         for item in notification_service.direct_messages
     )
 
@@ -154,10 +162,10 @@ async def test_reject_role_request_happy_path_updates_status_and_locks_buttons(
     updated = (await db.execute(select(RoleRequest).where(RoleRequest.id == request.id))).scalar_one()
     assert updated.status == RequestStatus.REJECTED
 
-    answer_mock.assert_awaited_once_with("❌ Rejected")
+    answer_mock.assert_awaited_once_with(ROLE_REQUEST_ADMIN_REJECTED)
     edit_reply_markup_mock.assert_awaited_once_with(reply_markup=None)
     assert any(
-        item.user_id == 920_004 and item.message_text == "❌ Role request rejected."
+        item.user_id == 920_004 and item.message_text == ROLE_REQUEST_NOTIFY_REJECTED
         for item in notification_service.direct_messages
     )
 
@@ -194,9 +202,9 @@ async def test_reject_role_request_already_processed_locks_buttons_and_reports_s
     updated = (await db.execute(select(RoleRequest).where(RoleRequest.id == request.id))).scalar_one()
     assert updated.status == RequestStatus.APPROVED
 
-    answer_mock.assert_awaited_once_with("Already processed")
+    answer_mock.assert_awaited_once_with(ROLE_REQUEST_ADMIN_ALREADY_PROCESSED)
     edit_reply_markup_mock.assert_awaited_once_with(reply_markup=None)
     assert any(
-        item.user_id == 920_002 and item.message_text == "Role request has already been processed."
+        item.user_id == 920_002 and item.message_text == ROLE_REQUEST_NOTIFY_ALREADY_PROCESSED
         for item in notification_service.direct_messages
     )

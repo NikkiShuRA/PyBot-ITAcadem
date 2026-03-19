@@ -10,6 +10,7 @@ from aiogram.types import Chat, Message, User
 
 from pybot.bot.handlers.points import grand_points
 from pybot.bot.handlers.points.grand_points import _extract_points_and_reason, _handle_points_command
+from pybot.bot.texts import POINTS_REASON_QUOTES_REQUIRED
 from pybot.core.constants import LevelTypeEnum, TaskScheduleKind
 from pybot.dto import UserReadDTO
 from pybot.dto.value_objects import Points
@@ -71,15 +72,12 @@ def _last_reply_text(reply_mock: AsyncMock) -> str:
 async def test_extract_points_and_reason_parses_positive_points_with_reason(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    # Given
     message = _build_message(text='/academic_points 25 "Great progress"')
     reply_mock = AsyncMock()
     monkeypatch.setattr(Message, "reply", reply_mock)
 
-    # When
     points, reason = await _extract_points_and_reason(message)
 
-    # Then
     assert points == 25
     assert reason == "Great progress"
     reply_mock.assert_not_awaited()
@@ -87,15 +85,12 @@ async def test_extract_points_and_reason_parses_positive_points_with_reason(
 
 @pytest.mark.asyncio
 async def test_extract_points_and_reason_parses_negative_points(monkeypatch: pytest.MonkeyPatch) -> None:
-    # Given
     message = _build_message(text="/reputation_points -7 'Too noisy in chat'")
     reply_mock = AsyncMock()
     monkeypatch.setattr(Message, "reply", reply_mock)
 
-    # When
     points, reason = await _extract_points_and_reason(message)
 
-    # Then
     assert points == -7
     assert reason == "Too noisy in chat"
     reply_mock.assert_not_awaited()
@@ -103,26 +98,21 @@ async def test_extract_points_and_reason_parses_negative_points(monkeypatch: pyt
 
 @pytest.mark.asyncio
 async def test_extract_points_and_reason_rejects_unquoted_reason(monkeypatch: pytest.MonkeyPatch) -> None:
-    # Given
     message = _build_message(text="/academic_points 10 because this was helpful")
     reply_mock = AsyncMock()
     monkeypatch.setattr(Message, "reply", reply_mock)
 
-    # When
     points, reason = await _extract_points_and_reason(message)
 
-    # Then
     assert points is None
     assert reason is None
-    reply_mock.assert_awaited_once()
-    assert '"' in _last_reply_text(reply_mock) or "'" in _last_reply_text(reply_mock)
+    reply_mock.assert_awaited_once_with(POINTS_REASON_QUOTES_REQUIRED)
 
 
 @pytest.mark.asyncio
 async def test_handle_points_command_changes_points_and_enqueues_notification(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    # Given
     recipient = _build_user_read_dto(db_id=10, telegram_id=720_002, first_name="Student")
     giver = _build_user_read_dto(db_id=11, telegram_id=720_001, first_name="Admin")
     user_service = StubUserService(users_by_tg={recipient.telegram_id: recipient, giver.telegram_id: giver})
@@ -135,7 +125,6 @@ async def test_handle_points_command_changes_points_and_enqueues_notification(
     monkeypatch.setattr(grand_points, "_get_target_user_id_from_mention", AsyncMock(return_value=None))
     monkeypatch.setattr(grand_points, "_get_target_user_id_from_text", AsyncMock(return_value=recipient.telegram_id))
 
-    # When
     await _handle_points_command(
         message=message,
         points_type=LevelTypeEnum.ACADEMIC,
@@ -144,7 +133,6 @@ async def test_handle_points_command_changes_points_and_enqueues_notification(
         notification_facade=cast(NotificationFacade, notification_facade),
     )
 
-    # Then
     points_service.change_points.assert_awaited_once()
     sent_adjustment = points_service.change_points.await_args.args[0]
     assert sent_adjustment.recipient_id == recipient.id
@@ -157,6 +145,7 @@ async def test_handle_points_command_changes_points_and_enqueues_notification(
     assert notify_dto.user_id == recipient.telegram_id
     assert notify_dto.kind is TaskScheduleKind.IMMEDIATE
     assert giver.first_name in notify_dto.message
+    assert "академических" in notify_dto.message
     assert "Great progress" in notify_dto.message
 
     reply_mock.assert_awaited_once()
@@ -169,7 +158,6 @@ async def test_handle_points_command_changes_points_and_enqueues_notification(
 async def test_handle_points_command_stops_when_recipient_or_giver_is_missing(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    # Given
     recipient = _build_user_read_dto(db_id=20, telegram_id=720_003, first_name="Student")
     user_service = StubUserService(users_by_tg={recipient.telegram_id: recipient})
     points_service = StubPointsService()
@@ -181,7 +169,6 @@ async def test_handle_points_command_stops_when_recipient_or_giver_is_missing(
     monkeypatch.setattr(grand_points, "_get_target_user_id_from_mention", AsyncMock(return_value=None))
     monkeypatch.setattr(grand_points, "_get_target_user_id_from_text", AsyncMock(return_value=recipient.telegram_id))
 
-    # When
     await _handle_points_command(
         message=message,
         points_type=LevelTypeEnum.ACADEMIC,
@@ -190,7 +177,6 @@ async def test_handle_points_command_stops_when_recipient_or_giver_is_missing(
         notification_facade=cast(NotificationFacade, notification_facade),
     )
 
-    # Then
     points_service.change_points.assert_not_awaited()
     notification_facade.notify_user.assert_not_awaited()
     reply_mock.assert_not_awaited()
@@ -200,7 +186,6 @@ async def test_handle_points_command_stops_when_recipient_or_giver_is_missing(
 async def test_handle_points_command_reports_points_service_failure(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    # Given
     recipient = _build_user_read_dto(db_id=30, telegram_id=720_004, first_name="Student")
     giver = _build_user_read_dto(db_id=31, telegram_id=720_001, first_name="Admin")
     user_service = StubUserService(users_by_tg={recipient.telegram_id: recipient, giver.telegram_id: giver})
@@ -213,7 +198,6 @@ async def test_handle_points_command_reports_points_service_failure(
     monkeypatch.setattr(grand_points, "_get_target_user_id_from_mention", AsyncMock(return_value=None))
     monkeypatch.setattr(grand_points, "_get_target_user_id_from_text", AsyncMock(return_value=recipient.telegram_id))
 
-    # When
     await _handle_points_command(
         message=message,
         points_type=LevelTypeEnum.ACADEMIC,
@@ -222,8 +206,7 @@ async def test_handle_points_command_reports_points_service_failure(
         notification_facade=cast(NotificationFacade, notification_facade),
     )
 
-    # Then
     points_service.change_points.assert_awaited_once()
     notification_facade.notify_user.assert_not_awaited()
     reply_mock.assert_awaited_once()
-    assert "балл" in _last_reply_text(reply_mock).lower() or "points" in _last_reply_text(reply_mock).lower()
+    assert "Не удалось изменить баллы" in _last_reply_text(reply_mock)

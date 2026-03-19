@@ -13,6 +13,7 @@ from aiogram.exceptions import (
 )
 
 from ...bot.keyboards.role_request_keyboard import get_admin_decision_kb
+from ...bot.texts import role_request_admin_notification
 from ...core import logger
 from ...core.config import settings
 from ...dto import NotifyDTO
@@ -27,29 +28,12 @@ class TelegramNotificationService(NotificationPort):
     """
 
     def __init__(self, bot: Bot) -> None:
-        """Initialize Telegram notification adapter.
-
-        Args:
-            bot: Shared aiogram bot instance.
-        """
         self.bot = bot
 
     async def send_role_request_to_admin(self, request_id: int, requester_user_id: int, role_name: str) -> None:
-        """Send role request details to configured Telegram admin.
-
-        Args:
-            request_id: Role request identifier.
-            requester_user_id: Requester Telegram ``telegram_id``.
-            role_name: Requested role name.
-
-        Raises:
-            NotificationTemporaryError: Transient Telegram delivery failure.
-            NotificationPermanentError: Non-retryable Telegram delivery failure.
-        """
         admin_tg_id = settings.role_request_admin_tg_id
-
-        mention = f"<a href='tg://user?id={requester_user_id}'>user {requester_user_id}</a>"
-        text = f"Новый запрос роли\n\nRequest ID: {request_id}\nРоль: {role_name}\nПользователь: {mention}"
+        mention = f"<a href='tg://user?id={requester_user_id}'>пользователь {requester_user_id}</a>"
+        text = role_request_admin_notification(request_id=request_id, role_name=role_name, mention=mention)
 
         try:
             await self.bot.send_message(
@@ -108,15 +92,6 @@ class TelegramNotificationService(NotificationPort):
             raise NotificationPermanentError(message="Unexpected notification delivery failure") from exc
 
     async def send_message(self, message_data: NotifyDTO) -> None:
-        """Send a direct Telegram message.
-
-        Args:
-            message_data: Validated direct-notification payload.
-
-        Raises:
-            NotificationTemporaryError: Transient Telegram delivery failure.
-            NotificationPermanentError: Non-retryable Telegram delivery failure.
-        """
         try:
             cleaned_text, user_id = message_data.message, message_data.user_id
             await self.bot.send_message(chat_id=user_id, text=cleaned_text)

@@ -16,6 +16,11 @@ from .competence_dto import CompetenceIdsDTO as CompetenceIdsDTO
 from .competence_dto import CompetenceReadDTO as CompetenceReadDTO
 from .competence_dto import CompetenceUpdateDTO as CompetenceUpdateDTO
 
+from .role_dto import CreateRoleRequestDTO as CreateRoleRequestDTO
+from .role_dto import RoleByIdDTO as RoleByIdDTO
+from .role_dto import RoleIdsDTO as RoleIdsDTO
+from .role_dto import RoleReadDTO as RoleReadDTO
+
 from .notify_dto import NotificationLogEvent as NotificationLogEvent
 from .notify_dto import NotificationTaskPayload as NotificationTaskPayload
 from .notify_dto import NotifyDTO as NotifyDTO

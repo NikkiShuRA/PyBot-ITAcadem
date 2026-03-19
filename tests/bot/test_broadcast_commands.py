@@ -7,10 +7,8 @@ from unittest.mock import AsyncMock
 import pytest
 from aiogram.types import Chat, Message, User
 
-from pybot.bot.handlers.broadcast.broadcast_commands import (
-    _extract_message_for_broadcast,
-    broadcast_command,
-)
+from pybot.bot.handlers.broadcast.broadcast_commands import _extract_message_for_broadcast, broadcast_command
+from pybot.bot.texts import BROADCAST_MESSAGE_REQUIRED, BROADCAST_USAGE
 from pybot.domain.exceptions import BroadcastMessageNotSpecifiedError
 from pybot.dto import BroadcastDTO, CompetenceBroadcastDTO, CompetenceReadDTO, RoleBroadcastDTO
 
@@ -157,7 +155,7 @@ async def test_broadcast_command_replies_when_target_is_unknown(monkeypatch: pyt
     assert broadcast_service.role_messages == []
     assert broadcast_service.competence_messages == []
     assert reply_mock.await_count == 1
-    assert "Unknown broadcast target" in _last_reply_text(reply_mock)
+    assert "Не удалось распознать получателя рассылки" in _last_reply_text(reply_mock)
 
 
 @pytest.mark.asyncio
@@ -178,4 +176,21 @@ async def test_broadcast_command_replies_when_broadcast_message_missing(monkeypa
     assert broadcast_service.role_messages == []
     assert broadcast_service.competence_messages == []
     assert reply_mock.await_count == 1
-    assert "Broadcast message is required" in _last_reply_text(reply_mock)
+    assert _last_reply_text(reply_mock) == BROADCAST_MESSAGE_REQUIRED
+
+
+@pytest.mark.asyncio
+async def test_broadcast_command_replies_when_target_missing(monkeypatch: pytest.MonkeyPatch) -> None:
+    message = _build_message("/broadcast")
+    broadcast_service = StubBroadcastService()
+    competence_service = StubCompetenceService(competencies=[])
+    reply_mock = AsyncMock()
+    monkeypatch.setattr(Message, "reply", reply_mock)
+
+    await broadcast_command(
+        message=message,
+        broadcast_service=broadcast_service,
+        competence_service=competence_service,
+    )
+
+    reply_mock.assert_awaited_once_with(BROADCAST_USAGE)

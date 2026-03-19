@@ -16,7 +16,6 @@ from tests.providers import FakeNotificationPort
 async def test_manage_profile_sends_rendered_message_with_user_progress(
     dishka_request_container: AsyncContainer,
 ) -> None:
-    # Arrange
     db_session = await dishka_request_container.get(AsyncSession)
     user_profile_service = await dishka_request_container.get(UserProfileService)
     notification_port = await dishka_request_container.get(FakeNotificationPort)
@@ -60,18 +59,16 @@ async def test_manage_profile_sends_rendered_message_with_user_progress(
 
     user_read = await map_orm_user_to_user_read_dto(user)
 
-    # Act
     await user_profile_service.manage_profile(user_read)
 
-    # Assert
     assert len(notification_port.direct_messages) == 1
     sent_message = notification_port.direct_messages[0]
     assert sent_message.user_id == user.telegram_id
     assert "Ilya" in sent_message.message_text
     assert "Scholar" in sent_message.message_text
     assert "Known" in sent_message.message_text
-    assert "120 academic" in sent_message.message_text
-    assert "40 reputation" in sent_message.message_text
+    assert "Всего баллов: 120" in sent_message.message_text
+    assert "Всего баллов: 40" in sent_message.message_text
     assert "/help" in sent_message.message_text
 
 
@@ -79,7 +76,6 @@ async def test_manage_profile_sends_rendered_message_with_user_progress(
 async def test_manage_profile_raises_when_some_level_track_is_missing(
     dishka_request_container: AsyncContainer,
 ) -> None:
-    # Arrange
     db_session = await dishka_request_container.get(AsyncSession)
     user_profile_service = await dishka_request_container.get(UserProfileService)
     notification_port = await dishka_request_container.get(FakeNotificationPort)
@@ -104,7 +100,6 @@ async def test_manage_profile_raises_when_some_level_track_is_missing(
 
     user_read = await map_orm_user_to_user_read_dto(user)
 
-    # Act / Assert
     with pytest.raises(LevelNotFoundError, match="Уровень не найден"):
         await user_profile_service.manage_profile(user_read)
 

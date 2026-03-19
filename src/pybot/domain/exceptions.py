@@ -130,6 +130,11 @@ class RoleNotFoundError(DomainError):
         super().__init__(f"Роль '{role_name}' не найдена в системе", details={"role": role_name})
 
 
+class RoleNotFoundByIdError(DomainError):
+    def __init__(self, role_id: int) -> None:
+        super().__init__(f"Роль c ID '{role_id}' не найдена в системе", details={"role": role_id})
+
+
 class RoleAlreadyAssignedError(DomainError):
     """Роль уже назначена пользователю."""
 

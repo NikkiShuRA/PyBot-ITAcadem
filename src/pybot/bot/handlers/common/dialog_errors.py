@@ -4,8 +4,7 @@ from aiogram.types import CallbackQuery, ErrorEvent
 from aiogram_dialog.api.exceptions import UnknownIntent
 
 from ....core import logger
-
-STALE_DIALOG_MESSAGE = "Диалог устарел. Нажмите /start и повторите действие."
+from ...texts import STALE_DIALOG_MESSAGE
 
 
 async def handle_unknown_intent(event: ErrorEvent) -> bool:

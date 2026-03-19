@@ -16,11 +16,10 @@ from pybot.bot.dialogs.user_reg.handlers import (
     _on_patronymic_skip_impl,
     on_first_name_input,
     on_last_name_input,
-    on_patronymic_skip,
     request_contact_prompt,
 )
 from pybot.bot.keyboards.auth import request_contact_kb
-from pybot.bot.texts import REGISTRATION_CONTACT_PROMPT
+from pybot.bot.texts import REGISTRATION_CONTACT_PROMPT, registration_profile_created
 from pybot.services import UserProfileService
 from pybot.services.users import UserService
 
@@ -207,7 +206,7 @@ async def test_patronymic_input_registers_user_and_shows_profile_on_success(mock
 
     assert manager_state.manager.dialog_data["patronymic"] == "Иванович"
     user_service_state.register_student_mock.assert_awaited_once_with(user_dto)
-    answer_mock.assert_awaited_once_with("✅ Профиль создан. Добро пожаловать, Иван!")
+    answer_mock.assert_awaited_once_with(registration_profile_created("Иван"))
     manager_state.done_mock.assert_awaited_once()
     user_profile_service_state.manage_profile_mock.assert_awaited_once_with(created_user)
 
@@ -244,7 +243,7 @@ async def test_patronymic_skip_registers_user_and_shows_profile_on_success(mocke
     )
 
     user_service_state.register_student_mock.assert_awaited_once_with(user_dto)
-    answer_mock.assert_awaited_once_with("✅ Профиль создан. Добро пожаловать, Иван!")
+    answer_mock.assert_awaited_once_with(registration_profile_created("Иван"))
     callback.answer.assert_awaited_once()
     manager_state.done_mock.assert_awaited_once()
     user_profile_service_state.manage_profile_mock.assert_awaited_once_with(created_user)

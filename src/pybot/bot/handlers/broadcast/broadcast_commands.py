@@ -11,6 +11,7 @@ from ....dto import BroadcastDTO, CompetenceBroadcastDTO, CompetenceReadDTO, Rol
 from ....services.broadcast import BroadcastService
 from ....services.competence import CompetenceService
 from ...filters import check_text_message_correction, create_chat_type_routers
+from ...texts import BROADCAST_MESSAGE_REQUIRED, BROADCAST_USAGE, broadcast_unknown_target
 
 (broadcast_command_private_router, _, _) = create_chat_type_routers("broadcast")
 TARGET_AND_MESSAGE_PARTS = 2
@@ -84,13 +85,13 @@ async def broadcast_command(
 ) -> None:
     target_token = _extract_target_token(message)
     if target_token is None:
-        await message.reply("Specify broadcast target and message: /broadcast @all|Role|Competence <message>")
+        await message.reply(BROADCAST_USAGE)
         return
 
     try:
         broadcast_message = await _extract_message_for_broadcast(message, target_token)
     except BroadcastMessageNotSpecifiedError:
-        await message.reply("Broadcast message is required. Format: /broadcast @all|Role|Competence <message>")
+        await message.reply(BROADCAST_MESSAGE_REQUIRED)
         return
 
     if _extract_all_ping(target_token):
@@ -112,11 +113,4 @@ async def broadcast_command(
         )
         return
 
-    roles_list = ", ".join(role_item.value for role_item in RoleEnum)
-    competences_list = ", ".join(competence_item.name for competence_item in competencies) or "none"
-    await message.reply(
-        "Unknown broadcast target.\n"
-        f"Available roles: {roles_list}\n"
-        f"Available competencies: {competences_list}\n"
-        "Format: /broadcast @all|Role|Competence <message>"
-    )
+    await message.reply(broadcast_unknown_target(competencies))

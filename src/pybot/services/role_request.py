@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ..bot.texts import role_request_user_status
 from ..core.constants import RequestStatus
 from ..db.models.role_module import RoleRequest
 from ..domain.exceptions import (
@@ -17,16 +18,6 @@ from ..dto import NotifyDTO
 from ..dto.role_dto import CreateRoleRequestDTO
 from ..infrastructure import RoleRepository, RoleRequestRepository, UserRepository
 from ..services.ports import NotificationPort
-
-
-def _render_role_request_status_text(status: RequestStatus) -> str:
-    status_text_map = {
-        RequestStatus.APPROVED: "одобрена",
-        RequestStatus.REJECTED: "отклонена",
-        RequestStatus.PENDING: "на рассмотрении",
-        RequestStatus.CANCELED: "отменена",
-    }
-    return status_text_map.get(status, status.value)
 
 
 class RoleRequestService:
@@ -51,7 +42,6 @@ class RoleRequestService:
             raise UserNotFoundError(user_id) from err
 
         role_check = await self.role_repository.get_role_by_name(self.db, user_role)
-
         if role_check is None:
             raise RoleNotFoundError(role_name=user_role)
 
@@ -62,20 +52,16 @@ class RoleRequestService:
             raise RoleRequestAlreadyExistsError(role_name=user_role, user_id=user.id)
 
         last_reject = await self.role_request_repository.get_last_rejected_request(self.db, user_id)
-
         if not last_reject:
             return True
-        else:
-            return not (datetime.now(None) - last_reject.updated_at) < timedelta(
-                seconds=5
-            )  # TODO: Значение timedelta выставлено для тестов.
+
+        return not (datetime.now(None) - last_reject.updated_at) < timedelta(seconds=5)
 
     async def create_role_request(self, user_id: int, role: str) -> CreateRoleRequestDTO:
         if not await self.check_requesting_user(user_id, role):
             raise RoleRequestRejectedError(role_name=role, user_id=user_id)
 
         role_object = await self.role_repository.get_role_by_name(self.db, role)
-
         if not role_object:
             raise RoleNotFoundError(role_name=role)
 
@@ -89,7 +75,6 @@ class RoleRequestService:
 
         await self.db.commit()
         await self.notification_service.send_role_request_to_admin(request.id, user.telegram_id, role)
-
         return CreateRoleRequestDTO.model_validate(request)
 
     async def change_request_status(self, request_id: int, new_status: RequestStatus) -> None:
@@ -98,23 +83,25 @@ class RoleRequestService:
             raise RoleRequestNotFoundError()
         if request.status != RequestStatus.PENDING:
             raise RoleRequestAlreadyProcessedError()
+
         try:
             user = await self.user_repository.get_by_id(self.db, request.user_id)
         except UserNotFoundError as err:
             raise UserNotFoundError() from err
+
         role_name = request.role.name
         if new_status == RequestStatus.APPROVED and await self.user_repository.has_role(self.db, user.id, role_name):
             raise RoleAlreadyAssignedError(user_id=user.id, role_name=role_name)
+
         request.change_status(new_status)
         if request.status == RequestStatus.APPROVED:
             user.add_role(request.role)
+
         self.db.add(request)
         await self.db.commit()
-        status_text = _render_role_request_status_text(request.status)
-
         await self.notification_service.send_message(
             NotifyDTO(
-                message=f"Ваша заявка на роль {request.role.name} была {status_text}.",
+                message=role_request_user_status(request.role.name, request.status),
                 user_id=user.telegram_id,
             )
         )

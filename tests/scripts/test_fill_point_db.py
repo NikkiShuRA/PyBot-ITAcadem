@@ -256,7 +256,10 @@ def test_main_uses_tyro_cli_and_asyncio_run(monkeypatch: pytest.MonkeyPatch) -> 
 
 
 def test_fill_point_db_help_does_not_require_runtime_env(tmp_path: Path) -> None:
-    script_path = Path(fill_point_db.__file__).resolve()
+    script_file = fill_point_db.__file__
+    if script_file is None:
+        raise AssertionError("fill_point_db module does not define __file__")
+    script_path = Path(script_file).resolve()
     runtime_env = os.environ.copy()
     for key in ("BOT_TOKEN", "BOT_TOKEN_TEST", "ROLE_REQUEST_ADMIN_TG_ID", "DATABASE_URL"):
         runtime_env.pop(key, None)

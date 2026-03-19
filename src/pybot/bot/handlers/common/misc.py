@@ -5,6 +5,7 @@ from dishka import FromDishka
 from ....domain.exceptions import UserNotFoundError
 from ....services.users import UserService
 from ...filters import create_chat_type_routers
+from ...texts import PING_ANONYMOUS, ping_status
 
 _, _, misc_global_router = create_chat_type_routers("start")
 
@@ -16,16 +17,14 @@ async def cmd_ping(
     user_id: int,
 ) -> None:
     if message.from_user is None:
-        await message.answer("Hello, anonymous user!")
+        await message.answer(PING_ANONYMOUS)
         return
 
     try:
         user = await user_service.get_user(user_id)
     except UserNotFoundError:
-        await message.answer("Hello, anonymous user!")
+        await message.answer(PING_ANONYMOUS)
         return
 
     is_admin = await user_service.check_user_role(user.id, "Admin")
-
-    await message.answer(f"Hello, {user.first_name}! Admin: {is_admin}")
-    await message.answer("pong")
+    await message.answer(ping_status(user.first_name, is_admin))

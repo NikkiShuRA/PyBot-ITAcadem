@@ -11,7 +11,15 @@ from ....mappers.user_mappers import map_dialog_data_to_user_create_dto
 from ....services import UserProfileService
 from ....services.users import UserService
 from ...keyboards.auth import request_contact_kb
-from ...texts import REGISTRATION_CONTACT_PROMPT
+from ...texts import (
+    REGISTRATION_CONTACT_ACCEPTED,
+    REGISTRATION_CONTACT_EMPTY,
+    REGISTRATION_CONTACT_PROMPT,
+    REGISTRATION_INTERNAL_ERROR,
+    REGISTRATION_VALUE_INVALID,
+    registration_existing_profile,
+    registration_profile_created,
+)
 
 
 def _validate_name_input(raw_text: str, field_name: str, *, allow_empty: bool = False) -> str | None:
@@ -20,11 +28,11 @@ def _validate_name_input(raw_text: str, field_name: str, *, allow_empty: bool = 
     if not text:
         if allow_empty:
             return None
-        raise ValueError(f"Поле «{field_name}» не может быть пустым. Попробуйте снова.")
+        raise ValueError(f"Поле «{field_name}» не может быть пустым. Попробуйте ещё раз.")
 
     cleaned_text = UserCreateDTO.clean_string(text)
     if cleaned_text != text:
-        raise ValueError(f"Поле «{field_name}» должно содержать только русские буквы и пробелы.")
+        raise ValueError(f"В поле «{field_name}» можно использовать только русские буквы и пробелы.")
 
     if len(text) < UserCreateDTO.NAME_MIN_LENGTH:
         raise ValueError(f"Поле «{field_name}» слишком короткое.")
@@ -36,7 +44,7 @@ def _validate_name_input(raw_text: str, field_name: str, *, allow_empty: bool = 
 
 
 async def on_other_messages(message: Message, message_input: MessageInput, manager: DialogManager) -> None:
-    await message.answer("Пожалуйста, введите корректное значение.")
+    await message.answer(REGISTRATION_VALUE_INVALID)
 
 
 async def request_contact_prompt(
@@ -70,14 +78,14 @@ async def _handle_contact_input(
 ) -> None:
     contact: Contact | None = message.contact if message.contact else None
     if contact is None or contact.phone_number is None:
-        await message.answer("Контакт не может быть пустым. Попробуйте снова.")
+        await message.answer(REGISTRATION_CONTACT_EMPTY)
         return
 
     phone: str = contact.phone_number
     user = await user_service.find_user_by_phone(phone)
     if user:
         await message.answer(
-            f"Найден существующий профиль. Твой ID: {user.id}",
+            registration_existing_profile(user.id),
             reply_markup=ReplyKeyboardRemove(),
         )
         await manager.done()
@@ -88,7 +96,7 @@ async def _handle_contact_input(
         manager.dialog_data["tg_id"] = message.from_user.id
     else:
         manager.dialog_data["tg_id"] = None
-    await message.answer("Контакт получен. Продолжаем регистрацию.", reply_markup=ReplyKeyboardRemove())
+    await message.answer(REGISTRATION_CONTACT_ACCEPTED, reply_markup=ReplyKeyboardRemove())
     await manager.next()
 
 
@@ -99,7 +107,7 @@ async def on_first_name_input(
 ) -> None:
     first_name = message.text or ""
     try:
-        validated_first_name = _validate_name_input(first_name, "Имя")
+        validated_first_name = _validate_name_input(first_name, "имя")
     except ValueError as err:
         await message.answer(str(err))
         return
@@ -115,7 +123,7 @@ async def on_last_name_input(
 ) -> None:
     last_name = message.text or ""
     try:
-        validated_last_name = _validate_name_input(last_name, "Фамилия")
+        validated_last_name = _validate_name_input(last_name, "фамилию")
     except ValueError as err:
         await message.answer(str(err))
         return
@@ -150,7 +158,7 @@ async def _on_patronymic_input_impl(
 ) -> None:
     patronymic = message.text or ""
     try:
-        cleaned_patronymic = _validate_name_input(patronymic, "Отчество", allow_empty=True)
+        cleaned_patronymic = _validate_name_input(patronymic, "отчество", allow_empty=True)
     except ValueError as err:
         await message.answer(str(err))
         return
@@ -158,14 +166,14 @@ async def _on_patronymic_input_impl(
     manager.dialog_data["patronymic"] = cleaned_patronymic
     user_data = await map_dialog_data_to_user_create_dto(manager)
     if not user_data:
-        await message.answer("Внутренняя ошибка. Пожалуйста, начните заново: /start")
+        await message.answer(REGISTRATION_INTERNAL_ERROR)
         await manager.done()
         return
 
     user = await user_service.register_student(user_data)
 
     logger.info("User created: {user}", user=user)
-    await message.answer(f"✅ Профиль создан. Добро пожаловать, {user.first_name}!")
+    await message.answer(registration_profile_created(user.first_name))
     await manager.done()
     await user_profile_service.manage_profile(user)
 
@@ -194,7 +202,7 @@ async def _on_patronymic_skip_impl(
 ) -> None:
     user_data = await map_dialog_data_to_user_create_dto(manager)
     if not user_data:
-        await callback.answer("Внутренняя ошибка. Пожалуйста, начните заново: /start")
+        await callback.answer(REGISTRATION_INTERNAL_ERROR)
         await manager.done()
         return
 
@@ -202,7 +210,7 @@ async def _on_patronymic_skip_impl(
 
     logger.info("User created: {user}", user=user)
     if callback.message is not None:
-        await callback.message.answer(f"✅ Профиль создан. Добро пожаловать, {user.first_name}!")
+        await callback.message.answer(registration_profile_created(user.first_name))
     await callback.answer()
     await manager.done()
     await user_profile_service.manage_profile(user)

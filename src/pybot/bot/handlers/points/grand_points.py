@@ -7,69 +7,51 @@ from pydantic import ValidationError
 
 from ....core import logger
 from ....core.constants import LevelTypeEnum, TaskScheduleKind
-from ....domain.exceptions import (
-    DomainError,
-    InvalidPointsValueError,
-    UserNotFoundError,
-    ZeroPointsAdjustmentError,
-)
+from ....domain.exceptions import DomainError, InvalidPointsValueError, UserNotFoundError, ZeroPointsAdjustmentError
 from ....dto import AdjustUserPointsDTO, UserReadDTO
 from ....dto.value_objects import Points
 from ....services.notification_facade import NotificationFacade, NotifyUserDTO
 from ....services.points import PointsService
 from ....services.users import UserService
 from ...filters import check_text_message_correction, create_chat_type_routers
-from ...utils import (
-    _get_target_user_id_from_mention,
-    _get_target_user_id_from_reply,
-    _get_target_user_id_from_text,
+from ...texts import (
+    POINTS_AMOUNT_REQUIRED,
+    POINTS_COMMAND_INVALID_FORMAT,
+    POINTS_OPERATION_FAILED,
+    POINTS_REASON_QUOTES_REQUIRED,
+    POINTS_UNEXPECTED_ERROR,
+    TARGET_NOT_FOUND,
+    points_change_success,
+    points_invalid_value,
+    points_notification,
 )
+from ...utils import _get_target_user_id_from_mention, _get_target_user_id_from_reply, _get_target_user_id_from_text
 
 (_, _, grand_points_global_router) = create_chat_type_routers("grand_points")
 
 
-def _format_points_type_label(points_type: LevelTypeEnum) -> str:
-    match points_type:
-        case LevelTypeEnum.ACADEMIC:
-            return "академических"
-        case LevelTypeEnum.REPUTATION:
-            return "репутационных"
-        case _:
-            return ""
-
-
-# TODO Перенести это в фасад нотификации?
 def _build_points_notification_message(
     points: Points,
     points_type: LevelTypeEnum,
     giver_user: UserReadDTO,
     reason: str | None,
 ) -> str:
-    action = "начислил" if points.is_positive() else "снял"
-    points_amount = abs(points.value)
-    points_label = _format_points_type_label(points_type)
-    reason_text = f"\nПричина: {reason}" if reason else ""
-
-    return f"Пользователь {giver_user.first_name} {action} вам {points_amount} {points_label} баллов.{reason_text}"
+    return points_notification(points, points_type, giver_user.first_name, reason)
 
 
-async def _extract_points_and_reason(
-    message: Message,
-) -> tuple[int | None, str | None]:
-    """Извлечь количество баллов и опциональную причину."""
+async def _extract_points_and_reason(message: Message) -> tuple[int | None, str | None]:
     text = check_text_message_correction(message)
     if text is None:
-        await message.reply("Неверный формат сообщения.")
+        await message.reply(POINTS_COMMAND_INVALID_FORMAT)
         return None, None
 
     points_match = re.search(r'(?:^|\s)(-?\d+)(?=\s|$|"|\')', text)
     if not points_match:
-        await message.reply("Не указано количество баллов (число).")
+        await message.reply(POINTS_AMOUNT_REQUIRED)
         return None, None
 
     points = int(points_match.group(1))
-    points_end_pos = points_match.end()
-    remaining_text = text[points_end_pos:].strip()
+    remaining_text = text[points_match.end() :].strip()
     reason = None
 
     if remaining_text:
@@ -80,10 +62,48 @@ async def _extract_points_and_reason(
         if reason_match:
             reason = reason_match.group(1)
         else:
-            await message.reply("Причина должна быть заключена в кавычки: \"причина\" или 'причина'")
+            await message.reply(POINTS_REASON_QUOTES_REQUIRED)
             return None, None
 
     return points, reason
+
+
+async def _prepare_points_command_context(
+    message: Message,
+    points_type: LevelTypeEnum,
+    user_service: UserService,
+) -> tuple[int, Points, str | None, UserReadDTO, UserReadDTO] | None:
+    if not check_text_message_correction(message):
+        await message.reply(POINTS_COMMAND_INVALID_FORMAT)
+        return None
+
+    if message.from_user is None:
+        return None
+
+    prepared_context: tuple[int, Points, str | None, UserReadDTO, UserReadDTO] | None = None
+    target_user_id: int | None = (
+        await _get_target_user_id_from_reply(message)
+        or await _get_target_user_id_from_mention(message, user_service)
+        or await _get_target_user_id_from_text(message, user_service)
+    )
+    if target_user_id is not None:
+        raw_points, reason = await _extract_points_and_reason(message)
+        if raw_points is not None:
+            try:
+                points = Points(value=raw_points, point_type=points_type)
+            except (ValidationError, ValueError):
+                await message.reply(points_invalid_value(raw_points))
+            else:
+                recipient_user = await user_service.find_user_by_telegram_id(target_user_id)
+                giver_user = await user_service.find_user_by_telegram_id(message.from_user.id)
+                if recipient_user is None or giver_user is None:
+                    logger.warning("Failed to resolve giver or recipient for points command")
+                else:
+                    prepared_context = target_user_id, points, reason, recipient_user, giver_user
+    else:
+        logger.warning("Failed to resolve target user for points command: {text}", text=message.text)
+
+    return prepared_context
 
 
 async def _handle_points_command(
@@ -93,39 +113,11 @@ async def _handle_points_command(
     user_service: UserService,
     notification_facade: NotificationFacade,
 ) -> None:
-    """Общий обработчик для выдачи и снятия баллов."""
-    if not check_text_message_correction(message):
-        raise ValueError("Отправленное сообщение некорректно")
-
-    if message.from_user is None:
+    prepared_context = await _prepare_points_command_context(message, points_type, user_service)
+    if prepared_context is None:
         return
 
-    target_user_id: int | None = (
-        await _get_target_user_id_from_reply(message)
-        or await _get_target_user_id_from_mention(message, user_service)
-        or await _get_target_user_id_from_text(message, user_service)
-    )
-
-    if target_user_id is None:
-        logger.warning("Не удалось определить целевого пользователя: {text}", text=message.text)
-        return
-
-    raw_points, reason = await _extract_points_and_reason(message)
-    if raw_points is None:
-        return
-
-    try:
-        points = Points(value=raw_points, point_type=points_type)
-    except ValidationError as err:
-        await message.reply(str(err))
-        return
-
-    recipient_user: UserReadDTO | None = await user_service.find_user_by_telegram_id(target_user_id)
-    giver_user: UserReadDTO | None = await user_service.find_user_by_telegram_id(message.from_user.id)
-
-    if recipient_user is None or giver_user is None:
-        logger.warning("Не удалось определить пользователей для операции с баллами")
-        return
+    target_user_id, points, reason, recipient_user, giver_user = prepared_context
 
     try:
         await points_service.change_points(
@@ -137,8 +129,8 @@ async def _handle_points_command(
             ),
         )
     except Exception:
-        logger.exception("Ошибка при изменении баллов")
-        await message.reply("Ошибка при изменении баллов")
+        logger.exception("Error while changing points")
+        await message.reply(POINTS_OPERATION_FAILED)
         return
 
     try:
@@ -155,8 +147,7 @@ async def _handle_points_command(
             telegram_id=recipient_user.telegram_id,
         )
 
-    reason_text = f" Причина: {reason}" if reason else ""
-    await message.reply(f"Баллы изменены для ID: {target_user_id}, количество: {points}.{reason_text}")
+    await message.reply(points_change_success(target_user_id, points, reason))
 
 
 @grand_points_global_router.message(Command("academic_points"), flags={"role": "Admin", "rate_limit": "expensive"})
@@ -174,19 +165,19 @@ async def handle_academic_points(
             user_service,
             notification_facade,
         )
-    except UserNotFoundError as err:
-        await message.reply(err.message)
-        logger.warning("User not found: {details}", details=err.details)
-    except ZeroPointsAdjustmentError as err:
-        await message.reply(err.message)
+    except UserNotFoundError:
+        await message.reply(TARGET_NOT_FOUND)
+        logger.warning("User not found in academic points command")
+    except ZeroPointsAdjustmentError:
+        await message.reply(points_invalid_value(0))
     except InvalidPointsValueError as err:
-        await message.reply(f"Некорректное значение баллов: {err.details['value']}")
+        await message.reply(points_invalid_value(err.details["value"]))
         logger.exception("Invalid points")
-    except DomainError as err:
-        await message.reply(f"Ошибка: {err.message}")
-        logger.error("Domain error: {error}", error=err, exc_info=True)
+    except DomainError:
+        await message.reply(POINTS_OPERATION_FAILED)
+        logger.error("Domain error in academic points command", exc_info=True)
     except Exception:
-        await message.reply("Неожиданная ошибка. Попробуйте позже.")
+        await message.reply(POINTS_UNEXPECTED_ERROR)
         logger.exception("Unexpected error in handle_academic_points")
 
 
@@ -205,17 +196,17 @@ async def handle_reputation_points(
             user_service,
             notification_facade,
         )
-    except UserNotFoundError as err:
-        await message.reply(err.message)
-        logger.warning("User not found: {details}", details=err.details)
-    except ZeroPointsAdjustmentError as err:
-        await message.reply(err.message)
+    except UserNotFoundError:
+        await message.reply(TARGET_NOT_FOUND)
+        logger.warning("User not found in reputation points command")
+    except ZeroPointsAdjustmentError:
+        await message.reply(points_invalid_value(0))
     except InvalidPointsValueError as err:
-        await message.reply(f"Некорректное значение баллов: {err.details['value']}")
+        await message.reply(points_invalid_value(err.details["value"]))
         logger.exception("Invalid points")
-    except DomainError as err:
-        await message.reply(f"Ошибка: {err.message}")
-        logger.exception("Domain error")
+    except DomainError:
+        await message.reply(POINTS_OPERATION_FAILED)
+        logger.exception("Domain error in handle_reputation_points")
     except Exception:
-        await message.reply("Неожиданная ошибка. Попробуйте позже.")
+        await message.reply(POINTS_UNEXPECTED_ERROR)
         logger.exception("Unexpected error in handle_reputation_points")

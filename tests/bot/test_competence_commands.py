@@ -150,7 +150,7 @@ async def test_removecompetence_invalid_list_returns_error_message(
     await handle_remove_competence(message=message, user_service=service)
 
     assert service.remove_calls == [(target_user.id, ["Unknown"])]
-    assert "Competence names not found" in _last_reply_text(reply_mock)
+    assert "Не удалось обработать список компетенций" in _last_reply_text(reply_mock)
 
 
 @pytest.mark.asyncio
@@ -219,7 +219,7 @@ async def test_addcompetence_unknown_names_returns_validation_error(
     await handle_add_competence(message=message, user_service=service)
 
     assert service.add_calls == [(target_user.id, ["Unknown"])]
-    assert "Competence names not found" in _last_reply_text(reply_mock)
+    assert "Не удалось обработать список компетенций" in _last_reply_text(reply_mock)
 
 
 @pytest.mark.asyncio
@@ -238,7 +238,7 @@ async def test_addcompetence_distinguishes_missing_target_from_not_found_target(
 
     await handle_add_competence(message=not_found_target_message, user_service=service)
     second_reply = _last_reply_text(reply_mock)
-    assert "not found" in second_reply.lower() or "не найден" in second_reply.lower()
+    assert second_reply == "Пользователь не найден."
 
 
 @pytest.mark.asyncio

@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ...core import logger
 from ...infrastructure.user_repository import UserRepository
 from ...utils import has_any_role
+from ..texts import ROLE_ACCESS_DENIED, ROLE_AUTH_ERROR
 
 
 class RoleMiddleware(BaseMiddleware):
@@ -29,36 +30,36 @@ class RoleMiddleware(BaseMiddleware):
             return await handler(event, data)
 
         user_db_id = data.get("user_id")
-
         if not user_db_id:
-            logger.warning("⛔️ Role check failed: User not found in DB")
+            logger.warning("Role check failed: user not found in DB")
             if isinstance(event, Message):
-                await event.answer("Ошибка авторизации. Попробуйте /start")
+                await event.answer(ROLE_AUTH_ERROR)
             return
 
         container = data.get(CONTAINER_NAME)
-
         if not container:
-            logger.error("❌ Dishka container not found in data!")
+            logger.error("Dishka container not found in data")
             return await handler(event, data)
 
         async with container() as request_container:
             db = await request_container.get(AsyncSession)
             repo: UserRepository = await request_container.get(UserRepository)
-
             has_permission = await repo.find_all_user_roles_by_pk(
                 db=db,
                 user_id=user_db_id,
             )
 
-        logger.info(f"🔒 Checking role '{required_role}' for user {user.id}")
+        logger.info("Checking role '{required_role}' for user {user_id}", required_role=required_role, user_id=user.id)
 
         if has_any_role(has_permission, required_role):
             return await handler(event, data)
 
-        logger.warning(f"⛔️ Access denied for user {user.id}. Required: {required_role}")
-
+        logger.warning(
+            "Access denied for user {user_id}. Required: {required_role}",
+            user_id=user.id,
+            required_role=required_role,
+        )
         if isinstance(event, Message):
-            await event.answer("⛔️ У вас недостаточно прав для этой операции.")
+            await event.answer(ROLE_ACCESS_DENIED)
 
         return
