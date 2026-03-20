@@ -210,6 +210,7 @@ Before handing work off as complete:
 - Do not add separate mandatory tests for purely declarative `aiogram-dialog` GUI elements if they do not contain meaningful logic of their own. Test them only when they include important branching, dynamic behavior, or other non-trivial presentation logic.
 - For changes in services, domain logic, repositories, DTOs, or other core behavior, add or update targeted unit and/or integration tests.
 - For larger user-facing changes, verify the critical scenario with a local smoke check in addition to automated tests.
+- Check touched user-facing text and Cyrillic content for mojibake or broken encoding, and fix such issues in the same request where they were introduced or discovered.
 - Run tests covering the code you changed or added.
 - Run the broader test suite to detect regressions when the scope of the change justifies it.
 - Verify the affected flow locally when local execution is feasible and relevant.
