@@ -49,6 +49,9 @@ Run migration command with argument:
 - `format-check` - Check formatting with ruff
 - `lint` - Run linter
 - `type-check` - Run type checker (`ty`)
+- `docs-install` - Install optional documentation dependencies
+- `docs-build` - Build MkDocs documentation in strict mode
+- `docs-serve` - Start the local MkDocs dev server
 - `migrate-create "<msg>"` - Create Alembic migration
 - `migrate-apply` - Apply all Alembic migrations
 - `clean` - Remove local caches and virtualenv

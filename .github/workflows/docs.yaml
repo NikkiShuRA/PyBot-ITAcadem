@@ -1,27 +1,25 @@
-name: 📚 Build & Deploy Docs
+name: Docs - Build & Deploy
 
 on:
-  # Триггеры
   push:
-    branches: [main, develop]
+    branches:
+      - main
     paths:
-      - 'docs/**'
-      - 'src/**'
-      - 'mkdocs.yml'
-      - '.github/workflows/docs.yml'
-
-  # Также можно запустить вручную
+      - "docs-project/**"
+      - "src/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - "justfile"
+      - ".github/workflows/docs.yaml"
   workflow_dispatch:
 
-# Разрешение на публикацию в GitHub Pages
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# Только одна сборка документации одновременно
 concurrency:
-  group: "pages"
+  group: pages
   cancel-in-progress: true
 
 jobs:
@@ -29,42 +27,41 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📥 Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Нужно для правильной работы git в mkdocs
 
-      - name: 🐍 Setup Python
-        uses: actions/setup-python@v4
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: 'pip'
 
-      - name: 📦 Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install uv
-          uv pip install -e ".[docs]"
-
-      - name: 🏗️ Build documentation
-        run: |
-          mkdocs build --strict
-
-      - name: 📤 Upload artifact
-        uses: actions/upload-pages-artifact@v2
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
         with:
-          path: 'site'
+          enable-cache: true
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Install documentation dependencies
+        run: uv sync --extra docs --no-dev
+
+      - name: Build documentation
+        run: uv run --extra docs mkdocs build -f docs-project/mkdocs.yml --strict
+
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs-project/site
 
   deploy:
     needs: build
     runs-on: ubuntu-latest
-
-    # Деплой на GitHub Pages
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
-      - name: 🌐 Deploy to GitHub Pages
+      - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v2
+        uses: actions/deploy-pages@v4

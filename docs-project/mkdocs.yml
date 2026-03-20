@@ -1,44 +1,30 @@
 site_name: PyBot ITAcadem
-site_description: Telegram бот для управления клубом IT Academy
-site_author: Your Team
-site_url: https://your-username.github.io/PyBot_ITAcadem/
-repo_url: https://github.com/your-username/PyBot_ITAcadem
-repo_name: PyBot_ITAcadem
-copyright: "Copyright © 2024 Your Team"
+site_description: Telegram-бот для ITAcadem StartUP
+site_author: ITAcadem StartUP Team
+repo_url: https://github.com/NikkiShuRA/PyBot-ITAcadem
+repo_name: NikkiShuRA/PyBot-ITAcadem
+copyright: "Copyright © 2026 ITAcadem StartUP"
 
-# 📱 Тема Material
 theme:
   name: material
   custom_dir: docs/overrides
-  language: ru  # ← Русский язык по умолчанию
-
+  language: ru
   features:
-    # Навигация
-    - navigation.instant          # Быстрая загрузка страниц (SPA)
-    - navigation.instant.progress # Прогресс загрузки
-    - navigation.tabs             # Горизонтальные табы
-    - navigation.tabs.sticky      # Липкие табы вверху
-    - navigation.sections         # Группировка по разделам
-    - navigation.indexes          # Подготовка index для папок
-    - navigation.top              # Кнопка наверх
-
-    # Содержание (TOC)
-    - toc.integrate               # TOC в левую панель
-
-    # Поиск
-    - search.suggest              # Подсказки при вводе
-    - search.highlight            # Подсветка в результатах
-
-    # Контент
-    - content.code.copy           # Копирование кода в одно нажатие
-    - content.code.select         # Выделение кода
-    - content.code.annotate       # Аннотирование блоков кода
-    - content.tabs.link           # Синхронизация табов
-
-    # Другое
-    - announce.dismiss            # Закрытие анонсов
-
-  # 🎨 Цветовая схема
+    - navigation.instant
+    - navigation.instant.progress
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.indexes
+    - navigation.top
+    - toc.integrate
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.select
+    - content.code.annotate
+    - content.tabs.link
+    - announce.dismiss
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
@@ -47,7 +33,6 @@ theme:
       toggle:
         icon: material/lightbulb-outline
         name: В тёмный режим
-
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
       primary: blue
@@ -55,56 +40,48 @@ theme:
       toggle:
         icon: material/lightbulb
         name: В светлый режим
-
-  # 🏷️ Иконки и шрифты
   font:
     text: Roboto
     code: Roboto Mono
-
   icon:
     logo: material/robot
     repo: fontawesome/brands/github
     edit: material/pencil
     view: material/eye
 
-# 📋 Структура навигации
 nav:
-  - 🏠 Home: index.md
-
-  - 📚 User Guide:
+  - Главная: index.md
+  - Руководство пользователя:
     - Обзор: user-guide/index.md
     - Быстрый старт: user-guide/getting-started.md
     - Установка: user-guide/installation.md
     - Конфигурация: user-guide/configuration.md
     - Примеры: user-guide/examples.md
-
-  - 🛠 Developer Guide:
+  - Руководство разработчика:
     - Обзор: developer-guide/index.md
     - Архитектура: developer-guide/architecture.md
-    - Как kontribuить: developer-guide/contributing.md
+    - Как контрибьютить: developer-guide/contributing.md
     - Тестирование: developer-guide/testing.md
     - Деплой: developer-guide/deployment.md
-
-  - 🔌 API Reference:
+  - Справочник API:
     - Обзор: api-reference/index.md
     - Core: api-reference/core.md
     - Services: api-reference/services.md
     - Domain: api-reference/domain.md
     - Infrastructure: api-reference/infrastructure.md
     - DTO: api-reference/dto.md
+  - Changelog: changelog.md
+  - Лицензия: about.md
 
-  - 📖 Changelog: changelog.md
-  - 📄 License: about.md
-
-# 🔌 Плагины
 plugins:
   - search:
       lang: ru
-
   - mkdocstrings:
       default_handler: python
       handlers:
         python:
+          paths:
+            - ../src
           options:
             show_root_heading: true
             show_root_full_path: false
@@ -114,75 +91,40 @@ plugins:
             separate_signature: true
             line_length: 88
             docstring_style: google
-
-            # Показывать приватные члены (опционально)
+            docstring_options:
+              warnings: false
+              warn_unknown_params: false
+              warn_missing_types: false
             show_private: false
             show_protected: false
-
-            # Наследование
             show_bases: true
 
-  - awesome-pages:
-      strict: false
-
-# 📝 Расширения Markdown
 markdown_extensions:
-  # Основные
-  - markdown.extensions.nl2br          # Новые строки → <br>
-  - markdown.extensions.toc            # Table of contents
-  - markdown.extensions.tables          # Таблицы
-
-  # Синтаксис кода
-  # - pymdownx.superfences:
-  #     custom_fences:
-  #       - name: mermaid
-  #         class: mermaid
-  #         format: !!python/name:pymdownx.superfences.fence_code_format
-
+  - markdown.extensions.nl2br
+  - markdown.extensions.toc
+  - markdown.extensions.tables
   - pymdownx.highlight:
       use_pygments: true
       linenums: true
-
-  - pymdownx.inlinehilite           # Подсветка кода в строке `:::python ...`
-  - pymdownx.snippets               # Включение фрагментов кода из файлов
-  - pymdownx.superfences            # Расширенные кодовые блоки
-
-  # Табы
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
   - pymdownx.tabbed:
       alternate_style: true
-
-  # Дополнительное форматирование
-  # - pymdownx.emoji:
-  #     emoji_index: !!python/name:pymdownx.emoji.twemoji
-  #     emoji_generator: !!python/name:pymdownx.emoji.to_svg
-
   - pymdownx.tasklist:
       custom_checkbox: true
-
-  - pymdownx.superfences
   - pymdownx.arithmatex:
       generic: true
+  - attr_list
+  - admonition
+  - pymdownx.details
+  - footnotes
 
-  - attr_list                       # Атрибуты в элементах [текст](#link){: .class }
-  - admonition                      # !!! note "Заголовок"
-  - pymdownx.details                # Collapsible блоки
-  - footnotes                       # Сноски [^1]
-
-# 🔍 Дополнительное
 extra:
-  # Соцсети / контакты
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/your-username
+      link: https://github.com/NikkiShuRA/PyBot-ITAcadem
       name: GitHub
-    - icon: fontawesome/brands/telegram
-      link: https://t.me/your_channel
-      name: Telegram
-
-  # Аналитика (опционально)
-  analytics:
-    provider: google
-    property: G-XXXXXXXXXX  # ← Твой Google Analytics ID
 
 extra_css:
   - stylesheets/custom.css

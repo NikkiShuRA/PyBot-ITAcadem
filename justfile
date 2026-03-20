@@ -34,6 +34,15 @@ quality-gate: # Full code quality gate (format check + lint + type check)
     just lint
     just type-check
 
+docs-install: # Install optional documentation dependencies
+    uv sync --extra docs
+
+docs-build: # Build MkDocs documentation in strict mode
+    uv run --extra docs mkdocs build -f docs-project/mkdocs.yml --strict
+
+docs-serve: # Serve MkDocs documentation locally
+    uv run --extra docs mkdocs serve -f docs-project/mkdocs.yml
+
 type-check: # Run type checker (ty)
     uv run ty check --python=.venv/ --output-format github --target-version 3.12 src/ tests/
 

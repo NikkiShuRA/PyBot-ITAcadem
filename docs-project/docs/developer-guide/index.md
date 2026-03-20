@@ -1,32 +1,26 @@
-# 🛠 Developer Guide
+# Руководство разработчика
 
-Информация для разработчиков, которые хотят контрибьютить в проект.
+Раздел для разработчиков, которые меняют код, архитектуру и сопровождают runtime проекта.
 
-## Примечание по архитектуре
+## Что важно знать сразу
 
-Проект построен на **Clean Architecture**:
-
-```
-src/
-├── domain/       # Pure business logic
-├── services/     # Use cases
-├── infrastructure/  # Repos, external APIs
-└── handlers/     # Telegram handlers
-```
+- проект следует Layered Architecture с Pragmatic DDD;
+- DI построен на Dishka;
+- презентационный слой остается тонким;
+- транзакционные границы живут в сервисах;
+- документация и API-страницы должны обновляться вместе с изменением структуры кода.
 
 ## Разделы
 
-- [Архитектура проекта](architecture.md)
+- [Архитектура](architecture.md)
 - [Как контрибьютить](contributing.md)
 - [Тестирование](testing.md)
 - [Деплой](deployment.md)
 
-## Быстрая подготовка окружения
+## Базовый набор команд
 
 ```bash
-git clone <repo>
-cd PyBot_ITAcadem
 uv sync
-pre-commit install
-make test
+just quality-gate
+just docs-build
 ```

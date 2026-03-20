@@ -1,43 +1,15 @@
-# 🔌 API Reference
+# Справочник API
 
-Автоматически сгенерированная документация из кода.
+Автогенерируемая документация строится через `mkdocstrings` и должна ссылаться только на реально существующие модули.
 
-<div class="grid cards" markdown>
+## Разделы
 
--   **:octicons-code-16: Core**
+- [Core](core.md) — конфигурация, константы, логирование, bootstrap.
+- [Services](services.md) — application layer и use cases.
+- [Domain](domain.md) — domain exceptions и domain services.
+- [Infrastructure](infrastructure.md) — repositories, adapters, TaskIQ integration.
+- [DTO](dto.md) — Pydantic DTO и value objects.
 
-    Основные классы и конфигурация
+## Правило сопровождения
 
-    [Core API →](core.md)
-
--   **:octicons-gear-16: Services**
-
-    Бизнес-логика и use cases
-
-    [Services API →](services.md)
-
--   **:octicons-database-16: Domain**
-
-    Domain models и exceptions
-
-    [Domain API →](domain.md)
-
--   **:octicons-server-16: Infrastructure**
-
-    Репозитории и интеграции
-
-    [Infrastructure API →](infrastructure.md)
-
--   **:octicons-package-16: DTO**
-
-    Data Transfer Objects
-
-    [DTO API →](dto.md)
-
-</div>
-
-## Как читать API Reference
-
-- **Классы:** Кликай на название класса, чтобы увидеть все методы
-- **Параметры:** Наводи на тип параметра для подробного описания
-- **Примеры:** Некоторые методы содержат примеры использования в docstring
+Если модуль перенесен, переименован или удален, API-страницы нужно обновлять в том же изменении. Иначе строгая сборка документации начнет падать на импортах.

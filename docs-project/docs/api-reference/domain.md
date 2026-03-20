@@ -1,24 +1,11 @@
 # Domain Layer
 
-Domain models, exceptions и value objects.
+Доменные исключения и domain services.
 
 ## Exceptions
 
 ::: pybot.domain.exceptions
-    options:
-      show_root_heading: true
-      members:
-        - DomainError
-        - UserNotFoundError
-        - InsufficientPointsError
-        - LevelNotFoundError
 
-## Models
+## Services
 
-::: pybot.domain.models.user
-    options:
-      show_root_heading: true
-
-::: pybot.domain.models.achievement
-    options:
-      show_root_heading: true
+::: pybot.domain.services.level_calculator

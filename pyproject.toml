@@ -31,6 +31,17 @@ dependencies = [
     "tyro>=1.0.10",
 ]
 
+[project.optional-dependencies]
+docs = [
+    "mkdocs>=1.5.0,<2.0.0",
+    "mkdocs-material>=9.5.0",
+    "mkdocstrings[python]>=0.24.0",
+    "mkdocstrings-python>=0.10.0",
+    "pymdown-extensions>=10.5",
+    "mkdocs-autorefs>=0.5.0",
+    "Pygments>=2.17.0",
+]
+
 [dependency-groups]
 dev = [
     "pytest-coverage>=0.0",
@@ -45,16 +56,6 @@ dev = [
     "polyfactory>=3.2.0",
     "httpie>=3.2.4",
     "pytest-aiogram>=0.1.0",
-]
-
-docs = [
-    "mkdocs>=1.5.0",
-    "mkdocs-material>=9.5.0",
-    "mkdocstrings[python]>=0.24.0",
-    "mkdocstrings-python>=0.10.0",
-    "pymdown-extensions>=10.5",
-    "mkdocs-autorefs>=0.5.0",
-    "Pygments>=2.17.0",
 ]
 
 [tool.ruff]
