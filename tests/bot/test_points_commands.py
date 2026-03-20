@@ -14,9 +14,9 @@ from pybot.bot.texts import POINTS_REASON_QUOTES_REQUIRED
 from pybot.core.constants import LevelTypeEnum, TaskScheduleKind
 from pybot.dto import UserReadDTO
 from pybot.dto.value_objects import Points
+from pybot.services.user_services import UserService
 from pybot.services.notification_facade import NotificationFacade
 from pybot.services.points import PointsService
-from pybot.services.users import UserService
 
 
 def _build_message(*, text: str, from_user_id: int = 720_001) -> Message:

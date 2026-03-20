@@ -12,7 +12,7 @@ from ....dto import AdjustUserPointsDTO, UserReadDTO
 from ....dto.value_objects import Points
 from ....services.notification_facade import NotificationFacade, NotifyUserDTO
 from ....services.points import PointsService
-from ....services.users import UserService
+from ....services.user_services import UserService
 from ...filters import check_text_message_correction, create_chat_type_routers
 from ...texts import (
     POINTS_AMOUNT_REQUIRED,

@@ -2,3 +2,6 @@ from .competence_mappers import map_orm_competence_to_competence_read_dto as map
 from .competence_mappers import (
     map_orm_competencies_to_competence_read_dtos as map_orm_competencies_to_competence_read_dtos,
 )
+from .user_mappers import map_dialog_data_to_user_create_dto as map_dialog_data_to_user_create_dto
+from .user_mappers import map_dialog_data_to_user_registration_dto as map_dialog_data_to_user_registration_dto
+from .user_mappers import map_orm_user_to_user_read_dto as map_orm_user_to_user_read_dto

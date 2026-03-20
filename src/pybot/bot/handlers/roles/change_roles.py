@@ -7,7 +7,7 @@ from dishka.integrations.aiogram import FromDishka
 from ....core import logger
 from ....core.constants import RoleEnum
 from ....domain.exceptions import InvalidRoleChangeError, RoleNotFoundError, UserNotFoundError
-from ....services.users import UserService
+from ....services.user_services import UserRolesService, UserService
 from ...filters import check_text_message_correction, create_chat_type_routers
 from ...texts import (
     ROLE_COMMAND_INVALID_FORMAT,
@@ -96,6 +96,7 @@ async def _extract_role_and_reason(message: Message) -> tuple[RoleEnum | None, s
 async def handle_set_role(
     message: Message,
     user_service: FromDishka[UserService],
+    user_roles_service: FromDishka[UserRolesService],
     user_id: int,
 ) -> None:
     target_id = await _get_target_user_id_from_reply(message)
@@ -111,7 +112,7 @@ async def handle_set_role(
         return
 
     try:
-        updated_user = await user_service.add_user_role(
+        updated_user = await user_roles_service.add_user_role(
             telegram_id=target_id,
             new_role=role,
         )
@@ -132,6 +133,7 @@ async def handle_set_role(
 async def handle_remove_role(
     message: Message,
     user_service: FromDishka[UserService],
+    user_roles_service: FromDishka[UserRolesService],
 ) -> None:
     target_id = await _get_target_user_id_from_reply(message)
     if not target_id:
@@ -146,7 +148,7 @@ async def handle_remove_role(
         return
 
     try:
-        updated_user = await user_service.remove_user_role(
+        updated_user = await user_roles_service.remove_user_role(
             tg_id=target_id,
             role_name=role.value,
         )

@@ -105,7 +105,7 @@ async def broadcast_command(
         )
         return
 
-    competencies = await competence_service.get_all_competencies()
+    competencies = await competence_service.find_all_competencies()
     competence = _extract_competence(target_token, competencies)
     if competence is not None:
         await broadcast_service.broadcast_for_users_with_competence(

@@ -3,7 +3,7 @@ from aiogram.types import Message
 from dishka import FromDishka
 
 from ....domain.exceptions import UserNotFoundError
-from ....services.users import UserService
+from ....services.user_services import UserRolesService, UserService
 from ...filters import create_chat_type_routers
 from ...texts import PING_ANONYMOUS, ping_status
 
@@ -14,6 +14,7 @@ _, _, misc_global_router = create_chat_type_routers("start")
 async def cmd_ping(
     message: Message,
     user_service: FromDishka[UserService],
+    user_roles_service: FromDishka[UserRolesService],
     user_id: int,
 ) -> None:
     if message.from_user is None:
@@ -26,5 +27,5 @@ async def cmd_ping(
         await message.answer(PING_ANONYMOUS)
         return
 
-    is_admin = await user_service.check_user_role(user.id, "Admin")
+    is_admin = await user_roles_service.check_user_role(user.id, "Admin")
     await message.answer(ping_status(user.first_name, is_admin))

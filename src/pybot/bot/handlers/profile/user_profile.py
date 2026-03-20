@@ -4,8 +4,7 @@ from aiogram_dialog import DialogManager
 from aiogram_dialog.api.entities.modes import StartMode
 from dishka.integrations.aiogram import FromDishka
 
-from ....services import UserProfileService
-from ....services.users import UserService
+from ....services.user_services import UserProfileService, UserService
 from ...dialogs.user_reg.states import CreateProfileSG
 from ...filters import create_chat_type_routers
 

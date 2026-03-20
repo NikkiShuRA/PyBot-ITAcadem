@@ -10,7 +10,7 @@ from tests.factories import UserSpec, ValuationSpec, create_user, create_valuati
 
 
 @pytest.mark.asyncio
-async def test_get_history_by_recipient_filters_sorts_and_limits(db_session) -> None:
+async def test_find_history_by_recipient_filters_sorts_and_limits(db_session) -> None:
     # Given
     repo = ValuationRepository()
     recipient = await create_user(db_session, spec=UserSpec(telegram_id=520_001))
@@ -50,7 +50,7 @@ async def test_get_history_by_recipient_filters_sorts_and_limits(db_session) -> 
     await db_session.commit()
 
     # When
-    history = await repo.get_history_by_recipient(
+    history = await repo.find_history_by_recipient(
         db_session,
         recipient_id=recipient.id,
         points_type=LevelTypeEnum.ACADEMIC,
@@ -64,12 +64,12 @@ async def test_get_history_by_recipient_filters_sorts_and_limits(db_session) -> 
 
 
 @pytest.mark.asyncio
-async def test_get_history_by_recipient_returns_empty_for_unknown_user(db_session) -> None:
+async def test_find_history_by_recipient_returns_empty_for_unknown_user(db_session) -> None:
     # Given
     repo = ValuationRepository()
 
     # When
-    history = await repo.get_history_by_recipient(
+    history = await repo.find_history_by_recipient(
         db_session,
         recipient_id=999_999,
         points_type=LevelTypeEnum.ACADEMIC,

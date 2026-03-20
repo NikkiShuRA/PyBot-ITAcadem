@@ -12,16 +12,21 @@ from aiogram_dialog.widgets.input import MessageInput
 from pytest_mock import MockerFixture
 
 from pybot.bot.dialogs.user_reg.handlers import (
+    _on_competence_skip_impl,
+    _on_competence_submit_impl,
     _on_patronymic_input_impl,
     _on_patronymic_skip_impl,
+    on_competence_selection_changed,
     on_first_name_input,
     on_last_name_input,
     request_contact_prompt,
 )
 from pybot.bot.keyboards.auth import request_contact_kb
 from pybot.bot.texts import REGISTRATION_CONTACT_PROMPT, registration_profile_created
-from pybot.services import UserProfileService
-from pybot.services.users import UserService
+from pybot.dto.competence_dto import CompetenceReadDTO
+from pybot.mappers.user_mappers import map_dialog_data_to_user_registration_dto
+from pybot.services import CompetenceService, UserRegistrationService
+from pybot.services.user_services import UserProfileService
 
 
 def _build_message(text: str, user_id: int = 100_001) -> Message:
@@ -36,7 +41,7 @@ def _build_message(text: str, user_id: int = 100_001) -> Message:
 
 
 async def _noop_input_handler(message: Message, widget: MessageInput, manager: DialogManager) -> None:
-    return None
+    del message, widget, manager
 
 
 def _build_widget() -> MessageInput:
@@ -51,8 +56,8 @@ class ManagerTestState:
 
 
 @dataclass(slots=True)
-class UserServiceTestState:
-    service: UserService
+class UserRegistrationServiceTestState:
+    service: UserRegistrationService
     register_student_mock: AsyncMock
 
 
@@ -60,6 +65,12 @@ class UserServiceTestState:
 class UserProfileServiceTestState:
     service: UserProfileService
     manage_profile_mock: AsyncMock
+
+
+@dataclass(slots=True)
+class CompetenceServiceTestState:
+    service: CompetenceService
+    find_all_competencies_mock: AsyncMock
 
 
 def _build_manager(mocker: MockerFixture) -> ManagerTestState:
@@ -73,11 +84,11 @@ def _build_manager(mocker: MockerFixture) -> ManagerTestState:
     return ManagerTestState(manager=manager, next_mock=next_mock, done_mock=done_mock)
 
 
-def _build_user_service(mocker: MockerFixture) -> UserServiceTestState:
-    service = mocker.create_autospec(UserService, instance=True, spec_set=True)
+def _build_user_registration_service(mocker: MockerFixture) -> UserRegistrationServiceTestState:
+    service = mocker.create_autospec(UserRegistrationService, instance=True, spec_set=True)
     register_student_mock = mocker.AsyncMock()
     service.register_student = register_student_mock
-    return UserServiceTestState(service=service, register_student_mock=register_student_mock)
+    return UserRegistrationServiceTestState(service=service, register_student_mock=register_student_mock)
 
 
 def _build_user_profile_service(mocker: MockerFixture) -> UserProfileServiceTestState:
@@ -85,6 +96,17 @@ def _build_user_profile_service(mocker: MockerFixture) -> UserProfileServiceTest
     manage_profile_mock = mocker.AsyncMock()
     service.manage_profile = manage_profile_mock
     return UserProfileServiceTestState(service=service, manage_profile_mock=manage_profile_mock)
+
+
+def _build_competence_service(mocker: MockerFixture) -> CompetenceServiceTestState:
+    service = mocker.create_autospec(CompetenceService, instance=True, spec_set=True)
+    find_all_competencies_mock = mocker.AsyncMock()
+    service.find_all_competencies = find_all_competencies_mock
+    return CompetenceServiceTestState(service=service, find_all_competencies_mock=find_all_competencies_mock)
+
+
+def _build_competence_read_dto(competence_id: int, name: str) -> CompetenceReadDTO:
+    return CompetenceReadDTO(id=competence_id, name=name, description=None)
 
 
 @pytest.mark.asyncio
@@ -134,21 +156,19 @@ async def test_patronymic_with_invalid_symbols_returns_error_and_keeps_state(moc
     message = _build_message("Иваныч42")
     widget = _build_widget()
     manager_state = _build_manager(mocker)
-    user_service_state = _build_user_service(mocker)
-    user_profile_service_state = _build_user_profile_service(mocker)
+    competence_service_state = _build_competence_service(mocker)
     answer_mock = mocker.patch.object(Message, "answer", new=mocker.AsyncMock())
 
     await _on_patronymic_input_impl(
         message=message,
         widget=widget,
         manager=manager_state.manager,
-        user_service=user_service_state.service,
-        user_profile_service=user_profile_service_state.service,
+        competence_service=competence_service_state.service,
     )
 
     answer_mock.assert_awaited_once()
-    manager_state.done_mock.assert_not_awaited()
-    user_service_state.register_student_mock.assert_not_called()
+    manager_state.next_mock.assert_not_awaited()
+    competence_service_state.find_all_competencies_mock.assert_not_awaited()
 
 
 @pytest.mark.asyncio
@@ -173,46 +193,70 @@ async def test_request_contact_prompt_moves_to_contact_step(mocker: MockerFixtur
 
 
 @pytest.mark.asyncio
-async def test_patronymic_input_registers_user_and_shows_profile_on_success(mocker: MockerFixture) -> None:
+async def test_patronymic_input_loads_competencies_and_moves_to_selection_step(mocker: MockerFixture) -> None:
     message = _build_message("Иванович")
     widget = _build_widget()
     manager_state = _build_manager(mocker)
-    manager_state.manager.dialog_data.update(
-        {
-            "phone_number": "+79990001122",
-            "tg_id": 100_001,
-            "first_name": "Иван",
-            "last_name": "Петров",
-        }
-    )
-    user_service_state = _build_user_service(mocker)
-    user_profile_service_state = _build_user_profile_service(mocker)
-    user_dto = SimpleNamespace()
-    created_user = SimpleNamespace(first_name="Иван")
+    competence_service_state = _build_competence_service(mocker)
+    competence_service_state.find_all_competencies_mock.return_value = [
+        _build_competence_read_dto(1, "Python"),
+        _build_competence_read_dto(2, "SQL"),
+    ]
     answer_mock = mocker.patch.object(Message, "answer", new=mocker.AsyncMock())
-    mocker.patch(
-        "pybot.bot.dialogs.user_reg.handlers.map_dialog_data_to_user_create_dto",
-        new=mocker.AsyncMock(return_value=user_dto),
-    )
-    user_service_state.register_student_mock.return_value = created_user
 
     await _on_patronymic_input_impl(
         message=message,
         widget=widget,
         manager=manager_state.manager,
-        user_service=user_service_state.service,
-        user_profile_service=user_profile_service_state.service,
+        competence_service=competence_service_state.service,
     )
 
     assert manager_state.manager.dialog_data["patronymic"] == "Иванович"
-    user_service_state.register_student_mock.assert_awaited_once_with(user_dto)
-    answer_mock.assert_awaited_once_with(registration_profile_created("Иван"))
-    manager_state.done_mock.assert_awaited_once()
-    user_profile_service_state.manage_profile_mock.assert_awaited_once_with(created_user)
+    assert manager_state.manager.dialog_data["registration_competencies"] == [(1, "Python"), (2, "SQL")]
+    assert manager_state.manager.dialog_data["competence_ids"] == []
+    manager_state.next_mock.assert_awaited_once()
+    answer_mock.assert_not_awaited()
 
 
 @pytest.mark.asyncio
-async def test_patronymic_skip_registers_user_and_shows_profile_on_success(mocker: MockerFixture) -> None:
+async def test_patronymic_skip_loads_competencies_and_moves_to_selection_step(mocker: MockerFixture) -> None:
+    callback = SimpleNamespace(answer=mocker.AsyncMock())
+    manager_state = _build_manager(mocker)
+    competence_service_state = _build_competence_service(mocker)
+    competence_service_state.find_all_competencies_mock.return_value = [
+        _build_competence_read_dto(3, "Docker"),
+    ]
+
+    await _on_patronymic_skip_impl(
+        callback=callback,  # type: ignore[arg-type]
+        manager=manager_state.manager,
+        competence_service=competence_service_state.service,
+    )
+
+    assert manager_state.manager.dialog_data["patronymic"] is None
+    assert manager_state.manager.dialog_data["registration_competencies"] == [(3, "Docker")]
+    assert manager_state.manager.dialog_data["competence_ids"] == []
+    callback.answer.assert_awaited_once()
+    manager_state.next_mock.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_on_competence_selection_changed_stores_checked_ids(mocker: MockerFixture) -> None:
+    manager_state = _build_manager(mocker)
+    widget = SimpleNamespace(get_checked=lambda: [1, 2])
+
+    await on_competence_selection_changed(
+        callback=SimpleNamespace(),  # type: ignore[arg-type]
+        widget=widget,  # type: ignore[arg-type]
+        manager=manager_state.manager,
+        item_id=2,
+    )
+
+    assert manager_state.manager.dialog_data["competence_ids"] == [1, 2]
+
+
+@pytest.mark.asyncio
+async def test_competence_submit_registers_user_and_shows_profile_on_success(mocker: MockerFixture) -> None:
     message = _build_message("/start")
     callback = SimpleNamespace(message=message, answer=mocker.AsyncMock())
     manager_state = _build_manager(mocker)
@@ -222,28 +266,115 @@ async def test_patronymic_skip_registers_user_and_shows_profile_on_success(mocke
             "tg_id": 100_001,
             "first_name": "Иван",
             "last_name": "Петров",
+            "patronymic": "Иванович",
+            "competence_ids": [1, 2],
         }
     )
-    user_service_state = _build_user_service(mocker)
+    user_registration_service_state = _build_user_registration_service(mocker)
     user_profile_service_state = _build_user_profile_service(mocker)
     user_dto = SimpleNamespace()
     created_user = SimpleNamespace(first_name="Иван")
     answer_mock = mocker.patch.object(Message, "answer", new=mocker.AsyncMock())
     mocker.patch(
-        "pybot.bot.dialogs.user_reg.handlers.map_dialog_data_to_user_create_dto",
+        "pybot.bot.dialogs.user_reg.handlers.map_dialog_data_to_user_registration_dto",
         new=mocker.AsyncMock(return_value=user_dto),
     )
-    user_service_state.register_student_mock.return_value = created_user
+    user_registration_service_state.register_student_mock.return_value = created_user
 
-    await _on_patronymic_skip_impl(
+    await _on_competence_submit_impl(
         callback=callback,  # type: ignore[arg-type]
         manager=manager_state.manager,
-        user_service=user_service_state.service,
+        user_reg_service=user_registration_service_state.service,
         user_profile_service=user_profile_service_state.service,
     )
 
-    user_service_state.register_student_mock.assert_awaited_once_with(user_dto)
+    user_registration_service_state.register_student_mock.assert_awaited_once_with(user_dto)
     answer_mock.assert_awaited_once_with(registration_profile_created("Иван"))
     callback.answer.assert_awaited_once()
     manager_state.done_mock.assert_awaited_once()
     user_profile_service_state.manage_profile_mock.assert_awaited_once_with(created_user)
+
+
+@pytest.mark.asyncio
+async def test_competence_skip_clears_selection_and_registers_user(mocker: MockerFixture) -> None:
+    message = _build_message("/start")
+    callback = SimpleNamespace(message=message, answer=mocker.AsyncMock())
+    manager_state = _build_manager(mocker)
+    manager_state.manager.dialog_data.update(
+        {
+            "phone_number": "+79990001122",
+            "tg_id": 100_001,
+            "first_name": "Иван",
+            "last_name": "Петров",
+            "competence_ids": [7, 8],
+        }
+    )
+    user_registration_service_state = _build_user_registration_service(mocker)
+    user_profile_service_state = _build_user_profile_service(mocker)
+    user_dto = SimpleNamespace()
+    created_user = SimpleNamespace(first_name="Иван")
+    answer_mock = mocker.patch.object(Message, "answer", new=mocker.AsyncMock())
+    mocker.patch(
+        "pybot.bot.dialogs.user_reg.handlers.map_dialog_data_to_user_registration_dto",
+        new=mocker.AsyncMock(return_value=user_dto),
+    )
+    user_registration_service_state.register_student_mock.return_value = created_user
+
+    await _on_competence_skip_impl(
+        callback=callback,  # type: ignore[arg-type]
+        manager=manager_state.manager,
+        user_reg_service=user_registration_service_state.service,
+        user_profile_service=user_profile_service_state.service,
+    )
+
+    assert manager_state.manager.dialog_data["competence_ids"] == []
+    user_registration_service_state.register_student_mock.assert_awaited_once_with(user_dto)
+    answer_mock.assert_awaited_once_with(registration_profile_created("Иван"))
+    callback.answer.assert_awaited_once()
+    manager_state.done_mock.assert_awaited_once()
+    user_profile_service_state.manage_profile_mock.assert_awaited_once_with(created_user)
+
+
+@pytest.mark.asyncio
+async def test_map_dialog_data_to_user_registration_dto_returns_dto_with_competence_ids(
+    mocker: MockerFixture,
+) -> None:
+    manager_state = _build_manager(mocker)
+    manager_state.manager.dialog_data.update(
+        {
+            "phone_number": "+79990001122",
+            "tg_id": 100_001,
+            "first_name": "Иван",
+            "last_name": "Петров",
+            "patronymic": "Иванович",
+            "competence_ids": [1, 2, 2],
+        }
+    )
+
+    result = await map_dialog_data_to_user_registration_dto(manager_state.manager)
+
+    assert result is not None
+    assert result.user.first_name == "Иван"
+    assert list(result.competence_ids) == [1, 2, 2]
+    manager_state.done_mock.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_map_dialog_data_to_user_registration_dto_uses_empty_competence_ids_by_default(
+    mocker: MockerFixture,
+) -> None:
+    manager_state = _build_manager(mocker)
+    manager_state.manager.dialog_data.update(
+        {
+            "phone_number": "+79990001122",
+            "tg_id": 100_001,
+            "first_name": "Иван",
+            "last_name": "Петров",
+        }
+    )
+
+    result = await map_dialog_data_to_user_registration_dto(manager_state.manager)
+
+    assert result is not None
+    assert tuple(result.competence_ids) == ()
+    manager_state.done_mock.assert_not_awaited()

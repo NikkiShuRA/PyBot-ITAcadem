@@ -25,6 +25,11 @@ def _build_message(*, text: str, from_user_id: int = 710_001) -> Message:
 
 @dataclass(slots=True)
 class StubUserService:
+    find_user_by_telegram_id: AsyncMock = field(default_factory=AsyncMock)
+
+
+@dataclass(slots=True)
+class StubUserRolesService:
     add_user_role: AsyncMock = field(default_factory=AsyncMock)
 
 
@@ -80,10 +85,16 @@ async def test_handle_set_role_explains_how_to_select_target_user(
 ) -> None:
     message = _build_message(text="/addrole Admin")
     user_service = StubUserService()
+    user_roles_service = StubUserRolesService()
     reply_mock = AsyncMock()
     monkeypatch.setattr(Message, "reply", reply_mock)
 
-    await handle_set_role(message=message, user_service=user_service, user_id=999_999)
+    await handle_set_role(
+        message=message,
+        user_service=user_service,
+        user_roles_service=user_roles_service,
+        user_id=999_999,
+    )
 
-    user_service.add_user_role.assert_not_awaited()
+    user_roles_service.add_user_role.assert_not_awaited()
     reply_mock.assert_awaited_once_with(role_target_required("addrole"))

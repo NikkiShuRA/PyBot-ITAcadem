@@ -6,8 +6,7 @@ from aiogram_dialog.api.entities.modes import StartMode
 from dishka.integrations.aiogram import FromDishka
 
 from ....bot.dialogs.user_reg.states import CreateProfileSG
-from ....services import UserProfileService
-from ....services.users import UserService
+from ....services.user_services import UserProfileService, UserService
 from ...filters import create_chat_type_routers
 from ...texts import HELP_GROUP, HELP_PRIVATE, INFO_GLOBAL, START_GROUP_GREETING, START_USER_ERROR
 

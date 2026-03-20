@@ -41,17 +41,17 @@ class RoleRequestService:
         except UserNotFoundError as err:
             raise UserNotFoundError(user_id) from err
 
-        role_check = await self.role_repository.get_role_by_name(self.db, user_role)
+        role_check = await self.role_repository.find_role_by_name(self.db, user_role)
         if role_check is None:
             raise RoleNotFoundError(role_name=user_role)
 
         if await self.user_repository.has_role(self.db, user.id, user_role):
             raise RoleAlreadyAssignedError(role_name=user_role, user_id=user.id)
 
-        if await self.role_request_repository.get_recent_active_request(self.db, user_id):
+        if await self.role_request_repository.find_recent_active_request(self.db, user_id):
             raise RoleRequestAlreadyExistsError(role_name=user_role, user_id=user.id)
 
-        last_reject = await self.role_request_repository.get_last_rejected_request(self.db, user_id)
+        last_reject = await self.role_request_repository.find_last_rejected_request(self.db, user_id)
         if not last_reject:
             return True
 
@@ -61,7 +61,7 @@ class RoleRequestService:
         if not await self.check_requesting_user(user_id, role):
             raise RoleRequestRejectedError(role_name=role, user_id=user_id)
 
-        role_object = await self.role_repository.get_role_by_name(self.db, role)
+        role_object = await self.role_repository.find_role_by_name(self.db, role)
         if not role_object:
             raise RoleNotFoundError(role_name=role)
 
@@ -78,7 +78,7 @@ class RoleRequestService:
         return CreateRoleRequestDTO.model_validate(request)
 
     async def change_request_status(self, request_id: int, new_status: RequestStatus) -> None:
-        request = await self.role_request_repository.get_request_by_id(self.db, request_id)
+        request = await self.role_request_repository.find_request_by_id(self.db, request_id)
         if request is None:
             raise RoleRequestNotFoundError()
         if request.status != RequestStatus.PENDING:

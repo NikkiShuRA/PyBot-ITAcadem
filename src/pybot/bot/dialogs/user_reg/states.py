@@ -10,4 +10,5 @@ class CreateProfileSG(StatesGroup):
     first_name = State()
     last_name = State()
     patronymic = State()
+    competencies = State()
     finish = State()

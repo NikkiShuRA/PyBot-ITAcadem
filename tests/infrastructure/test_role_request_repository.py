@@ -10,7 +10,7 @@ from tests.factories import RoleRequestSpec, UserSpec, create_role, create_role_
 
 
 @pytest.mark.asyncio
-async def test_get_recent_active_request_returns_pending_for_user(db_session) -> None:
+async def test_find_recent_active_request_returns_pending_for_user(db_session) -> None:
     # Given
     repo = RoleRequestRepository()
     user = await create_user(db_session, spec=UserSpec(telegram_id=510_001))
@@ -21,7 +21,7 @@ async def test_get_recent_active_request_returns_pending_for_user(db_session) ->
     await db_session.commit()
 
     # When
-    found = await repo.get_recent_active_request(db_session, user.id)
+    found = await repo.find_recent_active_request(db_session, user.id)
 
     # Then
     assert found is not None
@@ -30,7 +30,7 @@ async def test_get_recent_active_request_returns_pending_for_user(db_session) ->
 
 
 @pytest.mark.asyncio
-async def test_get_recent_active_request_returns_none_when_absent(db_session) -> None:
+async def test_find_recent_active_request_returns_none_when_absent(db_session) -> None:
     # Given
     repo = RoleRequestRepository()
     user = await create_user(db_session, spec=UserSpec(telegram_id=510_002))
@@ -39,14 +39,14 @@ async def test_get_recent_active_request_returns_none_when_absent(db_session) ->
     await db_session.commit()
 
     # When
-    found = await repo.get_recent_active_request(db_session, user.id)
+    found = await repo.find_recent_active_request(db_session, user.id)
 
     # Then
     assert found is None
 
 
 @pytest.mark.asyncio
-async def test_get_last_rejected_request_returns_newest_record_by_created_at_desc(db_session) -> None:
+async def test_find_last_rejected_request_returns_newest_record_by_created_at_desc(db_session) -> None:
     # Given
     repo = RoleRequestRepository()
     user = await create_user(db_session, spec=UserSpec(telegram_id=510_003))
@@ -72,7 +72,7 @@ async def test_get_last_rejected_request_returns_newest_record_by_created_at_des
     await db_session.commit()
 
     # When
-    found = await repo.get_last_rejected_request(db_session, user.id)
+    found = await repo.find_last_rejected_request(db_session, user.id)
 
     # Then
     assert found is not None
@@ -80,7 +80,7 @@ async def test_get_last_rejected_request_returns_newest_record_by_created_at_des
 
 
 @pytest.mark.asyncio
-async def test_get_all_role_requests_returns_all_rows(db_session) -> None:
+async def test_find_all_role_requests_returns_all_rows(db_session) -> None:
     # Given
     repo = RoleRequestRepository()
     user1 = await create_user(db_session, spec=UserSpec(telegram_id=510_004))
@@ -91,7 +91,7 @@ async def test_get_all_role_requests_returns_all_rows(db_session) -> None:
     await db_session.commit()
 
     # When
-    all_requests = await repo.get_all_role_requests(db_session)
+    all_requests = await repo.find_all_role_requests(db_session)
 
     # Then
     assert len(all_requests) == 2

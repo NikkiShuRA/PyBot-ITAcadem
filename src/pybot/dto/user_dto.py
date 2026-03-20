@@ -1,4 +1,5 @@
 import re
+from collections.abc import Sequence
 from datetime import date
 from typing import ClassVar
 
@@ -118,3 +119,8 @@ class UserProfileReadDTO(BaseDTO):
 
     user: UserReadDTO
     level_info: dict[LevelTypeEnum, UserLevelReadDTO]
+
+
+class UserRegistrationDTO(BaseDTO):
+    user: UserCreateDTO
+    competence_ids: Sequence[int] = Field(default_factory=tuple)

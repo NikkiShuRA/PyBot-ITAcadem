@@ -23,12 +23,12 @@ class CompetenceService:
         self.db = db
         self.competence_repository = competence_repository
 
-    async def get_all_competencies(self) -> Sequence[CompetenceReadDTO]:
-        competencies = await self.competence_repository.get_all(self.db)
+    async def find_all_competencies(self) -> Sequence[CompetenceReadDTO]:
+        competencies = await self.competence_repository.find_all(self.db)
         return await map_orm_competencies_to_competence_read_dtos(competencies)
 
     async def get_competencies(self, dto: CompetenceIdsDTO) -> Sequence[CompetenceReadDTO]:
-        competencies = await self.competence_repository.get_by_ids(self.db, dto.competence_ids)
+        competencies = await self.competence_repository.find_by_ids(self.db, dto.competence_ids)
         found_ids = {competence.id for competence in competencies}
         missing_ids = [competence_id for competence_id in dto.competence_ids if competence_id not in found_ids]
         if missing_ids:
@@ -37,14 +37,14 @@ class CompetenceService:
         return await map_orm_competencies_to_competence_read_dtos(competencies)
 
     async def get_competence_by_id(self, dto: CompetenceByIdDTO) -> CompetenceReadDTO:
-        competence = await self.competence_repository.get_by_id(self.db, dto.competence_id)
+        competence = await self.competence_repository.find_by_id(self.db, dto.competence_id)
         if competence is None:
             raise ValueError(f"Competence with id={dto.competence_id} not found")
 
         return await map_orm_competence_to_competence_read_dto(competence)
 
     async def create_competence(self, dto: CompetenceCreateDTO) -> CompetenceReadDTO:
-        existing = await self.competence_repository.get_by_name(self.db, dto.name)
+        existing = await self.competence_repository.find_by_name(self.db, dto.name)
         if existing is not None:
             raise ValueError(f"Competence with name='{dto.name}' already exists")
 
@@ -58,7 +58,7 @@ class CompetenceService:
         return await map_orm_competence_to_competence_read_dto(created)
 
     async def update_competence(self, dto: CompetenceUpdateDTO) -> CompetenceReadDTO:
-        competence = await self.competence_repository.get_by_id(self.db, dto.competence_id)
+        competence = await self.competence_repository.find_by_id(self.db, dto.competence_id)
         if competence is None:
             raise ValueError(f"Competence with id={dto.competence_id} not found")
 
@@ -70,7 +70,7 @@ class CompetenceService:
         return await map_orm_competence_to_competence_read_dto(updated)
 
     async def delete_competence(self, dto: CompetenceByIdDTO) -> None:
-        competence = await self.competence_repository.get_by_id(self.db, dto.competence_id)
+        competence = await self.competence_repository.find_by_id(self.db, dto.competence_id)
         if competence is None:
             raise ValueError(f"Competence with id={dto.competence_id} not found")
 

@@ -4,7 +4,7 @@ from pydantic import ValidationError
 from ..core import logger
 from ..core.constants import LevelTypeEnum
 from ..db.models import User
-from ..dto import UserCreateDTO, UserReadDTO
+from ..dto import UserCreateDTO, UserReadDTO, UserRegistrationDTO
 from ..dto.value_objects import Points
 
 
@@ -57,3 +57,27 @@ async def map_dialog_data_to_user_create_dto(manager: DialogManager) -> UserCrea
         return None
     else:
         return user_data
+
+
+async def map_dialog_data_to_user_registration_dto(manager: DialogManager) -> UserRegistrationDTO | None:
+    """
+    Маппинг данных из dialog_data в UserRegistrationDTO.
+    Возвращает DTO или None, если пользовательские данные неполные или невалидны.
+    """
+    user_data = await map_dialog_data_to_user_create_dto(manager)
+    if user_data is None:
+        return None
+
+    raw_competence_ids = manager.dialog_data.get("competence_ids", ())
+
+    try:
+        registration_data = UserRegistrationDTO(
+            user=user_data,
+            competence_ids=raw_competence_ids,
+        )
+    except (ValidationError, TypeError):
+        logger.exception("Ошибка валидации данных для регистрации пользователя из dialog_data")
+        await manager.done()
+        return None
+    else:
+        return registration_data

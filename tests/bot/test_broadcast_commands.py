@@ -44,7 +44,7 @@ class StubBroadcastService:
 class StubCompetenceService:
     competencies: list[CompetenceReadDTO]
 
-    async def get_all_competencies(self) -> list[CompetenceReadDTO]:
+    async def find_all_competencies(self) -> list[CompetenceReadDTO]:
         return self.competencies
 
 

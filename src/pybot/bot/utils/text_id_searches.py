@@ -4,7 +4,7 @@ from re import Match
 from aiogram.types import Message
 
 from ...dto import UserReadDTO
-from ...services.users import UserService
+from ...services.user_services import UserService
 from ..filters.message_value_filters import check_text_message_correction
 from ..texts import TARGET_REQUIRED, target_selected_mention, target_selected_reply
 

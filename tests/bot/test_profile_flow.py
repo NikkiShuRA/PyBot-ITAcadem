@@ -9,8 +9,8 @@ import pytest
 from aiogram.types import Chat, Message, User
 from aiogram_dialog.api.entities.modes import StartMode
 
-from pybot.bot.dialogs.user_reg.states import CreateProfileSG
 from pybot.bot.dialogs.user_reg.handlers import request_contact_prompt
+from pybot.bot.dialogs.user_reg.states import CreateProfileSG
 from pybot.bot.handlers.common.start import cmd_start_private
 from pybot.bot.handlers.profile.user_profile import cmd_profile_private
 from pybot.bot.keyboards.auth import request_contact_kb
@@ -18,8 +18,7 @@ from pybot.bot.texts import REGISTRATION_CONTACT_PROMPT
 from pybot.core.constants import LevelTypeEnum
 from pybot.dto import UserReadDTO
 from pybot.dto.value_objects import Points
-from pybot.services import UserProfileService
-from pybot.services.users import UserService
+from pybot.services.user_services import UserProfileService, UserService
 
 
 def _build_message(*, from_user_id: int | None = 700_001) -> Message:

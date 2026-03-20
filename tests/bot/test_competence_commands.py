@@ -11,6 +11,7 @@ from aiogram.types import Chat, Message, User
 from pybot.bot.handlers.roles.change_competences import (
     handle_add_competence,
     handle_remove_competence,
+    handle_show_all_competences,
     handle_show_competences,
 )
 from pybot.core.constants import LevelTypeEnum
@@ -64,18 +65,23 @@ def _build_message(
 class StubUserService:
     users_by_tg: dict[int, UserReadDTO] = field(default_factory=dict)
     users_by_id: dict[int, UserReadDTO] = field(default_factory=dict)
-    competencies_by_user_id: dict[int, list[CompetenceReadDTO]] = field(default_factory=dict)
-    add_calls: list[tuple[int, list[str]]] = field(default_factory=list)
-    remove_calls: list[tuple[int, list[str]]] = field(default_factory=list)
-    show_calls: list[int] = field(default_factory=list)
-    add_error: ValueError | None = None
-    remove_error: ValueError | None = None
 
     async def find_user_by_telegram_id(self, tg_id: int) -> UserReadDTO | None:
         return self.users_by_tg.get(tg_id)
 
     async def get_user(self, user_id: int) -> UserReadDTO | None:
         return self.users_by_id.get(user_id)
+
+
+@dataclass(slots=True)
+class StubUserCompetenceService:
+    users_by_id: dict[int, UserReadDTO] = field(default_factory=dict)
+    competencies_by_user_id: dict[int, list[CompetenceReadDTO]] = field(default_factory=dict)
+    add_calls: list[tuple[int, list[str]]] = field(default_factory=list)
+    remove_calls: list[tuple[int, list[str]]] = field(default_factory=list)
+    show_calls: list[int] = field(default_factory=list)
+    add_error: ValueError | None = None
+    remove_error: ValueError | None = None
 
     async def add_user_competencies_by_names(self, user_id: int, competence_names: Sequence[str]) -> UserReadDTO:
         self.add_calls.append((user_id, list(competence_names)))
@@ -100,6 +106,14 @@ class StubUserService:
         return self.competencies_by_user_id.get(user_id, [])
 
 
+@dataclass(slots=True)
+class StubCompetenceService:
+    competencies: list[CompetenceReadDTO] = field(default_factory=list)
+
+    async def find_all_competencies(self) -> Sequence[CompetenceReadDTO]:
+        return self.competencies
+
+
 def _last_reply_text(reply_mock: AsyncMock) -> str:
     assert reply_mock.await_args_list
     return str(reply_mock.await_args_list[-1][0][0])
@@ -110,10 +124,11 @@ async def test_addcompetence_by_reply_calls_service_with_csv_names(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     target_user = _build_user_read_dto(db_id=20, telegram_id=200_001, first_name="Target")
-    service = StubUserService(
+    user_service = StubUserService(
         users_by_tg={target_user.telegram_id: target_user},
         users_by_id={target_user.id: target_user},
     )
+    user_competence_service = StubUserCompetenceService(users_by_id={target_user.id: target_user})
     message = _build_message(
         text="/addcompetence Python, SQL",
         from_user_id=100_001,
@@ -123,9 +138,13 @@ async def test_addcompetence_by_reply_calls_service_with_csv_names(
     reply_mock = AsyncMock()
     monkeypatch.setattr(Message, "reply", reply_mock)
 
-    await handle_add_competence(message=message, user_service=service)
+    await handle_add_competence(
+        message=message,
+        user_service=user_service,
+        user_competence_service=user_competence_service,
+    )
 
-    assert service.add_calls == [(target_user.id, ["Python", "SQL"])]
+    assert user_competence_service.add_calls == [(target_user.id, ["Python", "SQL"])]
     assert reply_mock.await_count == 1
     reply_text = _last_reply_text(reply_mock)
     assert "Python" in reply_text
@@ -137,19 +156,25 @@ async def test_removecompetence_invalid_list_returns_error_message(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     target_user = _build_user_read_dto(db_id=21, telegram_id=200_002, first_name="Target")
-    service = StubUserService(
+    user_service = StubUserService(
         users_by_tg={target_user.telegram_id: target_user},
         users_by_id={target_user.id: target_user},
-        remove_error=ValueError("Competence names not found: ['Unknown']"),
+    )
+    user_competence_service = StubUserCompetenceService(
+        users_by_id={target_user.id: target_user}, remove_error=ValueError("Competence names not found: ['Unknown']")
     )
     message = _build_message(text="/removecompetence 200002 Unknown", from_user_id=100_002)
 
     reply_mock = AsyncMock()
     monkeypatch.setattr(Message, "reply", reply_mock)
 
-    await handle_remove_competence(message=message, user_service=service)
+    await handle_remove_competence(
+        message=message,
+        user_service=user_service,
+        user_competence_service=user_competence_service,
+    )
 
-    assert service.remove_calls == [(target_user.id, ["Unknown"])]
+    assert user_competence_service.remove_calls == [(target_user.id, ["Unknown"])]
     assert "Не удалось обработать список компетенций" in _last_reply_text(reply_mock)
 
 
@@ -158,7 +183,10 @@ async def test_showcompetences_without_target_uses_current_user(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     current_user = _build_user_read_dto(db_id=30, telegram_id=300_001, first_name="Admin")
-    service = StubUserService(
+    user_service = StubUserService(
+        users_by_id={current_user.id: current_user},
+    )
+    user_competence_service = StubUserCompetenceService(
         users_by_id={current_user.id: current_user},
         competencies_by_user_id={
             current_user.id: [CompetenceReadDTO(id=1, name="Python", description=None)],
@@ -169,9 +197,14 @@ async def test_showcompetences_without_target_uses_current_user(
     reply_mock = AsyncMock()
     monkeypatch.setattr(Message, "reply", reply_mock)
 
-    await handle_show_competences(message=message, user_service=service, user_id=current_user.id)
+    await handle_show_competences(
+        message=message,
+        user_service=user_service,
+        user_competence_service=user_competence_service,
+        user_id=current_user.id,
+    )
 
-    assert service.show_calls == [current_user.id]
+    assert user_competence_service.show_calls == [current_user.id]
     assert "Python" in _last_reply_text(reply_mock)
 
 
@@ -181,9 +214,12 @@ async def test_showcompetences_with_target_text_id_uses_target_user(
 ) -> None:
     target_user = _build_user_read_dto(db_id=40, telegram_id=400_001, first_name="Target")
     admin_user = _build_user_read_dto(db_id=41, telegram_id=400_002, first_name="Admin")
-    service = StubUserService(
+    user_service = StubUserService(
         users_by_tg={target_user.telegram_id: target_user},
         users_by_id={admin_user.id: admin_user, target_user.id: target_user},
+    )
+    user_competence_service = StubUserCompetenceService(
+        users_by_id={target_user.id: target_user},
         competencies_by_user_id={
             target_user.id: [CompetenceReadDTO(id=2, name="SQL", description=None)],
         },
@@ -193,9 +229,14 @@ async def test_showcompetences_with_target_text_id_uses_target_user(
     reply_mock = AsyncMock()
     monkeypatch.setattr(Message, "reply", reply_mock)
 
-    await handle_show_competences(message=message, user_service=service, user_id=admin_user.id)
+    await handle_show_competences(
+        message=message,
+        user_service=user_service,
+        user_competence_service=user_competence_service,
+        user_id=admin_user.id,
+    )
 
-    assert service.show_calls == [target_user.id]
+    assert user_competence_service.show_calls == [target_user.id]
     reply_text = _last_reply_text(reply_mock)
     assert "Target" in reply_text
     assert "SQL" in reply_text
@@ -206,8 +247,11 @@ async def test_addcompetence_unknown_names_returns_validation_error(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     target_user = _build_user_read_dto(db_id=50, telegram_id=500_001, first_name="Target")
-    service = StubUserService(
+    user_service = StubUserService(
         users_by_tg={target_user.telegram_id: target_user},
+        users_by_id={target_user.id: target_user},
+    )
+    user_competence_service = StubUserCompetenceService(
         users_by_id={target_user.id: target_user},
         add_error=ValueError("Competence names not found: ['Unknown']"),
     )
@@ -216,9 +260,13 @@ async def test_addcompetence_unknown_names_returns_validation_error(
     reply_mock = AsyncMock()
     monkeypatch.setattr(Message, "reply", reply_mock)
 
-    await handle_add_competence(message=message, user_service=service)
+    await handle_add_competence(
+        message=message,
+        user_service=user_service,
+        user_competence_service=user_competence_service,
+    )
 
-    assert service.add_calls == [(target_user.id, ["Unknown"])]
+    assert user_competence_service.add_calls == [(target_user.id, ["Unknown"])]
     assert "Не удалось обработать список компетенций" in _last_reply_text(reply_mock)
 
 
@@ -226,17 +274,26 @@ async def test_addcompetence_unknown_names_returns_validation_error(
 async def test_addcompetence_distinguishes_missing_target_from_not_found_target(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    service = StubUserService(users_by_tg={}, users_by_id={})
+    user_service = StubUserService(users_by_tg={}, users_by_id={})
+    user_competence_service = StubUserCompetenceService()
     missing_target_message = _build_message(text="/addcompetence Python,SQL", from_user_id=600_001)
     not_found_target_message = _build_message(text="/addcompetence 999999 Python,SQL", from_user_id=600_001)
     reply_mock = AsyncMock()
     monkeypatch.setattr(Message, "reply", reply_mock)
 
-    await handle_add_competence(message=missing_target_message, user_service=service)
+    await handle_add_competence(
+        message=missing_target_message,
+        user_service=user_service,
+        user_competence_service=user_competence_service,
+    )
     first_reply = _last_reply_text(reply_mock)
     assert "/addcompetence" in first_reply
 
-    await handle_add_competence(message=not_found_target_message, user_service=service)
+    await handle_add_competence(
+        message=not_found_target_message,
+        user_service=user_service,
+        user_competence_service=user_competence_service,
+    )
     second_reply = _last_reply_text(reply_mock)
     assert second_reply == "Пользователь не найден."
 
@@ -246,7 +303,10 @@ async def test_showcompetences_does_not_fallback_on_invalid_explicit_target(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     current_user = _build_user_read_dto(db_id=70, telegram_id=700_701, first_name="Admin")
-    service = StubUserService(
+    user_service = StubUserService(
+        users_by_id={current_user.id: current_user},
+    )
+    user_competence_service = StubUserCompetenceService(
         users_by_id={current_user.id: current_user},
         competencies_by_user_id={
             current_user.id: [CompetenceReadDTO(id=1, name="Python", description=None)],
@@ -256,7 +316,62 @@ async def test_showcompetences_does_not_fallback_on_invalid_explicit_target(
     reply_mock = AsyncMock()
     monkeypatch.setattr(Message, "reply", reply_mock)
 
-    await handle_show_competences(message=message, user_service=service, user_id=current_user.id)
+    await handle_show_competences(
+        message=message,
+        user_service=user_service,
+        user_competence_service=user_competence_service,
+        user_id=current_user.id,
+    )
 
-    assert service.show_calls == []
+    assert user_competence_service.show_calls == []
     assert "Python" not in _last_reply_text(reply_mock)
+
+
+@pytest.mark.asyncio
+async def test_competences_command_shows_all_competences_with_html_formatting(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    competence_service = StubCompetenceService(
+        competencies=[
+            CompetenceReadDTO(id=1, name="Python", description="Язык программирования"),
+            CompetenceReadDTO(id=2, name="SQL", description=None),
+        ]
+    )
+    message = _build_message(text="/competences", from_user_id=800_001)
+    reply_mock = AsyncMock()
+    monkeypatch.setattr(Message, "reply", reply_mock)
+
+    await handle_show_all_competences(
+        message=message,
+        competence_service=competence_service,
+    )
+
+    assert reply_mock.await_count == 1
+    await_args = reply_mock.await_args
+    assert await_args is not None
+    assert await_args.kwargs["parse_mode"] == "HTML"
+    reply_text = str(await_args.args[0])
+    assert "<b>Компетенции:</b>" in reply_text
+    assert "<b>Python</b>: Язык программирования." in reply_text
+    assert "<b>SQL</b>: Описание не указано." in reply_text
+
+
+@pytest.mark.asyncio
+async def test_competences_command_handles_empty_catalog(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    competence_service = StubCompetenceService(competencies=[])
+    message = _build_message(text="/competences", from_user_id=800_002)
+    reply_mock = AsyncMock()
+    monkeypatch.setattr(Message, "reply", reply_mock)
+
+    await handle_show_all_competences(
+        message=message,
+        competence_service=competence_service,
+    )
+
+    assert reply_mock.await_count == 1
+    await_args = reply_mock.await_args
+    assert await_args is not None
+    assert await_args.kwargs["parse_mode"] == "HTML"
+    assert "Пока в системе нет доступных компетенций." in str(await_args.args[0])

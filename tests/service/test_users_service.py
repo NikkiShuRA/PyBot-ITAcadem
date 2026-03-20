@@ -8,8 +8,13 @@ from pybot.core.config import settings
 from pybot.core.constants import LevelTypeEnum, RoleEnum
 from pybot.db.models import UserLevel
 from pybot.domain.exceptions import InitialLevelsNotFoundError, RoleNotFoundError, UserNotFoundError
+from pybot.dto import UserReadDTO, UserRegistrationDTO
+from pybot.infrastructure.competence_repository import CompetenceRepository
+from pybot.infrastructure.level_repository import LevelRepository
+from pybot.infrastructure.role_repository import RoleRepository
 from pybot.infrastructure.user_repository import UserRepository
-from pybot.services.users import UserService
+from pybot.services.user_services import UserCompetenceService, UserRolesService, UserService
+from pybot.services.user_services.user_registration import UserRegistrationService
 from tests.factories import (
     UserCreateDTOFactory,
     UserSpec,
@@ -42,7 +47,8 @@ async def test_register_student_success_creates_profile_levels_and_role(
     assert created.telegram_id == dto.tg_id
     assert created.first_name == dto.first_name
 
-    user_roles = await service.find_user_roles(created.id)
+    roles_service = await dishka_request_container.get(UserRolesService)
+    user_roles = await roles_service.find_user_roles(created.id)
     assert "Student" in user_roles
 
     levels_stmt = select(UserLevel).where(UserLevel.user_id == created.id)
@@ -101,7 +107,8 @@ async def test_register_student_assigns_admin_role_for_configured_telegram_ids(
     created = await service.register_student(dto)
 
     # Then
-    roles = await service.find_user_roles(created.id)
+    roles_service = await dishka_request_container.get(UserRolesService)
+    roles = await roles_service.find_user_roles(created.id)
     assert sorted(roles) == ["Admin", "Student"]
 
 
@@ -144,8 +151,44 @@ async def test_register_student_does_not_assign_admin_role_for_non_configured_te
     created = await service.register_student(dto)
 
     # Then
-    roles = await service.find_user_roles(created.id)
+    roles_service = await dishka_request_container.get(UserRolesService)
+    roles = await roles_service.find_user_roles(created.id)
     assert roles == ["Student"]
+
+
+@pytest.mark.asyncio
+async def test_user_registration_service_register_student_accepts_duplicate_competence_ids(
+    dishka_request_container,
+) -> None:
+    db = await dishka_request_container.get(AsyncSession)
+    user_repository = await dishka_request_container.get(UserRepository)
+    level_repository = await dishka_request_container.get(LevelRepository)
+    role_repository = await dishka_request_container.get(RoleRepository)
+    competence_repository = await dishka_request_container.get(CompetenceRepository)
+    service = UserRegistrationService(
+        db=db,
+        user_repository=user_repository,
+        level_repository=level_repository,
+        role_repository=role_repository,
+        competence_repository=competence_repository,
+    )
+    await create_role(db, name="Student")
+    await create_level(db, name="A0", level_type=LevelTypeEnum.ACADEMIC, required_points=0)
+    await create_level(db, name="R0", level_type=LevelTypeEnum.REPUTATION, required_points=0)
+    python_competence = await create_competence(db, name="Python")
+    sql_competence = await create_competence(db, name="SQL")
+    await db.commit()
+    user_data = UserCreateDTOFactory.build(tg_id=700_104, phone="+79876540104")
+
+    created = await service.register_student(
+        UserRegistrationDTO(
+            user=user_data,
+            competence_ids=[python_competence.id, python_competence.id, sql_competence.id],
+        )
+    )
+
+    loaded = await user_repository.get_by_id(db, created.id)
+    assert sorted(link.competence_id for link in loaded.competencies) == [python_competence.id, sql_competence.id]
 
 
 @pytest.mark.asyncio
@@ -154,7 +197,7 @@ async def test_remove_user_role_removes_existing_role_and_returns_dto(
 ) -> None:
     # Given
     db = await dishka_request_container.get(AsyncSession)
-    service = await dishka_request_container.get(UserService)
+    service = await dishka_request_container.get(UserRolesService)
     user = await create_user(db, spec=UserSpec(telegram_id=700_005))
     student = await create_role(db, name="Student")
     mentor = await create_role(db, name="Mentor")
@@ -193,7 +236,7 @@ async def test_add_user_role_raises_when_user_not_found(
 ) -> None:
     # Given
     db = await dishka_request_container.get(AsyncSession)
-    service = await dishka_request_container.get(UserService)
+    service = await dishka_request_container.get(UserRolesService)
     await create_role(db, name="Mentor")
     await db.commit()
 
@@ -208,7 +251,7 @@ async def test_find_user_roles_returns_all_assigned_roles(
 ) -> None:
     # Given
     db = await dishka_request_container.get(AsyncSession)
-    service = await dishka_request_container.get(UserService)
+    service = await dishka_request_container.get(UserRolesService)
     user = await create_user(db, spec=UserSpec(telegram_id=700_006))
     role_student = await create_role(db, name="Student")
     role_admin = await create_role(db, name="Admin")
@@ -229,7 +272,7 @@ async def test_get_users_with_competence_id_returns_matching_users(
 ) -> None:
     # Given
     db = await dishka_request_container.get(AsyncSession)
-    service = await dishka_request_container.get(UserService)
+    service = await dishka_request_container.get(UserCompetenceService)
     python_competence = await create_competence(db, name="Python")
     user_one = await create_user(db, spec=UserSpec(telegram_id=700_010))
     user_two = await create_user(db, spec=UserSpec(telegram_id=700_011))
@@ -247,12 +290,31 @@ async def test_get_users_with_competence_id_returns_matching_users(
 
 
 @pytest.mark.asyncio
-async def test_add_user_competencies_adds_links_for_user(
+async def test_find_user_by_phone_returns_read_dto_for_existing_user(
     dishka_request_container,
 ) -> None:
     # Given
     db = await dishka_request_container.get(AsyncSession)
     service = await dishka_request_container.get(UserService)
+    user = await create_user(db, spec=UserSpec(telegram_id=700_111, phone_number="+79995554433"))
+    await db.commit()
+
+    # When
+    found_user = await service.find_user_by_phone(user.phone_number)
+
+    # Then
+    assert isinstance(found_user, UserReadDTO)
+    assert found_user.id == user.id
+    assert found_user.telegram_id == user.telegram_id
+
+
+@pytest.mark.asyncio
+async def test_add_user_competencies_adds_links_for_user(
+    dishka_request_container,
+) -> None:
+    # Given
+    db = await dishka_request_container.get(AsyncSession)
+    service = await dishka_request_container.get(UserCompetenceService)
     user_repository = await dishka_request_container.get(UserRepository)
     user = await create_user(db, spec=UserSpec(telegram_id=700_013))
     python_competence = await create_competence(db, name="Python")
@@ -274,7 +336,7 @@ async def test_remove_user_competencies_removes_only_requested_links(
 ) -> None:
     # Given
     db = await dishka_request_container.get(AsyncSession)
-    service = await dishka_request_container.get(UserService)
+    service = await dishka_request_container.get(UserCompetenceService)
     user_repository = await dishka_request_container.get(UserRepository)
     user = await create_user(db, spec=UserSpec(telegram_id=700_014))
     python_competence = await create_competence(db, name="Python")
@@ -298,7 +360,7 @@ async def test_update_user_competencies_replaces_existing_set(
 ) -> None:
     # Given
     db = await dishka_request_container.get(AsyncSession)
-    service = await dishka_request_container.get(UserService)
+    service = await dishka_request_container.get(UserCompetenceService)
     user_repository = await dishka_request_container.get(UserRepository)
     user = await create_user(db, spec=UserSpec(telegram_id=700_015))
     python_competence = await create_competence(db, name="Python")
@@ -322,7 +384,7 @@ async def test_add_user_competencies_raises_for_unknown_competence_id(
 ) -> None:
     # Given
     db = await dishka_request_container.get(AsyncSession)
-    service = await dishka_request_container.get(UserService)
+    service = await dishka_request_container.get(UserCompetenceService)
     user = await create_user(db, spec=UserSpec(telegram_id=700_016))
     await db.commit()
 
@@ -334,7 +396,7 @@ async def test_add_user_competencies_raises_for_unknown_competence_id(
 @pytest.mark.asyncio
 async def test_find_user_competencies_returns_read_dto_list(dishka_request_container) -> None:
     db = await dishka_request_container.get(AsyncSession)
-    service = await dishka_request_container.get(UserService)
+    service = await dishka_request_container.get(UserCompetenceService)
     user = await create_user(db, spec=UserSpec(telegram_id=700_017))
     python_competence = await create_competence(db, name="Python")
     sql_competence = await create_competence(db, name="SQL")
@@ -348,9 +410,18 @@ async def test_find_user_competencies_returns_read_dto_list(dishka_request_conta
 
 
 @pytest.mark.asyncio
+async def test_find_user_competencies_returns_empty_list_for_unknown_user(dishka_request_container) -> None:
+    service = await dishka_request_container.get(UserCompetenceService)
+
+    competencies = await service.find_user_competencies(999_999)
+
+    assert competencies == []
+
+
+@pytest.mark.asyncio
 async def test_add_user_competencies_by_names_adds_competencies(dishka_request_container) -> None:
     db = await dishka_request_container.get(AsyncSession)
-    service = await dishka_request_container.get(UserService)
+    service = await dishka_request_container.get(UserCompetenceService)
     user_repository = await dishka_request_container.get(UserRepository)
     user = await create_user(db, spec=UserSpec(telegram_id=700_018))
     python_competence = await create_competence(db, name="Python")
@@ -367,7 +438,7 @@ async def test_add_user_competencies_by_names_adds_competencies(dishka_request_c
 @pytest.mark.asyncio
 async def test_remove_user_competencies_by_names_removes_selected_competencies(dishka_request_container) -> None:
     db = await dishka_request_container.get(AsyncSession)
-    service = await dishka_request_container.get(UserService)
+    service = await dishka_request_container.get(UserCompetenceService)
     user_repository = await dishka_request_container.get(UserRepository)
     user = await create_user(db, spec=UserSpec(telegram_id=700_019))
     python_competence = await create_competence(db, name="Python")
@@ -386,7 +457,7 @@ async def test_remove_user_competencies_by_names_removes_selected_competencies(d
 @pytest.mark.asyncio
 async def test_add_user_competencies_by_names_is_atomic_when_unknown_names_present(dishka_request_container) -> None:
     db = await dishka_request_container.get(AsyncSession)
-    service = await dishka_request_container.get(UserService)
+    service = await dishka_request_container.get(UserCompetenceService)
     user_repository = await dishka_request_container.get(UserRepository)
     user = await create_user(db, spec=UserSpec(telegram_id=700_020))
     python_competence = await create_competence(db, name="Python")

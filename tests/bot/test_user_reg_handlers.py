@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from types import SimpleNamespace
-from typing import Protocol
 from unittest.mock import AsyncMock
 
 import pytest
@@ -15,6 +13,9 @@ from pybot.bot.texts import (
     REGISTRATION_CONTACT_EMPTY,
     registration_existing_profile,
 )
+from pybot.core.constants import LevelTypeEnum
+from pybot.dto import UserReadDTO
+from pybot.dto.value_objects import Points
 
 
 def _build_message(
@@ -43,18 +44,27 @@ class StubDialogManager:
     done: AsyncMock = field(default_factory=AsyncMock)
 
 
-class SupportsUserId(Protocol):
-    id: int
-
-
 @dataclass(slots=True)
 class StubUserService:
-    existing_user: SupportsUserId | None = None
+    existing_user: UserReadDTO | None = None
     phone_queries: list[str] = field(default_factory=list)
 
-    async def find_user_by_phone(self, phone: str) -> SupportsUserId | None:
+    async def find_user_by_phone(self, phone: str) -> UserReadDTO | None:
         self.phone_queries.append(phone)
         return self.existing_user
+
+
+def _build_user_read_dto(user_id: int, telegram_id: int) -> UserReadDTO:
+    return UserReadDTO(
+        id=user_id,
+        first_name="Tester",
+        last_name="User",
+        patronymic=None,
+        telegram_id=telegram_id,
+        academic_points=Points(value=0, point_type=LevelTypeEnum.ACADEMIC),
+        reputation_points=Points(value=0, point_type=LevelTypeEnum.REPUTATION),
+        join_date=datetime.now(UTC).date(),
+    )
 
 
 @pytest.mark.asyncio
@@ -92,7 +102,7 @@ async def test_on_contact_input_removes_keyboard_for_existing_user_and_finishes(
 ) -> None:
     message = _build_message(phone_number="+79990001123")
     manager = StubDialogManager()
-    user_service = StubUserService(existing_user=SimpleNamespace(id=42))
+    user_service = StubUserService(existing_user=_build_user_read_dto(user_id=42, telegram_id=700_001))
     answer_mock = AsyncMock()
     monkeypatch.setattr(Message, "answer", answer_mock)
 

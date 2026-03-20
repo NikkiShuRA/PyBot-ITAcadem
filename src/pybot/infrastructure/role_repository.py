@@ -15,14 +15,13 @@ class RoleRepository:
     Правильный подход: сессия передаётся в методы.
     """
 
-    # TODO Заменить get* на find* для сохранения семантики
-    async def get_role_by_name(self, db: AsyncSession, name: str) -> Role | None:
+    async def find_role_by_name(self, db: AsyncSession, name: str) -> Role | None:
         """Находит определение роли в таблице roles"""
         stmt = select(Role).where(Role.name == name)
         result = await db.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def get_role_by_id(self, db: AsyncSession, role_id: int) -> Role | None:
+    async def get_role_by_id(self, db: AsyncSession, role_id: int) -> Role:
         """Находит определение роли в таблице roles"""
         stmt = select(Role).where(Role.id == role_id)
         result = await db.execute(stmt)

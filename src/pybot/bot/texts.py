@@ -1,3 +1,4 @@
+import html
 import textwrap
 from collections.abc import Sequence
 
@@ -12,6 +13,7 @@ BUTTON_CONTINUE = "Продолжить"
 BUTTON_CANCEL = "Отмена"
 BUTTON_BACK = "Назад"
 BUTTON_SKIP = "Пропустить"
+BUTTON_FINISH_REGISTRATION = "Завершить регистрацию"
 BUTTON_SEND_CONTACT = "Поделиться номером"
 BUTTON_APPROVE = "Одобрить"
 BUTTON_REJECT = "Отклонить"
@@ -25,6 +27,7 @@ HELP_PRIVATE = textwrap.dedent(
     /help - показать эту подсказку
     /info - рассказать о проекте
     /ping - проверить, что бот работает
+    /competences - показать все компетенции в системе
     /showcompetences [@user|id|reply] - показать компетенции пользователя
 
     Команды для администраторов:
@@ -47,6 +50,7 @@ HELP_GROUP = textwrap.dedent(
     /help - показать эту подсказку
     /info - рассказать о проекте
     /ping - проверить, что бот работает
+    /competences - показать все компетенции в системе
     /showcompetences [@user|id|reply] - показать компетенции пользователя
 
     Важно:
@@ -84,6 +88,13 @@ REGISTRATION_CONTACT_STEP = "📱 Поделитесь номером телеф
 REGISTRATION_FIRST_NAME_STEP = "Введите имя"
 REGISTRATION_LAST_NAME_STEP = "Введите фамилию"
 REGISTRATION_PATRONYMIC_STEP = "Введите отчество"
+REGISTRATION_COMPETENCE_STEP = textwrap.dedent(
+    """
+    Выберите компетенции, которые вам уже знакомы или интересны.
+
+    Этот шаг можно пропустить: потом вы сможете изменить компетенции в профиле.
+    """
+).strip()
 REGISTRATION_VALUE_INVALID = "Пожалуйста, отправьте корректное значение."
 REGISTRATION_CONTACT_EMPTY = "Не удалось получить номер телефона. Попробуйте ещё раз через кнопку ниже."
 REGISTRATION_CONTACT_ACCEPTED = "Номер получен. Продолжаем регистрацию."
@@ -140,7 +151,7 @@ ROLE_REQUEST_ADMIN_NOT_FOUND = "Запрос не найден"
 ROLE_REQUEST_ADMIN_ROLE_NOT_FOUND = "Роль не найдена"
 ROLE_REQUEST_ADMIN_USER_NOT_FOUND = "Пользователь не найден"
 ROLE_REQUEST_ADMIN_ALREADY_ASSIGNED = "Роль уже назначена"
-ROLE_REQUEST_USER_STATUS = "Ваш запрос на роль {role} был {status}."
+ROLE_REQUEST_USER_STATUS = "Ваша заявка на роль {role} была {status}."
 ROLE_REQUEST_ADMIN_NOTIFICATION = (
     "🛡️ Новый запрос на роль\n\nНомер запроса: {request_id}\nРоль: {role_name}\nПользователь: {mention}"
 )
@@ -161,6 +172,9 @@ COMPETENCE_ADD_SUCCESS = "✅ Пользователю {first_name} добавл
 COMPETENCE_REMOVE_SUCCESS = "✅ У пользователя {first_name} удалены компетенции: {competencies}"
 COMPETENCE_NONE = "У пользователя {first_name} пока нет компетенций."
 COMPETENCE_LIST = "🧩 Компетенции пользователя {first_name}:\n{competence_lines}"
+COMPETENCE_CATALOG_EMPTY = "<b>Компетенции:</b>\n\nПока в системе нет доступных компетенций."
+COMPETENCE_CATALOG = "<b>Компетенции:</b>\n\n{competence_lines}"
+COMPETENCE_DESCRIPTION_FALLBACK = "Описание не указано"
 COMPETENCE_VALIDATION_ERROR = "Не удалось обработать список компетенций: {details}"
 COMPETENCE_UNEXPECTED_ERROR = "Не удалось обработать компетенции. Попробуйте ещё раз позже."
 
@@ -234,10 +248,10 @@ def role_request_created(role_name: str) -> str:
 
 def role_request_user_status(role_name: str, status: RequestStatus) -> str:
     status_text_map = {
-        RequestStatus.APPROVED: "одобрен",
-        RequestStatus.REJECTED: "отклонён",
-        RequestStatus.PENDING: "принят в работу",
-        RequestStatus.CANCELED: "отменён",
+        RequestStatus.APPROVED: "одобрена",
+        RequestStatus.REJECTED: "отклонена",
+        RequestStatus.PENDING: "принята в работу",
+        RequestStatus.CANCELED: "отменена",
     }
     return ROLE_REQUEST_USER_STATUS.format(role=role_name, status=status_text_map.get(status, status.value))
 
@@ -269,6 +283,14 @@ def competence_none(first_name: str) -> str:
 def competence_list(first_name: str, competencies: Sequence[CompetenceReadDTO]) -> str:
     competence_lines = "\n".join(f"- {competence.name}" for competence in competencies)
     return COMPETENCE_LIST.format(first_name=first_name, competence_lines=competence_lines)
+
+
+def competence_catalog(competencies: Sequence[CompetenceReadDTO]) -> str:
+    if not competencies:
+        return COMPETENCE_CATALOG_EMPTY
+
+    competence_lines = "\n".join(_format_competence_catalog_line(competence) for competence in competencies)
+    return COMPETENCE_CATALOG.format(competence_lines=competence_lines)
 
 
 def competence_validation_error(details: str) -> str:
@@ -340,3 +362,8 @@ def profile_message(first_name: str, academic_section: str, reputation_section: 
         Посмотреть команды: /help
         """
     ).strip()
+
+
+def _format_competence_catalog_line(competence: CompetenceReadDTO) -> str:
+    description = competence.description or COMPETENCE_DESCRIPTION_FALLBACK
+    return f"<b>{html.escape(competence.name)}</b>: {html.escape(description)}."

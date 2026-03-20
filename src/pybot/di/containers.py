@@ -20,15 +20,21 @@ from ..infrastructure import (
 )
 from ..infrastructure.ports import LoggingNotificationService, TelegramNotificationService
 from ..infrastructure.taskiq.taskiq_notification_dispatcher import TaskIQNotificationDispatcher
-from ..services import LevelService, UserProfileService
+from ..services import (
+    UserCompetenceService,
+    UserProfileService,
+    UserRegistrationService,
+    UserRolesService,
+    UserService,
+)
 from ..services.broadcast import BroadcastService
 from ..services.competence import CompetenceService
 from ..services.health import HealthService, SessionExecutor
+from ..services.levels import LevelService
 from ..services.notification_facade import NotificationFacade
 from ..services.points import PointsService
 from ..services.ports import NotificationDispatchPort, NotificationPort
 from ..services.role_request import RoleRequestService
-from ..services.users import UserService
 
 
 class DatabaseProvider(Provider):
@@ -98,9 +104,26 @@ class ServiceProvider(Provider):
         user_repository: UserRepository,
         level_repository: LevelRepository,
         role_repository: RoleRepository,
-        competence_repository: CompetenceRepository,
     ) -> UserService:
-        return UserService(db, user_repository, level_repository, role_repository, competence_repository)
+        return UserService(db, user_repository, level_repository, role_repository)
+
+    @provide(scope=Scope.REQUEST)
+    def user_roles_service(
+        self,
+        db: AsyncSession,
+        user_repository: UserRepository,
+        role_repository: RoleRepository,
+    ) -> UserRolesService:
+        return UserRolesService(db, user_repository, role_repository)
+
+    @provide(scope=Scope.REQUEST)
+    def user_competence_service(
+        self,
+        db: AsyncSession,
+        user_repository: UserRepository,
+        competence_repository: CompetenceRepository,
+    ) -> UserCompetenceService:
+        return UserCompetenceService(db, user_repository, competence_repository)
 
     @provide(scope=Scope.REQUEST)
     def points_service(
@@ -151,6 +174,17 @@ class ServiceProvider(Provider):
         notification_port: NotificationPort,
     ) -> UserProfileService:
         return UserProfileService(level_service, notification_port)
+
+    @provide(scope=Scope.REQUEST)
+    def user_registration_service(
+        self,
+        db: AsyncSession,
+        user_repository: UserRepository,
+        level_repository: LevelRepository,
+        role_repository: RoleRepository,
+        competence_repository: CompetenceRepository,
+    ) -> UserRegistrationService:
+        return UserRegistrationService(db, user_repository, level_repository, role_repository, competence_repository)
 
 
 class HealthProvider(Provider):

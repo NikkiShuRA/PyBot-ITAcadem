@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from pybot.domain.exceptions import CompetenceNotFoundError
 from pybot.dto import CompetenceByIdDTO, CompetenceCreateDTO, CompetenceIdsDTO, CompetenceUpdateDTO
 from pybot.infrastructure.competence_repository import CompetenceRepository
 from pybot.services.competence import CompetenceService
@@ -10,7 +11,7 @@ from tests.factories import create_competence
 
 
 @pytest.mark.asyncio
-async def test_get_all_competencies_returns_all_sorted(dishka_request_container) -> None:
+async def test_find_all_competencies_returns_all_sorted(dishka_request_container) -> None:
     # Given
     db = await dishka_request_container.get(AsyncSession)
     service = await dishka_request_container.get(CompetenceService)
@@ -19,7 +20,7 @@ async def test_get_all_competencies_returns_all_sorted(dishka_request_container)
     await db.commit()
 
     # When
-    competencies = await service.get_all_competencies()
+    competencies = await service.find_all_competencies()
 
     # Then
     assert [competence.name for competence in competencies] == ["Python", "SQL"]
@@ -82,6 +83,36 @@ async def test_get_competencies_raises_for_missing_ids(dishka_request_container)
 
 
 @pytest.mark.asyncio
+async def test_competence_repository_get_by_ids_deduplicates_input_ids(
+    dishka_request_container,
+) -> None:
+    db = await dishka_request_container.get(AsyncSession)
+    repository = await dishka_request_container.get(CompetenceRepository)
+    python = await create_competence(db, name="Python")
+    sql = await create_competence(db, name="SQL")
+    await db.commit()
+
+    competencies = await repository.get_by_ids(db, [python.id, python.id, sql.id])
+
+    assert [competence.id for competence in competencies] == [python.id, sql.id]
+
+
+@pytest.mark.asyncio
+async def test_competence_repository_get_by_ids_raises_with_only_missing_ids(
+    dishka_request_container,
+) -> None:
+    db = await dishka_request_container.get(AsyncSession)
+    repository = await dishka_request_container.get(CompetenceRepository)
+    python = await create_competence(db, name="Python")
+    await db.commit()
+
+    with pytest.raises(CompetenceNotFoundError) as exc_info:
+        await repository.get_by_ids(db, [python.id, 999_999, 999_999, 888_888])
+
+    assert exc_info.value.details["missing_ids"] == [999_999, 888_888]
+
+
+@pytest.mark.asyncio
 async def test_update_competence_updates_model_and_commits(dishka_request_container) -> None:
     # Given
     db = await dishka_request_container.get(AsyncSession)
@@ -98,7 +129,7 @@ async def test_update_competence_updates_model_and_commits(dishka_request_contai
     # Then
     assert updated.name == "Python Advanced"
     assert updated.description == "New"
-    persisted = await repository.get_by_id(db, competence.id)
+    persisted = await repository.find_by_id(db, competence.id)
     assert persisted is not None
     assert persisted.name == "Python Advanced"
     assert persisted.description == "New"
@@ -117,7 +148,7 @@ async def test_create_competence_creates_new_competence(dishka_request_container
     # Then
     assert created.name == "Go"
     assert created.description == "Backend language"
-    persisted = await repository.get_by_id(db, created.id)
+    persisted = await repository.find_by_id(db, created.id)
     assert persisted is not None
     assert persisted.name == "Go"
 
@@ -148,7 +179,7 @@ async def test_delete_competence_removes_entity(dishka_request_container) -> Non
     await service.delete_competence(CompetenceByIdDTO(competence_id=competence.id))
 
     # Then
-    deleted = await repository.get_by_id(db, competence.id)
+    deleted = await repository.find_by_id(db, competence.id)
     assert deleted is None
 
 

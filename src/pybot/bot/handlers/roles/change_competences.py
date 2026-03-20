@@ -10,12 +10,14 @@ from dishka.integrations.aiogram import FromDishka
 from ....core import logger
 from ....domain.exceptions import CommandTargetNotSpecifiedError, UserNotFoundError
 from ....dto import UserReadDTO
-from ....services.users import UserService
+from ....services import CompetenceService
+from ....services.user_services import UserCompetenceService, UserService
 from ...filters import check_text_message_correction, create_chat_type_routers
 from ...texts import (
     COMPETENCE_UNEXPECTED_ERROR,
     TARGET_NOT_FOUND,
     competence_add_success,
+    competence_catalog,
     competence_list,
     competence_list_required,
     competence_none,
@@ -197,6 +199,7 @@ async def _resolve_target_user_for_command(
 async def handle_add_competence(
     message: Message,
     user_service: FromDishka[UserService],
+    user_competence_service: FromDishka[UserCompetenceService],
 ) -> None:
     try:
         target_user, target_source = await _resolve_target_user_for_command(
@@ -218,7 +221,7 @@ async def handle_add_competence(
         return
 
     try:
-        await user_service.add_user_competencies_by_names(target_user.id, competence_names)
+        await user_competence_service.add_user_competencies_by_names(target_user.id, competence_names)
     except UserNotFoundError:
         await message.reply(TARGET_NOT_FOUND)
     except ValueError as error:
@@ -237,6 +240,7 @@ async def handle_add_competence(
 async def handle_remove_competence(
     message: Message,
     user_service: FromDishka[UserService],
+    user_competence_service: FromDishka[UserCompetenceService],
 ) -> None:
     try:
         target_user, target_source = await _resolve_target_user_for_command(
@@ -258,7 +262,7 @@ async def handle_remove_competence(
         return
 
     try:
-        await user_service.remove_user_competencies_by_names(target_user.id, competence_names)
+        await user_competence_service.remove_user_competencies_by_names(target_user.id, competence_names)
     except UserNotFoundError:
         await message.reply(TARGET_NOT_FOUND)
     except ValueError as error:
@@ -277,6 +281,7 @@ async def handle_remove_competence(
 async def handle_show_competences(
     message: Message,
     user_service: FromDishka[UserService],
+    user_competence_service: FromDishka[UserCompetenceService],
     user_id: int,
 ) -> None:
     try:
@@ -292,7 +297,7 @@ async def handle_show_competences(
         return
 
     try:
-        competencies = await user_service.find_user_competencies(target_user.id)
+        competencies = await user_competence_service.find_user_competencies(target_user.id)
     except UserNotFoundError:
         await message.reply(TARGET_NOT_FOUND)
         return
@@ -306,3 +311,24 @@ async def handle_show_competences(
         return
 
     await message.reply(competence_list(target_user.first_name, competencies))
+
+
+@change_competence_global_router.message(
+    Command("competences"),
+    flags={"rate_limit": "moderate"},
+)
+async def handle_show_all_competences(
+    message: Message,
+    competence_service: FromDishka[CompetenceService],
+) -> None:
+    try:
+        competencies = await competence_service.find_all_competencies()
+    except Exception:
+        logger.exception("Unexpected error in handle_show_all_competences")
+        await message.reply(COMPETENCE_UNEXPECTED_ERROR)
+        return
+
+    await message.reply(
+        competence_catalog(competencies),
+        parse_mode="HTML",
+    )

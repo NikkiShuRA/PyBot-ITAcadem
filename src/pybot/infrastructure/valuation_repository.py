@@ -13,7 +13,7 @@ class ValuationRepository:
     Отвечает за доступ к операциям с баллами (Valuation).
     """
 
-    async def get_history_by_recipient(
+    async def find_history_by_recipient(
         self,
         db: AsyncSession,
         recipient_id: int,

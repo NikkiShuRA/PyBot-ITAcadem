@@ -24,12 +24,14 @@ class FakeRequestContainer:
         competence_service: "FakeCompetenceService",
         level_service: "FakeLevelService",
         points_service: "FakePointsService",
+        user_competence_service: "FakeUserCompetenceService",
         user_service: "FakeFillDatabaseUserService",
     ) -> None:
         self._session = session
         self._competence_service = competence_service
         self._level_service = level_service
         self._points_service = points_service
+        self._user_competence_service = user_competence_service
         self._user_service = user_service
 
     async def get(
@@ -38,8 +40,9 @@ class FakeRequestContainer:
         | type[fill_point_db.CompetenceService]
         | type[fill_point_db.LevelService]
         | type[fill_point_db.PointsService]
+        | type[fill_point_db.UserCompetenceService]
         | type[fill_point_db.UserService],
-    ) -> "FakeFillDatabaseSession | FakeCompetenceService | FakeLevelService | FakePointsService | FakeFillDatabaseUserService":
+    ) -> "FakeFillDatabaseSession | FakeCompetenceService | FakeLevelService | FakePointsService | FakeUserCompetenceService | FakeFillDatabaseUserService":
         if dep_type is AsyncSession:
             return self._session
         if dep_type is fill_point_db.CompetenceService:
@@ -48,6 +51,8 @@ class FakeRequestContainer:
             return self._level_service
         if dep_type is fill_point_db.PointsService:
             return self._points_service
+        if dep_type is fill_point_db.UserCompetenceService:
+            return self._user_competence_service
         if dep_type is fill_point_db.UserService:
             return self._user_service
         raise AssertionError(f"Unexpected dependency request: {dep_type!r}")
@@ -101,6 +106,11 @@ class FakePointsService(fill_point_db.PointsService):
         pass
 
 
+class FakeUserCompetenceService(fill_point_db.UserCompetenceService):
+    def __init__(self) -> None:
+        pass
+
+
 class FakeFillDatabaseUserService(fill_point_db.UserService):
     def __init__(self) -> None:
         pass
@@ -109,10 +119,14 @@ class FakeFillDatabaseUserService(fill_point_db.UserService):
 class FakeGenerateUsersService(fill_point_db.UserService):
     def __init__(self, created_user: UserReadDTO) -> None:
         self.register_student_mock = AsyncMock(return_value=created_user)
-        self.add_user_competencies_mock = AsyncMock(return_value=created_user)
 
     async def register_student(self, dto: UserCreateDTO) -> UserReadDTO:
         return await self.register_student_mock(dto)
+
+
+class FakeGenerateUsersCompetenceService(fill_point_db.UserCompetenceService):
+    def __init__(self, updated_user: UserReadDTO) -> None:
+        self.add_user_competencies_mock = AsyncMock(return_value=updated_user)
 
     async def add_user_competencies(self, user_id: int, competence_ids: Sequence[int]) -> UserReadDTO:
         return await self.add_user_competencies_mock(user_id, competence_ids)
@@ -167,6 +181,7 @@ def build_runtime_dependencies(
         competence_service_cls=fill_point_db.CompetenceService,
         level_service_cls=fill_point_db.LevelService,
         points_service_cls=fill_point_db.PointsService,
+        user_competence_service_cls=fill_point_db.UserCompetenceService,
         user_service_cls=fill_point_db.UserService,
     )
 
@@ -284,12 +299,14 @@ async def test_fill_database_uses_dishka_container_and_closes_it(monkeypatch: py
     fake_competence_service = FakeCompetenceService()
     fake_level_service = FakeLevelService()
     fake_points_service = FakePointsService()
+    fake_user_competence_service = FakeUserCompetenceService()
     fake_user_service = FakeFillDatabaseUserService()
     fake_request_container = FakeRequestContainer(
         fake_session,
         fake_competence_service,
         fake_level_service,
         fake_points_service,
+        fake_user_competence_service,
         fake_user_service,
     )
     fake_container = _ContainerStub(fake_request_container)
@@ -321,6 +338,7 @@ async def test_fill_database_uses_dishka_container_and_closes_it(monkeypatch: py
     add_competencies_data.assert_awaited_once_with(fake_competence_service, config)
     generate_users_data.assert_awaited_once_with(
         fake_user_service,
+        fake_user_competence_service,
         fake_points_service,
         competencies,
         config,
@@ -337,6 +355,7 @@ async def test_fill_database_skips_disabled_seed_steps(monkeypatch: pytest.Monke
         FakeCompetenceService(),
         FakeLevelService(),
         FakePointsService(),
+        FakeUserCompetenceService(),
         FakeFillDatabaseUserService(),
     )
     fake_container = _ContainerStub(fake_request_container)
@@ -394,6 +413,7 @@ async def test_generate_users_data_uses_services_for_registration_and_points(
         join_date=date(2026, 3, 13),
     )
     fake_user_service = FakeGenerateUsersService(fake_user)
+    fake_user_competence_service = FakeGenerateUsersCompetenceService(fake_user)
     fake_points_service = FakeGenerateUsersPointsService(fake_user)
 
     monkeypatch.setattr(fill_point_db, "_get_runtime_dependencies", Mock(return_value=build_runtime_dependencies()))
@@ -405,7 +425,13 @@ async def test_generate_users_data_uses_services_for_registration_and_points(
 
     competencies = [CompetenceReadDTO(id=7, name="Python", description=None)]
 
-    await fill_point_db.generate_users_data(fake_user_service, fake_points_service, competencies, config)
+    await fill_point_db.generate_users_data(
+        fake_user_service,
+        fake_user_competence_service,
+        fake_points_service,
+        competencies,
+        config,
+    )
 
     fake_user_service.register_student_mock.assert_awaited_once()
     register_call = fake_user_service.register_student_mock.await_args
@@ -426,7 +452,7 @@ async def test_generate_users_data_uses_services_for_registration_and_points(
     assert academic_dto.points == Points(value=5, point_type=LevelTypeEnum.ACADEMIC)
     assert academic_dto.reason == config.seed_points_reason
     assert reputation_dto.points == Points(value=5, point_type=LevelTypeEnum.REPUTATION)
-    fake_user_service.add_user_competencies_mock.assert_awaited_once_with(42, [7])
+    fake_user_competence_service.add_user_competencies_mock.assert_awaited_once_with(42, [7])
 
 
 @pytest.mark.asyncio
@@ -445,6 +471,7 @@ async def test_generate_users_data_skips_zero_points_adjustments(
         join_date=date(2026, 3, 13),
     )
     fake_user_service = FakeGenerateUsersService(fake_user)
+    fake_user_competence_service = FakeGenerateUsersCompetenceService(fake_user)
     fake_points_service = FakeGenerateUsersPointsService(fake_user)
 
     monkeypatch.setattr(fill_point_db, "_get_runtime_dependencies", Mock(return_value=build_runtime_dependencies()))
@@ -452,7 +479,13 @@ async def test_generate_users_data_skips_zero_points_adjustments(
     monkeypatch.setattr(fill_point_db.random, "choice", lambda seq: seq[0])
     monkeypatch.setattr(fill_point_db.random, "randrange", lambda start, stop, step: 0)
 
-    await fill_point_db.generate_users_data(fake_user_service, fake_points_service, [], config)
+    await fill_point_db.generate_users_data(
+        fake_user_service,
+        fake_user_competence_service,
+        fake_points_service,
+        [],
+        config,
+    )
 
     fake_points_service.change_points_mock.assert_not_awaited()
 
@@ -463,7 +496,7 @@ async def test_add_competencies_data_uses_selected_preset(
 ) -> None:
     created_competence = CompetenceReadDTO(id=1, name="Python", description="desc")
     competence_service = AsyncMock()
-    competence_service.get_all_competencies = AsyncMock(return_value=[])
+    competence_service.find_all_competencies = AsyncMock(return_value=[])
     competence_service.create_competence = AsyncMock(return_value=created_competence)
     monkeypatch.setattr(fill_point_db, "_get_runtime_dependencies", Mock(return_value=build_runtime_dependencies()))
     monkeypatch.setitem(
@@ -492,7 +525,7 @@ async def test_add_competencies_data_skips_empty_preset(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     competence_service = AsyncMock()
-    competence_service.get_all_competencies = AsyncMock(return_value=[])
+    competence_service.find_all_competencies = AsyncMock(return_value=[])
     competence_service.create_competence = AsyncMock()
     config = fill_point_db.FillDatabaseConfig(
         competencies_preset=fill_point_db.CompetencePreset.NONE,

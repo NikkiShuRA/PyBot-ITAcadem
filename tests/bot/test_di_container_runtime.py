@@ -5,7 +5,7 @@ from aiogram import Bot
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
 from pybot.di import containers as di_containers
-from pybot.services.users import UserService
+from pybot.services.user_services import UserService
 
 
 @pytest.mark.asyncio
