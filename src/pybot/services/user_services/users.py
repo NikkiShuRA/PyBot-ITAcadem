@@ -72,3 +72,12 @@ class UserService:
         if user:
             return await map_orm_user_to_user_read_dto(user)
         return None
+
+    async def track_activity(self, telegram_id: int) -> int | None:
+        user = await self.user_repository.find_user_by_telegram_id(self.db, telegram_id)
+        if not user:
+            return None
+
+        await self.user_repository.update_user_last_active(self.db, user.id)
+        await self.db.commit()
+        return user.id

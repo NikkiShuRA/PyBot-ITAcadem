@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pybot.core.config import settings
-from pybot.core.constants import LevelTypeEnum, RoleEnum
+from pybot.core.constants import PointsTypeEnum, RoleEnum
 from pybot.db.models import UserLevel
 from pybot.domain.exceptions import InitialLevelsNotFoundError, RoleNotFoundError, UserNotFoundError
 from pybot.dto import UserReadDTO, UserRegistrationDTO
@@ -35,8 +35,8 @@ async def test_register_student_success_creates_profile_levels_and_role(
     db = await dishka_request_container.get(AsyncSession)
     service = await dishka_request_container.get(UserService)
     await create_role(db, name="Student")
-    await create_level(db, name="A0", level_type=LevelTypeEnum.ACADEMIC, required_points=0)
-    await create_level(db, name="R0", level_type=LevelTypeEnum.REPUTATION, required_points=0)
+    await create_level(db, name="A0", level_type=PointsTypeEnum.ACADEMIC, required_points=0)
+    await create_level(db, name="R0", level_type=PointsTypeEnum.REPUTATION, required_points=0)
 
     dto = UserCreateDTOFactory.build(tg_id=700_001, phone="+79876543210")
 
@@ -78,8 +78,8 @@ async def test_register_student_raises_when_student_role_is_missing(
     # Given
     db = await dishka_request_container.get(AsyncSession)
     service = await dishka_request_container.get(UserService)
-    await create_level(db, name="A0", level_type=LevelTypeEnum.ACADEMIC, required_points=0)
-    await create_level(db, name="R0", level_type=LevelTypeEnum.REPUTATION, required_points=0)
+    await create_level(db, name="A0", level_type=PointsTypeEnum.ACADEMIC, required_points=0)
+    await create_level(db, name="R0", level_type=PointsTypeEnum.REPUTATION, required_points=0)
     dto = UserCreateDTOFactory.build(tg_id=700_003, phone="+79876543210")
 
     # When / Then
@@ -97,8 +97,8 @@ async def test_register_student_assigns_admin_role_for_configured_telegram_ids(
     service = await dishka_request_container.get(UserService)
     await create_role(db, name="Student")
     await create_role(db, name="Admin")
-    await create_level(db, name="A0", level_type=LevelTypeEnum.ACADEMIC, required_points=0)
-    await create_level(db, name="R0", level_type=LevelTypeEnum.REPUTATION, required_points=0)
+    await create_level(db, name="A0", level_type=PointsTypeEnum.ACADEMIC, required_points=0)
+    await create_level(db, name="R0", level_type=PointsTypeEnum.REPUTATION, required_points=0)
     auto_admin_tg_id = 700_099
     monkeypatch.setattr(settings, "auto_admin_telegram_ids", {auto_admin_tg_id})
     dto = UserCreateDTOFactory.build(tg_id=auto_admin_tg_id, phone="+79876540099")
@@ -121,8 +121,8 @@ async def test_register_student_raises_when_admin_role_is_missing_for_configured
     db = await dishka_request_container.get(AsyncSession)
     service = await dishka_request_container.get(UserService)
     await create_role(db, name="Student")
-    await create_level(db, name="A0", level_type=LevelTypeEnum.ACADEMIC, required_points=0)
-    await create_level(db, name="R0", level_type=LevelTypeEnum.REPUTATION, required_points=0)
+    await create_level(db, name="A0", level_type=PointsTypeEnum.ACADEMIC, required_points=0)
+    await create_level(db, name="R0", level_type=PointsTypeEnum.REPUTATION, required_points=0)
     auto_admin_tg_id = 700_102
     monkeypatch.setattr(settings, "auto_admin_telegram_ids", {auto_admin_tg_id})
     dto = UserCreateDTOFactory.build(tg_id=auto_admin_tg_id, phone="+79876540102")
@@ -142,8 +142,8 @@ async def test_register_student_does_not_assign_admin_role_for_non_configured_te
     service = await dishka_request_container.get(UserService)
     await create_role(db, name="Student")
     await create_role(db, name="Admin")
-    await create_level(db, name="A0", level_type=LevelTypeEnum.ACADEMIC, required_points=0)
-    await create_level(db, name="R0", level_type=LevelTypeEnum.REPUTATION, required_points=0)
+    await create_level(db, name="A0", level_type=PointsTypeEnum.ACADEMIC, required_points=0)
+    await create_level(db, name="R0", level_type=PointsTypeEnum.REPUTATION, required_points=0)
     monkeypatch.setattr(settings, "auto_admin_telegram_ids", {700_100})
     dto = UserCreateDTOFactory.build(tg_id=700_101, phone="+79876540101")
 
@@ -173,8 +173,8 @@ async def test_user_registration_service_register_student_accepts_duplicate_comp
         competence_repository=competence_repository,
     )
     await create_role(db, name="Student")
-    await create_level(db, name="A0", level_type=LevelTypeEnum.ACADEMIC, required_points=0)
-    await create_level(db, name="R0", level_type=LevelTypeEnum.REPUTATION, required_points=0)
+    await create_level(db, name="A0", level_type=PointsTypeEnum.ACADEMIC, required_points=0)
+    await create_level(db, name="R0", level_type=PointsTypeEnum.REPUTATION, required_points=0)
     python_competence = await create_competence(db, name="Python")
     sql_competence = await create_competence(db, name="SQL")
     await db.commit()
@@ -228,6 +228,23 @@ async def test_find_user_by_telegram_id_returns_none_for_unknown_user(
 
     # Then
     assert result is None, f"Expected no user for telegram id={telegram_id}"
+
+
+@pytest.mark.asyncio
+async def test_track_activity_updates_last_active_and_returns_user_id(
+    dishka_request_container,
+) -> None:
+    db = await dishka_request_container.get(AsyncSession)
+    service = await dishka_request_container.get(UserService)
+    user_repository = await dishka_request_container.get(UserRepository)
+    user = await create_user(db, spec=UserSpec(telegram_id=700_777))
+    await db.commit()
+
+    tracked_user_id = await service.track_activity(user.telegram_id)
+
+    refreshed_user = await user_repository.get_by_id(db, user.id)
+    assert tracked_user_id == user.id
+    assert refreshed_user.last_active_at is not None
 
 
 @pytest.mark.asyncio

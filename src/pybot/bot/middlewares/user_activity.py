@@ -4,10 +4,9 @@ from typing import Any
 from aiogram import BaseMiddleware
 from aiogram.types import TelegramObject
 from dishka.integrations.aiogram import CONTAINER_NAME
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...core import logger
-from ...infrastructure.user_repository import UserRepository
+from ...services import UserRolesService, UserService
 
 
 class UserActivityMiddleware(BaseMiddleware):
@@ -19,28 +18,25 @@ class UserActivityMiddleware(BaseMiddleware):
         event: TelegramObject,
         data: dict[str, Any],
     ) -> Any:
-        # 2. 🕵️‍♂️ Фоновая логика трекинга (выполняется после ответа)
+        # Background activity tracking for the current Telegram user.
         user = data.get("event_from_user")
         if not user:
             return await handler(event, data)
 
         container = data.get(CONTAINER_NAME)
         if not container:
-            # Логируем ошибку, но не ломаем работу бота, результат возвращаем
-            logger.error("❌ Dishka container not found in data!")
+            # Log the error but do not break update processing.
+            logger.error("Dishka container not found in data!")
             return await handler(event, data)
 
         try:
             async with container() as request_container:
-                db: AsyncSession = await request_container.get(AsyncSession)
-                repo: UserRepository = await request_container.get(UserRepository)
-                # TODO Лучше заменить на application service
-                db_user = await repo.find_user_by_telegram_id(db, tg_id=user.id)
-                if db_user:
-                    await repo.update_user_last_active(db=db, user_id=db_user.id)
-                    data["user_id"] = db_user.id  # Добавляем user_id для отвязки логики в сервисах от telegram id
-                    data["user_roles"] = set(await repo.find_user_roles(db=db, user_id=db_user.id))
-                    await db.commit()
+                user_service: UserService = await request_container.get(UserService)
+                user_roles_service: UserRolesService = await request_container.get(UserRolesService)
+                user_id = await user_service.track_activity(user.id)
+                if user_id is not None:
+                    data["user_id"] = user_id  # Decouple downstream logic from Telegram ids.
+                    data["user_roles"] = set(await user_roles_service.find_user_roles(user_id))
 
         except Exception:
             logger.exception("Failed to update user activity")
