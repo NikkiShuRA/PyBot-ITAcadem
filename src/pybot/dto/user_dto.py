@@ -5,8 +5,8 @@ from typing import ClassVar
 
 from pydantic import Field, field_validator
 
-from ..core.constants import LevelTypeEnum
-from ..domain.exceptions import InvalidPhoneNumberError
+from ..core.constants import PointsTypeEnum
+from ..domain.exceptions import InvalidPhoneNumberError, NameInputValidationError
 from ..dto.value_objects import Points
 from ..utils import normalize_phone
 from .base_dto import BaseDTO
@@ -56,6 +56,32 @@ class UserCreateDTO(BaseDTO):
             v = v.strip()
 
         return v
+
+    @classmethod
+    def validate_name_input(
+        cls,
+        raw_text: str,
+        *,
+        allow_empty: bool = False,
+    ) -> str | None:
+        """Validate dialog input using the same contract as DTO name fields."""
+        text = raw_text.strip()
+        if not text:
+            if allow_empty:
+                return None
+            raise NameInputValidationError("empty")
+
+        cleaned_text = cls.clean_string(text)
+        if cleaned_text != text:
+            raise NameInputValidationError("invalid_symbols")
+
+        if len(text) < cls.NAME_MIN_LENGTH:
+            raise NameInputValidationError("too_short")
+
+        if len(text) > cls.NAME_MAX_LENGTH:
+            raise NameInputValidationError("too_long", max_length=cls.NAME_MAX_LENGTH)
+
+        return text
 
     @field_validator("phone")
     @classmethod
@@ -118,7 +144,7 @@ class UserProfileReadDTO(BaseDTO):
     """
 
     user: UserReadDTO
-    level_info: dict[LevelTypeEnum, UserLevelReadDTO]
+    level_info: dict[PointsTypeEnum, UserLevelReadDTO]
 
 
 class UserRegistrationDTO(BaseDTO):

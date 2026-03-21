@@ -14,7 +14,7 @@ from pybot.bot.handlers.roles.change_competences import (
     handle_show_all_competences,
     handle_show_competences,
 )
-from pybot.core.constants import LevelTypeEnum
+from pybot.core.constants import PointsTypeEnum
 from pybot.dto import CompetenceReadDTO, UserReadDTO
 from pybot.dto.value_objects import Points
 
@@ -26,8 +26,8 @@ def _build_user_read_dto(db_id: int, telegram_id: int, first_name: str) -> UserR
         last_name="Test",
         patronymic=None,
         telegram_id=telegram_id,
-        academic_points=Points(value=0, point_type=LevelTypeEnum.ACADEMIC),
-        reputation_points=Points(value=0, point_type=LevelTypeEnum.REPUTATION),
+        academic_points=Points(value=0, point_type=PointsTypeEnum.ACADEMIC),
+        reputation_points=Points(value=0, point_type=PointsTypeEnum.REPUTATION),
         join_date=date.today(),
     )
 

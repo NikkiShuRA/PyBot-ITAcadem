@@ -8,7 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 from pydantic_extra_types.cron import CronStr
 from pydantic_extra_types.timezone_name import TimeZoneName
 
-from ..core.constants import LevelTypeEnum, TaskScheduleKind
+from ..core.constants import PointsTypeEnum, TaskScheduleKind
 from ..domain.exceptions import (
     TaskScheduleFieldTypeError,
     TaskScheduleFieldUnavailableError,
@@ -30,7 +30,7 @@ class Points(BaseValueModel):
 
     Attributes:
         value (int): Количество очков.
-        point_type (Points_type_enum): Тип очков.
+        point_type (PointsTypeEnum): Тип очков.
 
     Methods:
         adjust (int): Меняет количество очков на заданное значение.
@@ -41,7 +41,7 @@ class Points(BaseValueModel):
     """
 
     value: Annotated[int, Field(strict=True, ge=-(2**31), le=2**31 - 1)]
-    point_type: LevelTypeEnum
+    point_type: PointsTypeEnum
 
     def adjust(self, delta: int) -> Points:
         """

@@ -6,7 +6,7 @@ from sqlalchemy import BigInteger, DateTime, ForeignKey, Integer, String, Text, 
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from ....core.constants import LevelTypeEnum
+from ....core.constants import PointsTypeEnum
 from ....domain.exceptions import ZeroPointsAdjustmentError
 from ....dto.value_objects import Points
 from ...base_class import Base
@@ -29,7 +29,7 @@ class Valuation(Base):
     )
     reason: Mapped[str | None] = mapped_column(Text)
     points: Mapped[int] = mapped_column(Integer, nullable=False)
-    points_type: Mapped[LevelTypeEnum] = mapped_column(
+    points_type: Mapped[PointsTypeEnum] = mapped_column(
         String(50),
         nullable=False,
     )

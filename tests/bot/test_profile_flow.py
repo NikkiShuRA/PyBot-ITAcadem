@@ -15,7 +15,7 @@ from pybot.bot.handlers.common.start import cmd_start_private
 from pybot.bot.handlers.profile.user_profile import cmd_profile_private
 from pybot.bot.keyboards.auth import request_contact_kb
 from pybot.bot.texts import REGISTRATION_CONTACT_PROMPT
-from pybot.core.constants import LevelTypeEnum
+from pybot.core.constants import PointsTypeEnum
 from pybot.dto import UserReadDTO
 from pybot.dto.value_objects import Points
 from pybot.services.user_services import UserProfileService, UserService
@@ -39,8 +39,8 @@ def _build_user_read_dto() -> UserReadDTO:
         last_name="Tester",
         patronymic=None,
         telegram_id=700_001,
-        academic_points=Points(value=50, point_type=LevelTypeEnum.ACADEMIC),
-        reputation_points=Points(value=10, point_type=LevelTypeEnum.REPUTATION),
+        academic_points=Points(value=50, point_type=PointsTypeEnum.ACADEMIC),
+        reputation_points=Points(value=10, point_type=PointsTypeEnum.REPUTATION),
         join_date=date(2025, 1, 10),
     )
 

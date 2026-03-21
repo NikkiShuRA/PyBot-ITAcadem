@@ -4,8 +4,8 @@
 """
 
 from collections.abc import Sequence
-from datetime import timedelta
-from typing import Any
+from datetime import datetime, timedelta
+from typing import Any, Literal
 
 from ..core.constants import TaskScheduleKind
 
@@ -171,11 +171,12 @@ class RoleRequestAlreadyProcessedError(DomainError):
         )
 
 
-class RoleRequestRejectedError(DomainError):
-    def __init__(self, user_id: int, role_name: str) -> None:
+class RoleRequestCooldownError(DomainError):
+    def __init__(self, user_id: int, role_name: str, available_at: datetime) -> None:
+        self.available_at = available_at
         super().__init__(
-            f"Запрос на роль '{role_name}' был отклонен пользователем {user_id}",
-            details={"user_id": user_id, "role": role_name},
+            f"Role request '{role_name}' is unavailable until {available_at.isoformat()} for user {user_id}",
+            details={"user_id": user_id, "role": role_name, "available_at": available_at.isoformat()},
         )
 
 
@@ -218,6 +219,26 @@ class InvalidPhoneNumberError(DomainError):
         if reason:
             msg += f" ({reason})"
         super().__init__(msg, details={"phone": phone})
+
+
+NameInputValidationReason = Literal["empty", "invalid_symbols", "too_short", "too_long"]
+
+
+class NameInputValidationError(DomainError, ValueError):
+    """Семантическая ошибка валидации name-like ввода."""
+
+    def __init__(
+        self,
+        reason: NameInputValidationReason,
+        *,
+        max_length: int | None = None,
+    ) -> None:
+        self.reason = reason
+        self.max_length = max_length
+        details: dict[str, Any] = {"reason": reason}
+        if max_length is not None:
+            details["max_length"] = max_length
+        super().__init__("Некорректное значение для имени пользователя", details=details)
 
 
 class InitialLevelsNotFoundError(DomainError):

@@ -8,7 +8,7 @@ from sqlalchemy import BigInteger, Date, DateTime, ForeignKey, Integer, Text, fu
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from ....core.constants import LevelTypeEnum
+from ....core.constants import PointsTypeEnum
 from ....domain.exceptions import ZeroPointsAdjustmentError
 from ....dto.value_objects import Points
 from ...base_class import Base
@@ -178,7 +178,7 @@ class User(Base):
         """Обновить дату последней активности пользователя"""
         self.last_active_at = datetime.now(UTC)
 
-    def change_user_points(self, points: int, point_type: LevelTypeEnum) -> tuple[int, int]:
+    def change_user_points(self, points: int, point_type: PointsTypeEnum) -> tuple[int, int]:
         """
         Изменяет очки пользователя указанного типа.
         Возвращает кортеж (int)Изменение, (int)Новое значение
@@ -186,13 +186,13 @@ class User(Base):
         if points == 0:
             raise ZeroPointsAdjustmentError()
         current = 0
-        if point_type == LevelTypeEnum.ACADEMIC:
+        if point_type == PointsTypeEnum.ACADEMIC:
             current = self.academic_points
             self.academic_points += points
             self.academic_points = max(self.academic_points, 0)
             return self.academic_points - current, self.academic_points
 
-        elif point_type == LevelTypeEnum.REPUTATION:
+        elif point_type == PointsTypeEnum.REPUTATION:
             current = self.reputation_points
             self.reputation_points += points
             self.reputation_points = max(self.reputation_points, 0)
@@ -200,10 +200,10 @@ class User(Base):
 
         else:
             raise ValueError(
-                f"Неизвестный тип баллов: {point_type}. Доступные типы: {[t.value for t in LevelTypeEnum]}"
+                f"Неизвестный тип баллов: {point_type}. Доступные типы: {[t.value for t in PointsTypeEnum]}"
             )
 
-    def change_user_level(self, new_level_id: int, points_type: LevelTypeEnum) -> None:
+    def change_user_level(self, new_level_id: int, points_type: PointsTypeEnum) -> None:
         """Изменяет уровень пользователя на новый уровень указанного типа."""
         for user_level in self.user_levels:
             if user_level.level.level_type == points_type:
@@ -219,7 +219,7 @@ class User(Base):
         """Python-side: возвращает Value Object"""
         return Points(
             value=self.academic_points,
-            point_type=LevelTypeEnum.ACADEMIC,
+            point_type=PointsTypeEnum.ACADEMIC,
         )
 
     @academic_points_vo.expression  # ty:ignore[invalid-argument-type]
@@ -242,7 +242,7 @@ class User(Base):
     def reputation_points_vo(self) -> Points:
         return Points(
             value=self.reputation_points,
-            point_type=LevelTypeEnum.REPUTATION,
+            point_type=PointsTypeEnum.REPUTATION,
         )
 
     @reputation_points_vo.expression  # ty:ignore[invalid-argument-type]

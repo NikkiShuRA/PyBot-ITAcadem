@@ -4,7 +4,7 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from pybot.core.constants import LevelTypeEnum
+from pybot.core.constants import PointsTypeEnum
 from pybot.db.models import UserLevel, Valuation
 from pybot.domain.exceptions import UserNotFoundError, ZeroPointsAdjustmentError
 from pybot.dto import AdjustUserPointsDTO
@@ -21,8 +21,8 @@ async def test_change_points_updates_points_level_and_creates_valuation(
     db = await dishka_request_container.get(AsyncSession)
     service = await dishka_request_container.get(PointsService)
 
-    level_basic = await create_level(db, name="A0", level_type=LevelTypeEnum.ACADEMIC, required_points=0)
-    level_next = await create_level(db, name="A1", level_type=LevelTypeEnum.ACADEMIC, required_points=100)
+    level_basic = await create_level(db, name="A0", level_type=PointsTypeEnum.ACADEMIC, required_points=0)
+    level_next = await create_level(db, name="A1", level_type=PointsTypeEnum.ACADEMIC, required_points=100)
 
     recipient = await create_user(db, spec=UserSpec(telegram_id=800_001, academic_points=90))
     giver = await create_user(db, spec=UserSpec(telegram_id=800_002))
@@ -32,7 +32,7 @@ async def test_change_points_updates_points_level_and_creates_valuation(
     dto = AdjustUserPointsDTO(
         recipient_id=recipient.id,
         giver_id=giver.id,
-        points=Points(value=20, point_type=LevelTypeEnum.ACADEMIC),
+        points=Points(value=20, point_type=PointsTypeEnum.ACADEMIC),
         reason="Great progress",
     )
 
@@ -60,8 +60,8 @@ async def test_change_points_does_not_allow_negative_total_score(
     # Given
     db = await dishka_request_container.get(AsyncSession)
     service = await dishka_request_container.get(PointsService)
-    level_basic = await create_level(db, name="A0", level_type=LevelTypeEnum.ACADEMIC, required_points=0)
-    await create_level(db, name="A1", level_type=LevelTypeEnum.ACADEMIC, required_points=50)
+    level_basic = await create_level(db, name="A0", level_type=PointsTypeEnum.ACADEMIC, required_points=0)
+    await create_level(db, name="A1", level_type=PointsTypeEnum.ACADEMIC, required_points=50)
 
     recipient = await create_user(db, spec=UserSpec(telegram_id=800_003, academic_points=5))
     giver = await create_user(db, spec=UserSpec(telegram_id=800_004))
@@ -71,7 +71,7 @@ async def test_change_points_does_not_allow_negative_total_score(
     dto = AdjustUserPointsDTO(
         recipient_id=recipient.id,
         giver_id=giver.id,
-        points=Points(value=-10, point_type=LevelTypeEnum.ACADEMIC),
+        points=Points(value=-10, point_type=PointsTypeEnum.ACADEMIC),
         reason="Penalty",
     )
 
@@ -91,7 +91,7 @@ async def test_change_points_raises_when_recipient_not_found(
     dto = AdjustUserPointsDTO(
         recipient_id=999_001,
         giver_id=999_002,
-        points=Points(value=10, point_type=LevelTypeEnum.ACADEMIC),
+        points=Points(value=10, point_type=PointsTypeEnum.ACADEMIC),
         reason="No recipient",
     )
 
@@ -108,8 +108,8 @@ async def test_change_points_raises_when_giver_not_found(
     db = await dishka_request_container.get(AsyncSession)
     service = await dishka_request_container.get(PointsService)
 
-    level_basic = await create_level(db, name="A0", level_type=LevelTypeEnum.ACADEMIC, required_points=0)
-    await create_level(db, name="A1", level_type=LevelTypeEnum.ACADEMIC, required_points=100)
+    level_basic = await create_level(db, name="A0", level_type=PointsTypeEnum.ACADEMIC, required_points=0)
+    await create_level(db, name="A1", level_type=PointsTypeEnum.ACADEMIC, required_points=100)
     recipient = await create_user(db, spec=UserSpec(telegram_id=800_005, academic_points=10))
     await attach_user_level(db, user=recipient, level=level_basic)
     await db.commit()
@@ -117,7 +117,7 @@ async def test_change_points_raises_when_giver_not_found(
     dto = AdjustUserPointsDTO(
         recipient_id=recipient.id,
         giver_id=999_003,
-        points=Points(value=10, point_type=LevelTypeEnum.ACADEMIC),
+        points=Points(value=10, point_type=PointsTypeEnum.ACADEMIC),
         reason="Missing giver",
     )
 
@@ -134,8 +134,8 @@ async def test_change_points_raises_on_zero_adjustment(
     db = await dishka_request_container.get(AsyncSession)
     service = await dishka_request_container.get(PointsService)
 
-    level_basic = await create_level(db, name="A0", level_type=LevelTypeEnum.ACADEMIC, required_points=0)
-    await create_level(db, name="A1", level_type=LevelTypeEnum.ACADEMIC, required_points=100)
+    level_basic = await create_level(db, name="A0", level_type=PointsTypeEnum.ACADEMIC, required_points=0)
+    await create_level(db, name="A1", level_type=PointsTypeEnum.ACADEMIC, required_points=100)
     recipient = await create_user(db, spec=UserSpec(telegram_id=800_006, academic_points=10))
     giver = await create_user(db, spec=UserSpec(telegram_id=800_007))
     await attach_user_level(db, user=recipient, level=level_basic)
@@ -144,7 +144,7 @@ async def test_change_points_raises_on_zero_adjustment(
     dto = AdjustUserPointsDTO(
         recipient_id=recipient.id,
         giver_id=giver.id,
-        points=Points(value=0, point_type=LevelTypeEnum.ACADEMIC),
+        points=Points(value=0, point_type=PointsTypeEnum.ACADEMIC),
         reason="Zero change",
     )
 

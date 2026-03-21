@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 
 import pytest
 
-from pybot.core.constants import LevelTypeEnum
+from pybot.core.constants import PointsTypeEnum
 from pybot.domain.exceptions import UserNotFoundError, UsersNotFoundError
 from pybot.infrastructure.user_repository import UserRepository
 from tests.factories import (
@@ -25,7 +25,7 @@ async def test_get_by_id_returns_user_with_loaded_relations(db_session) -> None:
     repo = UserRepository()
     user = await create_user(db_session, spec=UserSpec(telegram_id=500_001))
     role = await create_role(db_session, name="Student")
-    level = await create_level(db_session, name="A0", level_type=LevelTypeEnum.ACADEMIC, required_points=0)
+    level = await create_level(db_session, name="A0", level_type=PointsTypeEnum.ACADEMIC, required_points=0)
     await attach_user_role(db_session, user=user, role=role)
     await attach_user_level(db_session, user=user, level=level)
     await db_session.commit()

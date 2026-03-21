@@ -4,7 +4,7 @@ import pytest
 from dishka import AsyncContainer
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from pybot.core.constants import LevelTypeEnum
+from pybot.core.constants import PointsTypeEnum
 from pybot.domain.exceptions import LevelNotFoundError
 from pybot.mappers.user_mappers import map_orm_user_to_user_read_dto
 from pybot.services import UserProfileService
@@ -32,25 +32,25 @@ async def test_manage_profile_sends_rendered_message_with_user_progress(
     academic_current = await create_level(
         db_session,
         name="Scholar",
-        level_type=LevelTypeEnum.ACADEMIC,
+        level_type=PointsTypeEnum.ACADEMIC,
         required_points=100,
     )
     await create_level(
         db_session,
         name="Expert",
-        level_type=LevelTypeEnum.ACADEMIC,
+        level_type=PointsTypeEnum.ACADEMIC,
         required_points=200,
     )
     reputation_current = await create_level(
         db_session,
         name="Known",
-        level_type=LevelTypeEnum.REPUTATION,
+        level_type=PointsTypeEnum.REPUTATION,
         required_points=20,
     )
     await create_level(
         db_session,
         name="Trusted",
-        level_type=LevelTypeEnum.REPUTATION,
+        level_type=PointsTypeEnum.REPUTATION,
         required_points=80,
     )
     await attach_user_level(db_session, user=user, level=academic_current)
@@ -92,7 +92,7 @@ async def test_manage_profile_raises_when_some_level_track_is_missing(
     academic_current = await create_level(
         db_session,
         name="Scholar",
-        level_type=LevelTypeEnum.ACADEMIC,
+        level_type=PointsTypeEnum.ACADEMIC,
         required_points=0,
     )
     await attach_user_level(db_session, user=user, level=academic_current)

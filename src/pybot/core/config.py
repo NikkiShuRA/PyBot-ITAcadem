@@ -42,6 +42,13 @@ class BotSettings(BaseSettings):
         description="Telegram user id of admin recipient for role requests",
         gt=0,
     )
+    role_request_reject_cooldown_minutes: int = Field(
+        1440,
+        alias="ROLE_REQUEST_REJECT_COOLDOWN_MINUTES",
+        description="Cooldown in minutes for role request rejection",
+        gt=0,
+    )
+
     auto_admin_telegram_ids: set[int] = Field(
         default_factory=set,
         alias="AUTO_ADMIN_TELEGRAM_IDS",

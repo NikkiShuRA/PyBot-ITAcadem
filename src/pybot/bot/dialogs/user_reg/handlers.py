@@ -8,6 +8,7 @@ from dishka.integrations.aiogram import FromDishka
 from dishka.integrations.aiogram_dialog import inject
 
 from ....core import logger
+from ....domain.exceptions import NameInputValidationError
 from ....dto import UserCreateDTO, UserReadDTO
 from ....dto.competence_dto import CompetenceReadDTO
 from ....mappers.user_mappers import map_dialog_data_to_user_registration_dto
@@ -19,37 +20,33 @@ from ...texts import (
     REGISTRATION_CONTACT_EMPTY,
     REGISTRATION_CONTACT_PROMPT,
     REGISTRATION_INTERNAL_ERROR,
+    REGISTRATION_NAME_EMPTY,
+    REGISTRATION_NAME_INVALID_SYMBOLS,
+    REGISTRATION_NAME_TOO_SHORT,
     REGISTRATION_VALUE_INVALID,
     registration_existing_profile,
+    registration_name_too_long,
     registration_profile_created,
 )
-
-
-# TODO Выделить это в utils
-def _validate_name_input(raw_text: str, field_name: str, *, allow_empty: bool = False) -> str | None:
-    """Validate a name-like input without silently dropping invalid symbols."""
-    text = raw_text.strip()
-    if not text:
-        if allow_empty:
-            return None
-        raise ValueError(f"Поле «{field_name}» не может быть пустым. Попробуйте ещё раз.")
-
-    cleaned_text = UserCreateDTO.clean_string(text)
-    if cleaned_text != text:
-        raise ValueError(f"В поле «{field_name}» можно использовать только русские буквы и пробелы.")
-
-    if len(text) < UserCreateDTO.NAME_MIN_LENGTH:
-        raise ValueError(f"Поле «{field_name}» слишком короткое.")
-
-    if len(text) > UserCreateDTO.NAME_MAX_LENGTH:
-        raise ValueError(f"Поле «{field_name}» слишком длинное. Максимум {UserCreateDTO.NAME_MAX_LENGTH} символов.")
-
-    return text
 
 
 async def on_other_messages(message: Message, message_input: MessageInput, manager: DialogManager) -> None:
     del message_input, manager
     await message.answer(REGISTRATION_VALUE_INVALID)
+
+
+def _name_input_error_text(error: NameInputValidationError) -> str:
+    match error.reason:
+        case "empty":
+            return REGISTRATION_NAME_EMPTY
+        case "invalid_symbols":
+            return REGISTRATION_NAME_INVALID_SYMBOLS
+        case "too_short":
+            return REGISTRATION_NAME_TOO_SHORT
+        case "too_long":
+            return registration_name_too_long(error.max_length or UserCreateDTO.NAME_MAX_LENGTH)
+        case _:
+            return REGISTRATION_VALUE_INVALID
 
 
 async def request_contact_prompt(
@@ -116,9 +113,9 @@ async def on_first_name_input(
     del widget
     first_name = message.text or ""
     try:
-        validated_first_name = _validate_name_input(first_name, "имя")
-    except ValueError as err:
-        await message.answer(str(err))
+        validated_first_name = UserCreateDTO.validate_name_input(first_name)
+    except NameInputValidationError as err:
+        await message.answer(_name_input_error_text(err))
         return
 
     manager.dialog_data["first_name"] = validated_first_name
@@ -133,9 +130,9 @@ async def on_last_name_input(
     del widget
     last_name = message.text or ""
     try:
-        validated_last_name = _validate_name_input(last_name, "фамилию")
-    except ValueError as err:
-        await message.answer(str(err))
+        validated_last_name = UserCreateDTO.validate_name_input(last_name)
+    except NameInputValidationError as err:
+        await message.answer(_name_input_error_text(err))
         return
 
     manager.dialog_data["last_name"] = validated_last_name
@@ -166,9 +163,9 @@ async def _on_patronymic_input_impl(
     del widget
     patronymic = message.text or ""
     try:
-        cleaned_patronymic = _validate_name_input(patronymic, "отчество", allow_empty=True)
-    except ValueError as err:
-        await message.answer(str(err))
+        cleaned_patronymic = UserCreateDTO.validate_name_input(patronymic, allow_empty=True)
+    except NameInputValidationError as err:
+        await message.answer(_name_input_error_text(err))
         return
 
     manager.dialog_data["patronymic"] = cleaned_patronymic

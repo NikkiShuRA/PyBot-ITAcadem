@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from pybot.core.constants import LevelTypeEnum
+from pybot.core.constants import PointsTypeEnum
 from pybot.infrastructure.valuation_repository import ValuationRepository
 from tests.factories import UserSpec, ValuationSpec, create_user, create_valuation
 
@@ -23,7 +23,7 @@ async def test_find_history_by_recipient_filters_sorts_and_limits(db_session) ->
             recipient=recipient,
             giver=giver,
             points=5,
-            points_type=LevelTypeEnum.ACADEMIC,
+            points_type=PointsTypeEnum.ACADEMIC,
             created_at=now - timedelta(minutes=3),
         ),
     )
@@ -33,7 +33,7 @@ async def test_find_history_by_recipient_filters_sorts_and_limits(db_session) ->
             recipient=recipient,
             giver=giver,
             points=8,
-            points_type=LevelTypeEnum.ACADEMIC,
+            points_type=PointsTypeEnum.ACADEMIC,
             created_at=now - timedelta(minutes=1),
         ),
     )
@@ -43,7 +43,7 @@ async def test_find_history_by_recipient_filters_sorts_and_limits(db_session) ->
             recipient=recipient,
             giver=giver,
             points=9,
-            points_type=LevelTypeEnum.REPUTATION,
+            points_type=PointsTypeEnum.REPUTATION,
             created_at=now - timedelta(minutes=2),
         ),
     )
@@ -53,14 +53,14 @@ async def test_find_history_by_recipient_filters_sorts_and_limits(db_session) ->
     history = await repo.find_history_by_recipient(
         db_session,
         recipient_id=recipient.id,
-        points_type=LevelTypeEnum.ACADEMIC,
+        points_type=PointsTypeEnum.ACADEMIC,
         limit=1,
     )
 
     # Then
     assert len(history) == 1
     assert history[0].id == latest.id
-    assert history[0].points_type == LevelTypeEnum.ACADEMIC
+    assert history[0].points_type == PointsTypeEnum.ACADEMIC
 
 
 @pytest.mark.asyncio
@@ -72,7 +72,7 @@ async def test_find_history_by_recipient_returns_empty_for_unknown_user(db_sessi
     history = await repo.find_history_by_recipient(
         db_session,
         recipient_id=999_999,
-        points_type=LevelTypeEnum.ACADEMIC,
+        points_type=PointsTypeEnum.ACADEMIC,
         limit=10,
     )
 

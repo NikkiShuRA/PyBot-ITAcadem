@@ -11,7 +11,7 @@ from aiogram.types import Chat, Message, User
 from pybot.bot.handlers.points import grand_points
 from pybot.bot.handlers.points.grand_points import _extract_points_and_reason, _handle_points_command
 from pybot.bot.texts import POINTS_REASON_QUOTES_REQUIRED
-from pybot.core.constants import LevelTypeEnum, TaskScheduleKind
+from pybot.core.constants import PointsTypeEnum, TaskScheduleKind
 from pybot.dto import UserReadDTO
 from pybot.dto.value_objects import Points
 from pybot.services.user_services import UserService
@@ -37,8 +37,8 @@ def _build_user_read_dto(*, db_id: int, telegram_id: int, first_name: str) -> Us
         last_name="Test",
         patronymic=None,
         telegram_id=telegram_id,
-        academic_points=Points(value=0, point_type=LevelTypeEnum.ACADEMIC),
-        reputation_points=Points(value=0, point_type=LevelTypeEnum.REPUTATION),
+        academic_points=Points(value=0, point_type=PointsTypeEnum.ACADEMIC),
+        reputation_points=Points(value=0, point_type=PointsTypeEnum.REPUTATION),
         join_date=date.today(),
     )
 
@@ -127,7 +127,7 @@ async def test_handle_points_command_changes_points_and_enqueues_notification(
 
     await _handle_points_command(
         message=message,
-        points_type=LevelTypeEnum.ACADEMIC,
+        points_type=PointsTypeEnum.ACADEMIC,
         points_service=cast(PointsService, points_service),
         user_service=cast(UserService, user_service),
         notification_facade=cast(NotificationFacade, notification_facade),
@@ -171,7 +171,7 @@ async def test_handle_points_command_stops_when_recipient_or_giver_is_missing(
 
     await _handle_points_command(
         message=message,
-        points_type=LevelTypeEnum.ACADEMIC,
+        points_type=PointsTypeEnum.ACADEMIC,
         points_service=cast(PointsService, points_service),
         user_service=cast(UserService, user_service),
         notification_facade=cast(NotificationFacade, notification_facade),
@@ -200,7 +200,7 @@ async def test_handle_points_command_reports_points_service_failure(
 
     await _handle_points_command(
         message=message,
-        points_type=LevelTypeEnum.ACADEMIC,
+        points_type=PointsTypeEnum.ACADEMIC,
         points_service=cast(PointsService, points_service),
         user_service=cast(UserService, user_service),
         notification_facade=cast(NotificationFacade, notification_facade),

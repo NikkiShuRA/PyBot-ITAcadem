@@ -22,7 +22,11 @@ from pybot.bot.dialogs.user_reg.handlers import (
     request_contact_prompt,
 )
 from pybot.bot.keyboards.auth import request_contact_kb
-from pybot.bot.texts import REGISTRATION_CONTACT_PROMPT, registration_profile_created
+from pybot.bot.texts import (
+    REGISTRATION_CONTACT_PROMPT,
+    REGISTRATION_NAME_INVALID_SYMBOLS,
+    registration_profile_created,
+)
 from pybot.dto.competence_dto import CompetenceReadDTO
 from pybot.mappers.user_mappers import map_dialog_data_to_user_registration_dto
 from pybot.services import CompetenceService, UserRegistrationService
@@ -118,7 +122,7 @@ async def test_first_name_with_invalid_symbols_returns_error_and_keeps_state(moc
 
     await on_first_name_input(message=message, widget=widget, manager=manager_state.manager)
 
-    answer_mock.assert_awaited_once()
+    answer_mock.assert_awaited_once_with(REGISTRATION_NAME_INVALID_SYMBOLS)
     manager_state.next_mock.assert_not_awaited()
     assert "first_name" not in manager_state.manager.dialog_data
 
@@ -146,7 +150,7 @@ async def test_last_name_with_invalid_symbols_returns_error_and_keeps_state(mock
 
     await on_last_name_input(message=message, widget=widget, manager=manager_state.manager)
 
-    answer_mock.assert_awaited_once()
+    answer_mock.assert_awaited_once_with(REGISTRATION_NAME_INVALID_SYMBOLS)
     manager_state.next_mock.assert_not_awaited()
     assert "last_name" not in manager_state.manager.dialog_data
 
@@ -166,7 +170,7 @@ async def test_patronymic_with_invalid_symbols_returns_error_and_keeps_state(moc
         competence_service=competence_service_state.service,
     )
 
-    answer_mock.assert_awaited_once()
+    answer_mock.assert_awaited_once_with(REGISTRATION_NAME_INVALID_SYMBOLS)
     manager_state.next_mock.assert_not_awaited()
     competence_service_state.find_all_competencies_mock.assert_not_awaited()
 

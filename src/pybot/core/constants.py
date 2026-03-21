@@ -1,8 +1,7 @@
 from enum import StrEnum
 
 
-# TODO Вернуть это к нормальному названию
-class LevelTypeEnum(StrEnum):
+class PointsTypeEnum(StrEnum):
     ACADEMIC = "academic"
     REPUTATION = "reputation"
 

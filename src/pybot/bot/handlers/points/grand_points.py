@@ -6,7 +6,7 @@ from dishka import FromDishka
 from pydantic import ValidationError
 
 from ....core import logger
-from ....core.constants import LevelTypeEnum, TaskScheduleKind
+from ....core.constants import PointsTypeEnum, TaskScheduleKind
 from ....domain.exceptions import DomainError, InvalidPointsValueError, UserNotFoundError, ZeroPointsAdjustmentError
 from ....dto import AdjustUserPointsDTO, UserReadDTO
 from ....dto.value_objects import Points
@@ -32,7 +32,7 @@ from ...utils import _get_target_user_id_from_mention, _get_target_user_id_from_
 
 def _build_points_notification_message(
     points: Points,
-    points_type: LevelTypeEnum,
+    points_type: PointsTypeEnum,
     giver_user: UserReadDTO,
     reason: str | None,
 ) -> str:
@@ -70,7 +70,7 @@ async def _extract_points_and_reason(message: Message) -> tuple[int | None, str 
 
 async def _prepare_points_command_context(
     message: Message,
-    points_type: LevelTypeEnum,
+    points_type: PointsTypeEnum,
     user_service: UserService,
 ) -> tuple[int, Points, str | None, UserReadDTO, UserReadDTO] | None:
     if not check_text_message_correction(message):
@@ -108,7 +108,7 @@ async def _prepare_points_command_context(
 
 async def _handle_points_command(
     message: Message,
-    points_type: LevelTypeEnum,
+    points_type: PointsTypeEnum,
     points_service: PointsService,
     user_service: UserService,
     notification_facade: NotificationFacade,
@@ -160,7 +160,7 @@ async def handle_academic_points(
     try:
         await _handle_points_command(
             message,
-            LevelTypeEnum.ACADEMIC,
+            PointsTypeEnum.ACADEMIC,
             points_service,
             user_service,
             notification_facade,
@@ -191,7 +191,7 @@ async def handle_reputation_points(
     try:
         await _handle_points_command(
             message,
-            LevelTypeEnum.REPUTATION,
+            PointsTypeEnum.REPUTATION,
             points_service,
             user_service,
             notification_facade,

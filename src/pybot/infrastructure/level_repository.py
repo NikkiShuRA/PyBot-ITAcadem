@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
-from ..core.constants import LevelTypeEnum
+from ..core.constants import PointsTypeEnum
 from ..db.models.user_module import Level, UserLevel
 
 
@@ -33,7 +33,7 @@ class LevelRepository:
         self,
         db: AsyncSession,
         user_id: int,
-        points_type: LevelTypeEnum,
+        points_type: PointsTypeEnum,
     ) -> tuple[UserLevel, Level] | None:
         stmt = (
             select(UserLevel)
@@ -58,7 +58,7 @@ class LevelRepository:
         self,
         db: AsyncSession,
         current_level: Level,
-        points_type: LevelTypeEnum,
+        points_type: PointsTypeEnum,
     ) -> Level | None:
         stmt = (
             select(Level)
@@ -81,7 +81,7 @@ class LevelRepository:
         self,
         db: AsyncSession,
         current_level: Level,
-        points_type: LevelTypeEnum,
+        points_type: PointsTypeEnum,
     ) -> Level | None:
         query = (
             select(Level)

@@ -49,7 +49,7 @@ class Points(BaseValueModel):
 
     Attributes:
         value (int): Количество очков.
-        point_type (Points_type_enum): Тип очков.
+        point_type (PointsTypeEnum): Тип очков.
 
     Methods:
         adjust (int): Меняет количество очков на заданное значение.
@@ -60,7 +60,7 @@ class Points(BaseValueModel):
     """
 
     value: Annotated[int, Field(strict=True, ge=-(2**31), le=2**31 - 1)]
-    point_type: LevelTypeEnum
+    point_type: PointsTypeEnum
 
     def adjust(self, delta: int) -> "Points":
         """
@@ -117,3 +117,4 @@ class Points(BaseValueModel):
 
 * [Pydantic V2: Immutability and frozen models](https://docs.pydantic.dev/latest/api/config/#pydantic.config.ConfigDict.frozen)
 * [Martin Fowler: ValueObject](https://martinfowler.com/bliki/ValueObject.html)
+

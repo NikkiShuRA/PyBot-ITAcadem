@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from ...bot.texts import profile_message, profile_section
-from ...core.constants import LevelTypeEnum
+from ...core.constants import PointsTypeEnum
 from ...domain.exceptions import LevelNotFoundError
 from ...dto import NotifyDTO, UserLevelReadDTO, UserProfileReadDTO, UserReadDTO
 from ...dto.value_objects import Points
@@ -34,8 +34,8 @@ class UserProfileService:
         self.notification_port = notification_port
 
     async def _collect_user_profile(self, user_read_dto: UserReadDTO) -> UserProfileReadDTO:
-        levels_data: dict[LevelTypeEnum, UserLevelReadDTO] = {}
-        for level_system in LevelTypeEnum:
+        levels_data: dict[PointsTypeEnum, UserLevelReadDTO] = {}
+        for level_system in PointsTypeEnum:
             orm_current_level_res = await self.level_service.find_user_current_level(user_read_dto.id, level_system)
             if orm_current_level_res is None:
                 raise LevelNotFoundError(user_read_dto.id)
@@ -57,7 +57,7 @@ class UserProfileService:
         return UserProfileReadDTO(user=user_read_dto, level_info=levels_data)
 
     async def _handle_points_data(
-        self, user_profile_read: UserProfileReadDTO, point_type: LevelTypeEnum
+        self, user_profile_read: UserProfileReadDTO, point_type: PointsTypeEnum
     ) -> tuple[Points, UserLevelReadDTO, Points, Points]:
         current_progress = getattr(
             user_profile_read.user,
@@ -105,13 +105,13 @@ class UserProfileService:
             academic_level,
             academic_current_points,
             academic_next_points,
-        ) = await self._handle_points_data(user_profile, LevelTypeEnum.ACADEMIC)
+        ) = await self._handle_points_data(user_profile, PointsTypeEnum.ACADEMIC)
         (
             reputation_progress,
             reputation_level,
             reputation_current_points,
             reputation_next_points,
-        ) = await self._handle_points_data(user_profile, LevelTypeEnum.REPUTATION)
+        ) = await self._handle_points_data(user_profile, PointsTypeEnum.REPUTATION)
 
         message_text = await self._create_profile_message(
             ProfileMessagePO(

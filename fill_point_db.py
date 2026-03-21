@@ -27,14 +27,14 @@ if TYPE_CHECKING:
     from dishka import AsyncContainer
     from loguru import Logger
 
-    from src.pybot.core.constants import LevelTypeEnum, RoleEnum
+    from src.pybot.core.constants import PointsTypeEnum, RoleEnum
     from src.pybot.db.models import Level, Role
     from src.pybot.dto import AdjustUserPointsDTO, CompetenceCreateDTO, CompetenceReadDTO, UserCreateDTO
     from src.pybot.dto.value_objects import Points
     from src.pybot.services import CompetenceService, LevelService, PointsService, UserCompetenceService, UserService
 else:
 
-    class LevelTypeEnum(enum.StrEnum):
+    class PointsTypeEnum(enum.StrEnum):
         ACADEMIC = "academic"
         REPUTATION = "reputation"
 
@@ -82,9 +82,9 @@ else:
 
     class Points:
         value: int
-        point_type: LevelTypeEnum
+        point_type: PointsTypeEnum
 
-        def __init__(self, value: int, point_type: LevelTypeEnum) -> None:
+        def __init__(self, value: int, point_type: PointsTypeEnum) -> None:
             del value, point_type
             raise RuntimeError("fill_point_db runtime dependencies are not loaded")
 
@@ -111,7 +111,7 @@ logger = loguru_logger
 class RuntimeDependencies:
     """Application runtime dependencies required only for actual seed execution."""
 
-    level_type_enum: type[LevelTypeEnum]
+    points_type_enum: type[PointsTypeEnum]
     role_enum: type[RoleEnum]
     level_model: type[Level]
     role_model: type[Role]
@@ -140,7 +140,7 @@ def _get_runtime_dependencies() -> RuntimeDependencies:
     services_module = import_module("src.pybot.services")
 
     return RuntimeDependencies(
-        level_type_enum=constants_module.LevelTypeEnum,
+        points_type_enum=constants_module.PointsTypeEnum,
         role_enum=constants_module.RoleEnum,
         level_model=db_models_module.Level,
         role_model=db_models_module.Role,
@@ -459,7 +459,7 @@ async def generate_levels_data(
                 name=f"Уровень {level_num}",
                 description=f"Требуется {required_xp} академических баллов для достижения этого уровня.",
                 required_points=required_xp,
-                level_type=runtime.level_type_enum.ACADEMIC,
+                level_type=runtime.points_type_enum.ACADEMIC,
             )
         )
         levels_to_add.append(
@@ -467,7 +467,7 @@ async def generate_levels_data(
                 name=f"Уровень {level_num}",
                 description=f"Требуется {required_xp} репутационных баллов для достижения этого уровня.",
                 required_points=required_xp,
-                level_type=runtime.level_type_enum.REPUTATION,
+                level_type=runtime.points_type_enum.REPUTATION,
             )
         )
 
@@ -754,7 +754,7 @@ async def _seed_registered_user(
         giver_id=giver_id,
         points=runtime.points_cls(
             value=user_data["academic_points"],
-            point_type=runtime.level_type_enum.ACADEMIC,
+            point_type=runtime.points_type_enum.ACADEMIC,
         ),
         reason=config.seed_points_reason,
     )
@@ -764,7 +764,7 @@ async def _seed_registered_user(
         giver_id=giver_id,
         points=runtime.points_cls(
             value=user_data["reputation_points"],
-            point_type=runtime.level_type_enum.REPUTATION,
+            point_type=runtime.points_type_enum.REPUTATION,
         ),
         reason=config.seed_points_reason,
     )

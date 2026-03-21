@@ -13,7 +13,7 @@ from pybot.bot.texts import (
     REGISTRATION_CONTACT_EMPTY,
     registration_existing_profile,
 )
-from pybot.core.constants import LevelTypeEnum
+from pybot.core.constants import PointsTypeEnum
 from pybot.dto import UserReadDTO
 from pybot.dto.value_objects import Points
 
@@ -61,8 +61,8 @@ def _build_user_read_dto(user_id: int, telegram_id: int) -> UserReadDTO:
         last_name="User",
         patronymic=None,
         telegram_id=telegram_id,
-        academic_points=Points(value=0, point_type=LevelTypeEnum.ACADEMIC),
-        reputation_points=Points(value=0, point_type=LevelTypeEnum.REPUTATION),
+        academic_points=Points(value=0, point_type=PointsTypeEnum.ACADEMIC),
+        reputation_points=Points(value=0, point_type=PointsTypeEnum.REPUTATION),
         join_date=datetime.now(UTC).date(),
     )
 

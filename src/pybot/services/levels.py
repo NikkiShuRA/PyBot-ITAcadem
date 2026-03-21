@@ -2,7 +2,7 @@ from collections.abc import Sequence
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..core.constants import LevelTypeEnum
+from ..core.constants import PointsTypeEnum
 from ..db.models.user_module import Level, UserLevel
 from ..infrastructure import LevelRepository
 
@@ -21,12 +21,12 @@ class LevelService:
     async def find_user_current_level(
         self,
         user_id: int,
-        points_type: LevelTypeEnum,
+        points_type: PointsTypeEnum,
     ) -> tuple[UserLevel, Level] | None:
         return await self.level_repo.find_user_current_level(self.db, user_id, points_type)
 
-    async def find_next_level(self, current_level: Level, points_type: LevelTypeEnum) -> Level | None:
+    async def find_next_level(self, current_level: Level, points_type: PointsTypeEnum) -> Level | None:
         return await self.level_repo.find_next_level(self.db, current_level, points_type)
 
-    async def find_previous_level(self, current_level: Level, points_type: LevelTypeEnum) -> Level | None:
+    async def find_previous_level(self, current_level: Level, points_type: PointsTypeEnum) -> Level | None:
         return await self.level_repo.find_previous_level(self.db, current_level, points_type)

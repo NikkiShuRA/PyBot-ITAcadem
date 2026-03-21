@@ -1,5 +1,7 @@
 import re
+from datetime import datetime
 
+import pendulum
 from aiogram import F
 from aiogram.filters.command import Command
 from aiogram.types import CallbackQuery, Message
@@ -12,8 +14,8 @@ from ....domain.exceptions import (
     RoleNotFoundError,
     RoleRequestAlreadyExistsError,
     RoleRequestAlreadyProcessedError,
+    RoleRequestCooldownError,
     RoleRequestNotFoundError,
-    RoleRequestRejectedError,
     UserNotFoundError,
 )
 from ....dto import NotifyDTO
@@ -40,9 +42,9 @@ from ...texts import (
     ROLE_REQUEST_NOTIFY_ROLE_NOT_FOUND,
     ROLE_REQUEST_NOTIFY_UNEXPECTED,
     ROLE_REQUEST_NOTIFY_USER_NOT_FOUND,
-    ROLE_REQUEST_REJECTED_RECENTLY,
     ROLE_REQUEST_UNEXPECTED_ERROR,
     role_not_specified,
+    role_request_cooldown_until,
     role_request_created,
 )
 
@@ -80,6 +82,20 @@ async def _extract_role(message: Message) -> RoleEnum | None:
         return None
 
 
+def _format_role_request_available_at(available_at: datetime, requested_at: datetime) -> str:
+    request_time = pendulum.instance(requested_at)
+    available_time = pendulum.instance(available_at, tz=request_time.timezone)
+    human_diff = f"через {request_time.diff(available_time).in_words(locale='ru')}"
+    day_difference = (available_time.date() - request_time.date()).days
+
+    if available_time <= request_time.add(days=1) and day_difference in {0, 1}:
+        day_label = "сегодня" if day_difference == 0 else "завтра"
+        return f"{day_label} в {available_time.format('HH:mm')} ({human_diff})"
+
+    absolute_time = available_time.format("D MMMM YYYY [в] HH:mm", locale="ru")
+    return f"{absolute_time} ({human_diff})"
+
+
 @role_request_private_router.message(Command("role_request"), flags={"role": "Student", "rate_limit": "moderate"})
 async def cmd_role_request(
     message: Message,
@@ -94,8 +110,10 @@ async def cmd_role_request(
         await role_request_service.create_role_request(user_id, role.value)
     except UserNotFoundError:
         await message.reply(ROLE_REQUEST_ADMIN_USER_NOT_FOUND)
-    except RoleRequestRejectedError:
-        await message.reply(ROLE_REQUEST_REJECTED_RECENTLY)
+    except RoleRequestCooldownError as err:
+        await message.reply(
+            role_request_cooldown_until(_format_role_request_available_at(err.available_at, message.date))
+        )
     except RoleNotFoundError:
         await message.reply(ROLE_REQUEST_ADMIN_ROLE_NOT_FOUND)
     except RoleRequestAlreadyExistsError:

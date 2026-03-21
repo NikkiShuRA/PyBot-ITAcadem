@@ -5,7 +5,7 @@ from datetime import datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from pybot.core.constants import LevelTypeEnum, RequestStatus
+from pybot.core.constants import PointsTypeEnum, RequestStatus
 from pybot.db.models import Competence, Level, Role, RoleRequest, User, UserCompetence, UserLevel, UserRole, Valuation
 
 
@@ -34,7 +34,7 @@ class ValuationSpec:
     recipient: User
     giver: User
     points: int
-    points_type: LevelTypeEnum
+    points_type: PointsTypeEnum
     reason: str | None = None
     created_at: datetime | None = None
 
@@ -69,7 +69,7 @@ async def create_level(
     db: AsyncSession,
     *,
     name: str,
-    level_type: LevelTypeEnum,
+    level_type: PointsTypeEnum,
     required_points: int,
     description: str | None = None,
 ) -> Level:

@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..bot.texts import role_request_user_status
+from ..core.config import settings
 from ..core.constants import RequestStatus
 from ..db.models.role_module import RoleRequest
 from ..domain.exceptions import (
@@ -10,8 +11,8 @@ from ..domain.exceptions import (
     RoleNotFoundError,
     RoleRequestAlreadyExistsError,
     RoleRequestAlreadyProcessedError,
+    RoleRequestCooldownError,
     RoleRequestNotFoundError,
-    RoleRequestRejectedError,
     UserNotFoundError,
 )
 from ..dto import NotifyDTO
@@ -35,6 +36,14 @@ class RoleRequestService:
         self.role_request_repository: RoleRequestRepository = role_request_repository
         self.notification_service: NotificationPort = notification_service
 
+    def get_time_since_last_reject(self, request_time: datetime, last_reject: RoleRequest) -> timedelta:
+        """Return elapsed time between request creation and the latest rejected role request."""
+        return request_time - last_reject.updated_at
+
+    def get_role_request_available_at(self, last_reject: RoleRequest) -> datetime:
+        """Return the moment when a new role request becomes available."""
+        return last_reject.updated_at + timedelta(minutes=settings.role_request_reject_cooldown_minutes)
+
     async def check_requesting_user(self, user_id: int, user_role: str) -> bool:
         try:
             user = await self.user_repository.get_by_id(self.db, user_id)
@@ -55,11 +64,15 @@ class RoleRequestService:
         if not last_reject:
             return True
 
-        return not (datetime.now(None) - last_reject.updated_at) < timedelta(seconds=5)
+        request_time = datetime.now(None)
+        available_at = self.get_role_request_available_at(last_reject)
+        if request_time < available_at:
+            raise RoleRequestCooldownError(user_id=user.id, role_name=user_role, available_at=available_at)
+
+        return True
 
     async def create_role_request(self, user_id: int, role: str) -> CreateRoleRequestDTO:
-        if not await self.check_requesting_user(user_id, role):
-            raise RoleRequestRejectedError(role_name=role, user_id=user_id)
+        await self.check_requesting_user(user_id, role)
 
         role_object = await self.role_repository.find_role_by_name(self.db, role)
         if not role_object:

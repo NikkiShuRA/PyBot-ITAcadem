@@ -6,12 +6,14 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from pybot.core.config import settings as service_settings
 from pybot.core.constants import RequestStatus
 from pybot.db.models import RoleRequest
 from pybot.domain.exceptions import (
     RoleAlreadyAssignedError,
     RoleNotFoundError,
     RoleRequestAlreadyExistsError,
+    RoleRequestCooldownError,
     RoleRequestAlreadyProcessedError,
     RoleRequestNotFoundError,
     UserNotFoundError,
@@ -20,6 +22,23 @@ from pybot.infrastructure.user_repository import UserRepository
 from pybot.services.role_request import RoleRequestService
 from tests.factories import RoleRequestSpec, UserSpec, attach_user_role, create_role, create_role_request, create_user
 from tests.providers import FakeNotificationPort
+
+
+@pytest.mark.asyncio
+async def test_get_time_since_last_reject_uses_passed_request_time(
+    dishka_request_container,
+) -> None:
+    # Given
+    service = await dishka_request_container.get(RoleRequestService)
+    last_reject = RoleRequest(user_id=1, role_id=1, status=RequestStatus.REJECTED)
+    last_reject.updated_at = datetime(2026, 3, 21, 10, 0, 0)
+    request_time = datetime(2026, 3, 21, 10, 7, 30)
+
+    # When
+    elapsed = service.get_time_since_last_reject(request_time, last_reject)
+
+    # Then
+    assert elapsed == timedelta(minutes=7, seconds=30)
 
 
 @pytest.mark.asyncio
@@ -107,7 +126,7 @@ async def test_create_role_request_raises_when_pending_request_already_exists(
 
 
 @pytest.mark.asyncio
-async def test_check_requesting_user_returns_false_on_recent_reject_cooldown(
+async def test_check_requesting_user_raises_cooldown_error_with_available_at(
     dishka_request_container,
 ) -> None:
     # Given
@@ -115,22 +134,25 @@ async def test_check_requesting_user_returns_false_on_recent_reject_cooldown(
     service = await dishka_request_container.get(RoleRequestService)
     user = await create_user(db, spec=UserSpec(telegram_id=900_005))
     role = await create_role(db, name="Mentor")
+    rejected_at = datetime.now() - timedelta(seconds=1)
     await create_role_request(
         db,
         spec=RoleRequestSpec(
             user=user,
             role=role,
             status=RequestStatus.REJECTED,
-            updated_at=datetime.now() - timedelta(seconds=1),
+            updated_at=rejected_at,
         ),
     )
     await db.commit()
 
-    # When
-    is_allowed = await service.check_requesting_user(user_id=user.id, user_role="Mentor")
+    # When / Then
+    with pytest.raises(RoleRequestCooldownError) as err:
+        await service.check_requesting_user(user_id=user.id, user_role="Mentor")
 
-    # Then
-    assert is_allowed is False
+    assert err.value.available_at == rejected_at + timedelta(
+        minutes=service_settings.role_request_reject_cooldown_minutes
+    )
 
 
 @pytest.mark.asyncio

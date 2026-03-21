@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from pybot.core.constants import LevelTypeEnum
+from pybot.core.constants import PointsTypeEnum
 from pybot.infrastructure.level_repository import LevelRepository
 from tests.factories import create_level
 
@@ -11,8 +11,8 @@ from tests.factories import create_level
 async def test_find_all_levels_returns_all_rows(db_session) -> None:
     # Given
     repo = LevelRepository()
-    await create_level(db_session, name="A0", level_type=LevelTypeEnum.ACADEMIC, required_points=0)
-    await create_level(db_session, name="R0", level_type=LevelTypeEnum.REPUTATION, required_points=0)
+    await create_level(db_session, name="A0", level_type=PointsTypeEnum.ACADEMIC, required_points=0)
+    await create_level(db_session, name="R0", level_type=PointsTypeEnum.REPUTATION, required_points=0)
     await db_session.commit()
 
     # When
@@ -26,26 +26,26 @@ async def test_find_all_levels_returns_all_rows(db_session) -> None:
 async def test_find_all_by_type_filters_levels(db_session) -> None:
     # Given
     repo = LevelRepository()
-    await create_level(db_session, name="A0", level_type=LevelTypeEnum.ACADEMIC, required_points=0)
-    await create_level(db_session, name="A1", level_type=LevelTypeEnum.ACADEMIC, required_points=100)
-    await create_level(db_session, name="R0", level_type=LevelTypeEnum.REPUTATION, required_points=0)
+    await create_level(db_session, name="A0", level_type=PointsTypeEnum.ACADEMIC, required_points=0)
+    await create_level(db_session, name="A1", level_type=PointsTypeEnum.ACADEMIC, required_points=100)
+    await create_level(db_session, name="R0", level_type=PointsTypeEnum.REPUTATION, required_points=0)
     await db_session.commit()
 
     # When
-    academic_levels = await repo.find_all_by_type(db_session, LevelTypeEnum.ACADEMIC)
+    academic_levels = await repo.find_all_by_type(db_session, PointsTypeEnum.ACADEMIC)
 
     # Then
     assert len(academic_levels) == 2
-    assert all(level.level_type == LevelTypeEnum.ACADEMIC for level in academic_levels)
+    assert all(level.level_type == PointsTypeEnum.ACADEMIC for level in academic_levels)
 
 
 @pytest.mark.asyncio
 async def test_find_initial_levels_returns_only_zero_threshold_levels(db_session) -> None:
     # Given
     repo = LevelRepository()
-    await create_level(db_session, name="A0", level_type=LevelTypeEnum.ACADEMIC, required_points=0)
-    await create_level(db_session, name="A1", level_type=LevelTypeEnum.ACADEMIC, required_points=100)
-    await create_level(db_session, name="R0", level_type=LevelTypeEnum.REPUTATION, required_points=0)
+    await create_level(db_session, name="A0", level_type=PointsTypeEnum.ACADEMIC, required_points=0)
+    await create_level(db_session, name="A1", level_type=PointsTypeEnum.ACADEMIC, required_points=100)
+    await create_level(db_session, name="R0", level_type=PointsTypeEnum.REPUTATION, required_points=0)
     await db_session.commit()
 
     # When

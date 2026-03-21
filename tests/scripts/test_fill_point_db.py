@@ -12,7 +12,7 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 import fill_point_db
-from src.pybot.core.constants import LevelTypeEnum
+from src.pybot.core.constants import PointsTypeEnum
 from src.pybot.dto import AdjustUserPointsDTO, CompetenceCreateDTO, CompetenceReadDTO, UserCreateDTO, UserReadDTO
 from src.pybot.dto.value_objects import Points
 
@@ -168,7 +168,7 @@ def build_runtime_dependencies(
     setup_container: AsyncMock | None = None,
 ) -> fill_point_db.RuntimeDependencies:
     return fill_point_db.RuntimeDependencies(
-        level_type_enum=LevelTypeEnum,
+        points_type_enum=PointsTypeEnum,
         role_enum=fill_point_db.RoleEnum,
         level_model=fill_point_db.Level,
         role_model=fill_point_db.Role,
@@ -408,8 +408,8 @@ async def test_generate_users_data_uses_services_for_registration_and_points(
         last_name="\u0418\u0432\u0430\u043d\u043e\u0432",
         patronymic="\u0418\u0432\u0430\u043d\u043e\u0432\u0438\u0447",
         telegram_id=config.min_telegram_id,
-        academic_points=Points(value=0, point_type=LevelTypeEnum.ACADEMIC),
-        reputation_points=Points(value=0, point_type=LevelTypeEnum.REPUTATION),
+        academic_points=Points(value=0, point_type=PointsTypeEnum.ACADEMIC),
+        reputation_points=Points(value=0, point_type=PointsTypeEnum.REPUTATION),
         join_date=date(2026, 3, 13),
     )
     fake_user_service = FakeGenerateUsersService(fake_user)
@@ -449,9 +449,9 @@ async def test_generate_users_data_uses_services_for_registration_and_points(
     reputation_dto = fake_points_service.change_points_mock.await_args_list[1].args[0]
     assert academic_dto.recipient_id == 42
     assert academic_dto.giver_id == 42
-    assert academic_dto.points == Points(value=5, point_type=LevelTypeEnum.ACADEMIC)
+    assert academic_dto.points == Points(value=5, point_type=PointsTypeEnum.ACADEMIC)
     assert academic_dto.reason == config.seed_points_reason
-    assert reputation_dto.points == Points(value=5, point_type=LevelTypeEnum.REPUTATION)
+    assert reputation_dto.points == Points(value=5, point_type=PointsTypeEnum.REPUTATION)
     fake_user_competence_service.add_user_competencies_mock.assert_awaited_once_with(42, [7])
 
 
@@ -466,8 +466,8 @@ async def test_generate_users_data_skips_zero_points_adjustments(
         last_name="\u0418\u0432\u0430\u043d\u043e\u0432",
         patronymic="\u0418\u0432\u0430\u043d\u043e\u0432\u0438\u0447",
         telegram_id=config.min_telegram_id,
-        academic_points=Points(value=0, point_type=LevelTypeEnum.ACADEMIC),
-        reputation_points=Points(value=0, point_type=LevelTypeEnum.REPUTATION),
+        academic_points=Points(value=0, point_type=PointsTypeEnum.ACADEMIC),
+        reputation_points=Points(value=0, point_type=PointsTypeEnum.REPUTATION),
         join_date=date(2026, 3, 13),
     )
     fake_user_service = FakeGenerateUsersService(fake_user)

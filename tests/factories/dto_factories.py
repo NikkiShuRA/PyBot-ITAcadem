@@ -4,12 +4,12 @@ from itertools import count, cycle
 
 from polyfactory.factories.pydantic_factory import ModelFactory
 
-from pybot.core.constants import LevelTypeEnum
+from pybot.core.constants import PointsTypeEnum
 from pybot.dto import AdjustUserPointsDTO, UserCreateDTO
 from pybot.dto.value_objects import Points
 
 _points_value_seq = cycle((-50, 0, 150))
-_points_type_seq = cycle((LevelTypeEnum.ACADEMIC, LevelTypeEnum.REPUTATION))
+_points_type_seq = cycle((PointsTypeEnum.ACADEMIC, PointsTypeEnum.REPUTATION))
 _tg_id_seq = count(100_000)
 
 
@@ -17,7 +17,7 @@ def next_points_value() -> int:
     return next(_points_value_seq)
 
 
-def next_points_type() -> LevelTypeEnum:
+def next_points_type() -> PointsTypeEnum:
     return next(_points_type_seq)
 
 
@@ -26,7 +26,7 @@ def next_tg_id() -> int:
 
 
 def default_academic_points() -> Points:
-    return Points(value=10, point_type=LevelTypeEnum.ACADEMIC)
+    return Points(value=10, point_type=PointsTypeEnum.ACADEMIC)
 
 
 class PointsFactory(ModelFactory[Points]):
