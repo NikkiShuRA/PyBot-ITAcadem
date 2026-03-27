@@ -10,6 +10,7 @@ from pybot.services.user_services import UserService
 
 @pytest.mark.asyncio
 async def test_setup_container_smoke_resolves_key_dependencies(
+    patched_public_di_engine: AsyncEngine,
     monkeypatch: pytest.MonkeyPatch,
     mocker,
 ) -> None:
@@ -34,7 +35,7 @@ async def test_setup_container_smoke_resolves_key_dependencies(
 
         assert isinstance(bot, FakeBot)
         assert bot.token == "123456:SMOKE_TOKEN"
-        assert engine is not None
+        assert engine is patched_public_di_engine
         assert session is not None
         assert isinstance(user_service, UserService)
     finally:

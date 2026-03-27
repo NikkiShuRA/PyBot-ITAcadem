@@ -10,13 +10,14 @@ from pybot.services.ports import NotificationPort
 
 def _configure_fake_bot(monkeypatch: pytest.MonkeyPatch, mocker) -> None:
     class FakeBot:
-        def __init__(self, token: str) -> None:
+        def __init__(self, token: str, session=None, **_: object) -> None:
             self.token = token
-            self.session = SimpleNamespace(close=mocker.AsyncMock())
+            self.session = session or SimpleNamespace(close=mocker.AsyncMock())
 
     monkeypatch.setattr(di_containers, "Bot", FakeBot)
     monkeypatch.setattr(di_containers.settings, "bot_mode", "test")
     monkeypatch.setattr(di_containers.settings, "bot_token_test", "123456:NOTIF_TEST_TOKEN")
+    monkeypatch.setattr(di_containers.settings, "telegram_proxy_url", None)
 
 
 @pytest.mark.asyncio

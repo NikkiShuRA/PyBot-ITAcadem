@@ -89,6 +89,29 @@ def test_broadcast_allowed_roles_default_is_admin() -> None:
     assert parsed_settings.broadcast_allowed_roles == {"Admin"}
 
 
+def test_telegram_proxy_url_defaults_to_none() -> None:
+    parsed_settings = BotSettings(
+        BOT_TOKEN="123456:prod",
+        BOT_TOKEN_TEST="123456:test",
+        DATABASE_URL="sqlite+aiosqlite:///./test.db",
+        ROLE_REQUEST_ADMIN_TG_ID=ADMIN_TG_ID,
+    )
+
+    assert parsed_settings.telegram_proxy_url is None
+
+
+def test_telegram_proxy_url_is_parsed_from_env_var() -> None:
+    parsed_settings = BotSettings(
+        BOT_TOKEN="123456:prod",
+        BOT_TOKEN_TEST="123456:test",
+        DATABASE_URL="sqlite+aiosqlite:///./test.db",
+        ROLE_REQUEST_ADMIN_TG_ID=ADMIN_TG_ID,
+        TELEGRAM_PROXY_URL="socks5://127.0.0.1:1080",
+    )
+
+    assert parsed_settings.telegram_proxy_url == "socks5://127.0.0.1:1080"
+
+
 def test_broadcast_allowed_roles_rejects_unknown_role(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("BROADCAST_ALLOWED_ROLES", "Admin,WrongRole")
 

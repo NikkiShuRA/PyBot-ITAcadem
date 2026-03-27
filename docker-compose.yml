@@ -8,6 +8,7 @@ x-app-service: &app-service
   environment:
     DATABASE_URL: ${DATABASE_URL:-sqlite+aiosqlite:///./data/pybot_itacadem.db}
     AUTO_SEED_DB: ${AUTO_SEED_DB:-true}
+    TELEGRAM_PROXY_URL: ${TELEGRAM_PROXY_URL:-}
     FSM_STORAGE_BACKEND: ${FSM_STORAGE_BACKEND:-redis}
     REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
   depends_on:

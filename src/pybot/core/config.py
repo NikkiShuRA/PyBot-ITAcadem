@@ -26,6 +26,11 @@ class BotSettings(BaseSettings):
         alias="NOTIFICATION_BACKEND",
         description="Notification backend: 'telegram' or 'logging'",
     )
+    telegram_proxy_url: str | None = Field(
+        None,
+        alias="TELEGRAM_PROXY_URL",
+        description="Optional proxy URL for Telegram Bot API traffic",
+    )
     fsm_storage_backend: Literal["memory", "redis"] = Field(
         "memory",
         alias="FSM_STORAGE_BACKEND",
@@ -152,6 +157,17 @@ class BotSettings(BaseSettings):
             return False
 
         raise ValueError("DEBUG must be a boolean-like value (e.g. true/false/debug/release)")
+
+    @field_validator("telegram_proxy_url", mode="before")
+    @classmethod
+    def parse_telegram_proxy_url(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+
+        normalized = value.strip()
+        if not normalized:
+            return None
+        return normalized
 
     @field_validator("broadcast_allowed_roles", mode="before")
     @classmethod

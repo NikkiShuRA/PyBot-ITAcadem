@@ -21,6 +21,7 @@
 | `FSM_STORAGE_BACKEND` | backend хранения FSM |
 | `REDIS_URL` | Redis для FSM и TaskIQ |
 | `NOTIFICATION_BACKEND` | `telegram` или `logging` |
+| `TELEGRAM_PROXY_URL` | optional proxy для Telegram Bot API |
 | `HEALTH_API_ENABLED` | отдельный health API |
 
 ## Broadcast-настройки
@@ -37,3 +38,5 @@
 
 !!! tip "Практика"
     Для локальной разработки удобнее держать `BOT_MODE=test`, `FSM_STORAGE_BACKEND=memory` и SQLite в каталоге проекта.
+
+`TELEGRAM_PROXY_URL` можно оставить пустым. Переменная нужна только для окружений, где доступ к Telegram Bot API возможен через proxy.

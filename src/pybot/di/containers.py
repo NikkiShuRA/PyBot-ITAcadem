@@ -1,6 +1,7 @@
 from collections.abc import AsyncGenerator
 
 from aiogram import Bot
+from aiogram.client.session.aiohttp import AiohttpSession
 from dishka import AsyncContainer, Provider, Scope, make_async_container, provide
 from dishka.integrations.aiogram import AiogramProvider
 from dishka.integrations.taskiq import TaskiqProvider
@@ -209,7 +210,13 @@ class BotProvider(Provider):
 
     @provide(scope=Scope.APP)
     async def bot(self) -> AsyncGenerator[Bot, None]:
-        bot = Bot(settings.active_bot_token)
+        if settings.telegram_proxy_url is not None:
+            bot = Bot(
+                settings.active_bot_token,
+                session=AiohttpSession(proxy=settings.telegram_proxy_url),
+            )
+        else:
+            bot = Bot(settings.active_bot_token)
         try:
             yield bot
         finally:

@@ -19,12 +19,13 @@ async def test_notification_runtime_smoke_resolves_facade_and_dispatcher(
     """Smoke test for the new notification runtime wiring through the public container API."""
 
     class FakeBot:
-        def __init__(self, token: str) -> None:
+        def __init__(self, token: str, session=None, **_: object) -> None:
             self.token = token
-            self.session = SimpleNamespace(close=mocker.AsyncMock())
+            self.session = session or SimpleNamespace(close=mocker.AsyncMock())
 
     monkeypatch.setattr(di_containers, "Bot", FakeBot)
     monkeypatch.setattr(di_containers.settings, "bot_token_test", "123456:NOTIFY_TOKEN")
+    monkeypatch.setattr(di_containers.settings, "telegram_proxy_url", None)
 
     container = await di_containers.setup_container()
     try:

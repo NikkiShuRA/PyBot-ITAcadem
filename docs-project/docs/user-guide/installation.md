@@ -23,6 +23,8 @@ uv sync
 - `ROLE_REQUEST_ADMIN_TG_ID`
 - `DATABASE_URL`
 
+`.env.example` уже содержит опциональную переменную `TELEGRAM_PROXY_URL`. В обычной среде ее можно оставить пустой и заполнять только там, где Telegram Bot API доступен через proxy.
+
 После этого можно применить миграции и запустить бота:
 
 ```bash

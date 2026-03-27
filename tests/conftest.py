@@ -18,6 +18,7 @@ from sqlalchemy.pool import ConnectionPoolEntry
 from pybot.core.config import settings
 from pybot.db.models import Base
 from pybot.db.models.role_module.role_request import RoleRequest
+from pybot.di import containers as di_containers
 from pybot.di.containers import DomainServiceProvider, HealthProvider, RepositoryProvider, ServiceProvider
 from tests.providers import TestDatabaseProvider, TestOverridesProvider
 
@@ -157,3 +158,14 @@ async def dishka_request_container(
     """Open Dishka request scope for service-level tests."""
     async with dishka_test_container() as request_container:
         yield request_container
+
+
+@pytest.fixture
+def patched_public_di_engine(
+    create_schema: None,
+    monkeypatch: pytest.MonkeyPatch,
+    test_engine: AsyncEngine,
+) -> AsyncEngine:
+    """Route public DI container setup through the isolated test engine."""
+    monkeypatch.setattr(di_containers, "global_engine", test_engine)
+    return test_engine

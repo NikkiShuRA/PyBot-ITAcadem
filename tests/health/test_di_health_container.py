@@ -6,7 +6,9 @@ from pybot.services.health import HealthService
 
 
 @pytest.mark.asyncio
-async def test_setup_health_container_smoke_resolves_key_dependencies() -> None:
+async def test_setup_health_container_smoke_resolves_key_dependencies(
+    patched_public_di_engine: AsyncEngine,
+) -> None:
     """Smoke test for health DI container assembly."""
     container = di_containers.setup_health_container()
     try:
@@ -15,7 +17,7 @@ async def test_setup_health_container_smoke_resolves_key_dependencies() -> None:
             session = await request_container.get(AsyncSession)
             health_service = await request_container.get(HealthService)
 
-        assert engine is not None
+        assert engine is patched_public_di_engine
         assert session is not None
         assert isinstance(health_service, HealthService)
     finally:
