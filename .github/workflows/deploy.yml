@@ -144,6 +144,37 @@ jobs:
           )
           PY
 
+      - name: Debug SSH connectivity
+        run: |
+          set -eu
+          echo "Host: $DEPLOY_HOST"
+          echo "Port: ${DEPLOY_PORT:-22}"
+          echo "User: $DEPLOY_USER"
+          getent hosts "$DEPLOY_HOST" || true
+          python - <<'PY'
+          import os
+          import socket
+
+          host = os.environ["DEPLOY_HOST"]
+          port = int(os.environ.get("DEPLOY_PORT") or "22")
+
+          print(f"Resolving {host}:{port}")
+          infos = socket.getaddrinfo(host, port, type=socket.SOCK_STREAM)
+          for info in infos:
+              print("Resolved:", info[4])
+
+          try:
+              with socket.create_connection((host, port), timeout=10):
+                  print("TCP open")
+          except OSError as err:
+              print(f"TCP connect failed: {err}")
+              raise
+          PY
+          ssh -vv -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=yes \
+            -i "$HOME/.ssh/id_ed25519" \
+            -p "${DEPLOY_PORT:-22}" \
+            "$DEPLOY_USER@$DEPLOY_HOST" true
+
       - name: Run production deploy
         run: |
           set -eu
