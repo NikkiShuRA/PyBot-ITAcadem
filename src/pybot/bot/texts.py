@@ -449,64 +449,36 @@ def points_invalid_value(value: object) -> str:
 
 
 def profile_point_section(title: str, level_name: str, progress_bar: str, points: Points) -> str:
-    return textwrap.dedent(
-        f"""
-        {title}
-        {level_name}
-        {progress_bar}
-        Всего баллов: {points.value}
-        """
-    ).strip()
+    return "\n".join([title, level_name, progress_bar, f"Всего баллов: {points.value}"])
 
 
 def profile_empty_section(title: str) -> str:
-    return textwrap.dedent(
-        f"""
-        {title}
-        Пока не указаны
-        """
-    ).strip()
+    return "\n".join([title, "Пока не указаны"])
 
 
 def profile_competence_section(title: str, competencies: Sequence[CompetenceReadDTO]) -> str:
     competence_lines = "\n".join(_format_competence_catalog_line(competence) for competence in competencies)
-    return textwrap.dedent(
-        f"""
-        {title}
-        {competence_lines}
-        """
-    ).strip()
+    return "\n".join([title, competence_lines])
 
 
 def profile_roles_section(title: str, roles: Sequence[str]) -> str:
     role_lines = "\n".join(f"- {role}" for role in roles)
-    return textwrap.dedent(
-        f"""
-        {title}
-        {role_lines}
-        """
-    ).strip()
+    return "\n".join([title, role_lines])
 
 
 def profile_message(
     first_name: str, academic_section: str, reputation_section: str, roles_section: str, competencies_section: str
 ) -> str:
-    return textwrap.dedent(
-        f"""
-        👋 Здравствуйте, {first_name}!
-
-        {academic_section}
-
-        {reputation_section}
-
-        {roles_section}
-
-        {competencies_section}
-
-        Обновить профиль: /profile
-        Посмотреть команды: /help
-        """
-    ).strip()
+    return "\n\n".join(
+        [
+            f"👋 Здравствуйте, {first_name}!",
+            academic_section,
+            reputation_section,
+            roles_section,
+            competencies_section,
+            "Обновить профиль: /profile\nПосмотреть команды: /help",
+        ]
+    )
 
 
 def render_profile_message(user_profile_data: ProfileViewDTO) -> str:
