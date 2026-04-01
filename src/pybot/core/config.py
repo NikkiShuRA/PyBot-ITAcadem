@@ -31,6 +31,17 @@ class BotSettings(BaseSettings):
         alias="TELEGRAM_PROXY_URL",
         description="Optional proxy URL for Telegram Bot API traffic",
     )
+    runtime_alerts_enabled: bool = Field(
+        False,
+        alias="RUNTIME_ALERTS_ENABLED",
+        description="Enable runtime startup/shutdown alerts for the bot process",
+    )
+    runtime_alerts_chat_id: int | None = Field(
+        None,
+        alias="RUNTIME_ALERTS_CHAT_ID",
+        description="Telegram chat id for runtime alerts",
+        gt=0,
+    )
     fsm_storage_backend: Literal["memory", "redis"] = Field(
         "memory",
         alias="FSM_STORAGE_BACKEND",
@@ -206,6 +217,12 @@ class BotSettings(BaseSettings):
     def validate_broadcast_jitter_range(self: Self) -> Self:
         if self.broadcast_jitter_max_ms < self.broadcast_jitter_min_ms:
             raise ValueError("BROADCAST_JITTER_MAX_MS must be greater than or equal to BROADCAST_JITTER_MIN_MS")
+        return self
+
+    @model_validator(mode="after")
+    def validate_runtime_alerts_config(self: Self) -> Self:
+        if self.runtime_alerts_enabled and self.runtime_alerts_chat_id is None:
+            raise ValueError("RUNTIME_ALERTS_CHAT_ID must be set when RUNTIME_ALERTS_ENABLED=true")
         return self
 
 

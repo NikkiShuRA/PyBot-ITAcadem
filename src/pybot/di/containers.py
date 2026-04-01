@@ -22,6 +22,7 @@ from ..infrastructure import (
 from ..infrastructure.ports import LoggingNotificationService, TelegramNotificationService
 from ..infrastructure.taskiq.taskiq_notification_dispatcher import TaskIQNotificationDispatcher
 from ..services import (
+    SystemRuntimeAlertsService,
     UserCompetenceService,
     UserProfileService,
     UserRegistrationService,
@@ -242,6 +243,14 @@ class FacadeProvider(Provider):
     @provide(scope=Scope.APP)
     async def notification_facade(self, notification_port: NotificationDispatchPort) -> NotificationFacade:
         return NotificationFacade(notification_port)
+
+    @provide(scope=Scope.APP)
+    async def system_runtime_alerts_service(
+        self,
+        notification_facade: NotificationFacade,
+        notification_service: NotificationPort,
+    ) -> SystemRuntimeAlertsService:
+        return SystemRuntimeAlertsService(notification_facade, notification_service)
 
 
 async def setup_container() -> AsyncContainer:

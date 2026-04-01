@@ -22,6 +22,8 @@
 | `REDIS_URL` | Redis для FSM и TaskIQ |
 | `NOTIFICATION_BACKEND` | `telegram` или `logging` |
 | `TELEGRAM_PROXY_URL` | optional proxy для Telegram Bot API |
+| `RUNTIME_ALERTS_ENABLED` | включает runtime alerts для bot startup/shutdown |
+| `RUNTIME_ALERTS_CHAT_ID` | chat id для runtime alerts |
 | `HEALTH_API_ENABLED` | отдельный health API |
 
 ## Broadcast-настройки
@@ -40,3 +42,5 @@
     Для локальной разработки удобнее держать `BOT_MODE=test`, `FSM_STORAGE_BACKEND=memory` и SQLite в каталоге проекта.
 
 `TELEGRAM_PROXY_URL` можно оставить пустым. Переменная нужна только для окружений, где доступ к Telegram Bot API возможен через proxy.
+
+`RUNTIME_ALERTS_ENABLED` и `RUNTIME_ALERTS_CHAT_ID` тоже являются опциональными. В v1 они покрывают только lifecycle основного `bot` runtime: startup-уведомление идет через TaskIQ, а shutdown-уведомление отправляется напрямую как best effort.

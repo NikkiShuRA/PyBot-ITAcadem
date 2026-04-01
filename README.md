@@ -171,6 +171,8 @@ AUTO_ADMIN_TELEGRAM_IDS=
 
 NOTIFICATION_BACKEND=telegram
 TELEGRAM_PROXY_URL=
+RUNTIME_ALERTS_ENABLED=false
+RUNTIME_ALERTS_CHAT_ID=
 FSM_STORAGE_BACKEND=memory
 REDIS_URL=redis://localhost:6379/0
 
@@ -188,6 +190,7 @@ HEALTH_API_PORT=8001
 - `BOT_MODE=test` использует `BOT_TOKEN_TEST`, `BOT_MODE=prod` использует `BOT_TOKEN`;
 - `ROLE_REQUEST_ADMIN_TG_ID` обязателен, потому что role request flow уже является частью рабочего сценария;
 - `TELEGRAM_PROXY_URL` опционален и нужен только там, где Telegram Bot API доступен через proxy;
+- `RUNTIME_ALERTS_ENABLED` и `RUNTIME_ALERTS_CHAT_ID` опциональны и включают runtime alerts только для основного bot-процесса;
 - при `FSM_STORAGE_BACKEND=memory` Redis для обычного локального запуска не нужен.
 
 ### 4. Примените миграции

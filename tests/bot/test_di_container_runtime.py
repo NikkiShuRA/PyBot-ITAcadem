@@ -17,12 +17,13 @@ async def test_setup_container_smoke_resolves_key_dependencies(
     """Smoke test for DI assembly via public container API."""
 
     class FakeBot:
-        def __init__(self, token: str) -> None:
+        def __init__(self, token: str, session=None, **_: object) -> None:
             self.token = token
-            self.session = SimpleNamespace(close=mocker.AsyncMock())
+            self.session = session or SimpleNamespace(close=mocker.AsyncMock())
 
     monkeypatch.setattr(di_containers, "Bot", FakeBot)
     monkeypatch.setattr(di_containers.settings, "bot_token_test", "123456:SMOKE_TOKEN")
+    monkeypatch.setattr(di_containers.settings, "telegram_proxy_url", None)
 
     container = await di_containers.setup_container()
     try:
@@ -50,9 +51,9 @@ async def test_container_lifecycle_closes_session_and_disposes_engine(
     """Verify graceful shutdown closes request session and disposes DB engine."""
 
     class FakeBot:
-        def __init__(self, token: str) -> None:
+        def __init__(self, token: str, session=None, **_: object) -> None:
             self.token = token
-            self.session = SimpleNamespace(close=mocker.AsyncMock())
+            self.session = session or SimpleNamespace(close=mocker.AsyncMock())
 
     class FakeEngine:
         def __init__(self) -> None:
@@ -87,6 +88,7 @@ async def test_container_lifecycle_closes_session_and_disposes_engine(
 
     monkeypatch.setattr(di_containers, "Bot", FakeBot)
     monkeypatch.setattr(di_containers.settings, "bot_token_test", "123456:LIFECYCLE_TOKEN")
+    monkeypatch.setattr(di_containers.settings, "telegram_proxy_url", None)
     monkeypatch.setattr(di_containers, "global_engine", fake_engine)
     monkeypatch.setattr(di_containers, "async_sessionmaker", fake_async_sessionmaker)
 
