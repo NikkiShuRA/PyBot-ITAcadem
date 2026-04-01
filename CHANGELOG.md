@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v0.20.0 (2026-04-01)
+
+### Features
+
+- Добавил runtime alerts для lifecycle бота
+  ([`4ab568b`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/4ab568b9f50c9a6af5cfc80f5fba372f543df5d5))
+
+### Refactoring
+
+- Упростил сборку текста профиля
+  ([`4c0e54d`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/4c0e54dd7ed2e64dbc84a407671e40a6f5ad1900))
+
+
 ## v0.19.0 (2026-03-27)
 
 ### Bug Fixes
