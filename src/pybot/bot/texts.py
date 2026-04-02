@@ -483,32 +483,32 @@ def profile_message(
 
 def render_profile_message(user_profile_data: ProfileViewDTO) -> str:
     academic_section = profile_point_section(
-        title="📘 Академический уровень",
+        title="<b>📘 Академический уровень</b>",
         level_name=user_profile_data.academic_level.current_level.name,
         progress_bar=user_profile_data.academic_progress_bar,
         points=user_profile_data.academic_progress,
     )
     reputation_section = profile_point_section(
-        title="⭐ Репутационный уровень",
+        title="<b>⭐ Репутационный уровень</b>",
         level_name=user_profile_data.reputation_level.current_level.name,
         progress_bar=user_profile_data.reputation_progress_bar,
         points=user_profile_data.reputation_progress,
     )
     roles_section = (
         profile_roles_section(
-            title="🎭 Роли",
+            title="<b>🎭 Роли</b>",
             roles=user_profile_data.roles_data,
         )
         if user_profile_data.roles_data != []
-        else profile_empty_section("🎭 Роли")
+        else profile_empty_section("<b>🎭 Роли</b>")
     )
     competencies_section = (
         profile_competence_section(
-            title="🧩 Компетенции",
+            title="<b>🧩 Компетенции</b>",
             competencies=user_profile_data.competences,
         )
         if user_profile_data.competences != []
-        else profile_empty_section("🧩 Компетенции")
+        else profile_empty_section("<b>🧩 Компетенции</b>")
     )
     return profile_message(
         first_name=user_profile_data.user.first_name,

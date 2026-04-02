@@ -99,7 +99,7 @@ async def test_cmd_start_private_shows_profile_when_user_exists(monkeypatch: pyt
     assert user_service.telegram_queries == [700_001]
     user_profile_service.build_profile_view_mock.assert_awaited_once_with(user)
     render_mock.assert_called_once_with(user_profile_service.profile_view)
-    answer_mock.assert_awaited_once_with("profile text")
+    answer_mock.assert_awaited_once_with("profile text", parse_mode="HTML")
     dialog_manager.start.assert_not_awaited()
 
 
@@ -149,7 +149,7 @@ async def test_cmd_profile_private_shows_profile_when_user_exists(monkeypatch: p
     assert user_service.telegram_queries == [700_001]
     user_profile_service.build_profile_view_mock.assert_awaited_once_with(user)
     render_mock.assert_called_once_with(user_profile_service.profile_view)
-    answer_mock.assert_awaited_once_with("profile text")
+    answer_mock.assert_awaited_once_with("profile text", parse_mode="HTML")
     dialog_manager.start.assert_not_awaited()
 
 

@@ -37,7 +37,7 @@ async def cmd_start_private(
     user = await user_service.find_user_by_telegram_id(message.from_user.id)
     if user:
         user_profile_dto = await user_profile_service.build_profile_view(user)
-        await message.answer(render_profile_message(user_profile_dto))
+        await message.answer(render_profile_message(user_profile_dto), parse_mode="HTML")
         return
 
     await dialog_manager.start(CreateProfileSG.welcome, mode=StartMode.RESET_STACK)
