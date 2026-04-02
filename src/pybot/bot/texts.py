@@ -5,7 +5,7 @@ from collections.abc import Sequence
 from datetime import timedelta
 
 from ..core.constants import PointsTypeEnum, RequestStatus, RoleEnum
-from ..dto import CompetenceReadDTO, ProfileViewDTO, WeeklyLeaderboardRowDTO
+from ..dto import CompetenceReadDTO, ProfileViewDTO, RoleReadDTO, WeeklyLeaderboardRowDTO
 from ..dto.value_objects import Points
 from ..utils import telegram_user_link
 
@@ -32,6 +32,8 @@ HELP_PRIVATE = textwrap.dedent(
     /ping - проверить, что бот работает
     /leaderboard - показать недельный лидерборд
     /competences - показать все компетенции в системе
+    /roles - показать все роли в системе
+    /showroles [@user|id|reply] - показать роли пользователя
     /showcompetences [@user|id|reply] - показать компетенции пользователя
 
     Команды для администраторов:
@@ -66,6 +68,8 @@ HELP_PRIVATE_PUBLIC = textwrap.dedent(
     /ping - проверить, что бот работает
     /leaderboard - показать недельный лидерборд
     /competences - показать все компетенции в системе
+    /roles - показать все роли в системе
+    /showroles [@user|id|reply] - показать роли пользователя
     /showcompetences [@user|id|reply] - показать компетенции пользователя
     """
 ).strip()
@@ -80,6 +84,8 @@ HELP_GROUP = textwrap.dedent(
     /ping - проверить, что бот работает
     /leaderboard - показать недельный лидерборд
     /competences - показать все компетенции в системе
+    /roles - показать все роли в системе
+    /showroles [@user|id|reply] - показать роли пользователя
     /showcompetences [@user|id|reply] - показать компетенции пользователя
 
     Важно:
@@ -256,6 +262,8 @@ COMPETENCE_LIST = "🧩 Компетенции пользователя {first_n
 COMPETENCE_CATALOG_EMPTY = "<b>Компетенции:</b>\n\nПока в системе нет доступных компетенций."
 COMPETENCE_CATALOG = "<b>Компетенции:</b>\n\n{competence_lines}"
 COMPETENCE_DESCRIPTION_FALLBACK = "Описание не указано"
+ROLE_CATALOG_EMPTY = "<b>Роли:</b>\n\nПока в системе нет доступных ролей."
+ROLE_CATALOG = "<b>Роли:</b>\n\n{role_lines}"
 COMPETENCE_VALIDATION_ERROR = (
     "Не удалось обработать список компетенций.\nИспользуйте существующие названия через запятую, например: Python, SQL."
 )
@@ -407,12 +415,29 @@ def competence_list(first_name: str, competencies: Sequence[CompetenceReadDTO]) 
     return COMPETENCE_LIST.format(first_name=first_name, competence_lines=competence_lines)
 
 
+def user_role_none(first_name: str) -> str:
+    return f"У пользователя {first_name} пока нет ролей."
+
+
+def user_role_list(first_name: str, user_roles: Sequence[str]) -> str:
+    role_lines = "\n".join(f"- {role_name}" for role_name in user_roles)
+    return f"🎭 Роли пользователя {first_name}:\n{role_lines}"
+
+
 def competence_catalog(competencies: Sequence[CompetenceReadDTO]) -> str:
     if not competencies:
         return COMPETENCE_CATALOG_EMPTY
 
     competence_lines = "\n".join(_format_competence_catalog_line(competence) for competence in competencies)
     return COMPETENCE_CATALOG.format(competence_lines=competence_lines)
+
+
+def roles_catalog(roles: Sequence[RoleReadDTO]) -> str:
+    if not roles:
+        return ROLE_CATALOG_EMPTY
+
+    role_lines = "\n".join(_format_role_catalog_line(role) for role in roles)
+    return ROLE_CATALOG.format(role_lines=role_lines)
 
 
 def competence_validation_error() -> str:
@@ -596,3 +621,7 @@ def _format_competence_catalog_line(competence: CompetenceReadDTO) -> str:
     return f"<b>{html.escape(competence.name)}</b>: {html.escape(description)}."
 
 
+def _format_role_catalog_line(role: RoleReadDTO) -> str:
+    if role.description:
+        return f"- <b>{html.escape(role.name)}</b>: {html.escape(role.description)}"
+    return f"- <b>{html.escape(role.name)}</b>"

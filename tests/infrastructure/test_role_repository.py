@@ -31,3 +31,19 @@ async def test_find_role_by_name_returns_none_when_absent(db_session) -> None:
 
     # Then
     assert found is None
+
+
+@pytest.mark.asyncio
+async def test_find_all_roles_returns_roles_sorted_by_name(db_session) -> None:
+    # Given
+    repo = RoleRepository()
+    await create_role(db_session, name="Student")
+    await create_role(db_session, name="Admin")
+    await create_role(db_session, name="Mentor")
+    await db_session.commit()
+
+    # When
+    found_roles = await repo.find_all_roles(db_session)
+
+    # Then
+    assert [role.name for role in found_roles] == ["Admin", "Mentor", "Student"]

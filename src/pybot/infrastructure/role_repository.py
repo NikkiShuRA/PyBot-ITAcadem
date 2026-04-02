@@ -31,6 +31,7 @@ class RoleRepository:
         return role
 
     async def find_all_roles(self, db: AsyncSession) -> Sequence[Role]:
-        stmt = select(Role)
+        """Return all roles ordered by name for deterministic read flows."""
+        stmt = select(Role).order_by(Role.name.asc())
         result = await db.execute(stmt)
         return result.scalars().all()
