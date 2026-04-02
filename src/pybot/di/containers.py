@@ -23,6 +23,7 @@ from ..infrastructure import (
 from ..infrastructure.ports import LoggingNotificationService, TelegramNotificationService
 from ..infrastructure.taskiq.taskiq_notification_dispatcher import TaskIQNotificationDispatcher
 from ..services import (
+    LeaderboardService,
     SystemRuntimeAlertsService,
     UserCompetenceService,
     UserProfileService,
@@ -142,6 +143,14 @@ class ServiceProvider(Provider):
         points_transaction_repository: PointsTransactionRepository,
     ) -> PointsService:
         return PointsService(db, level_calculator, user_repository, level_repository, points_transaction_repository)
+
+    @provide(scope=Scope.REQUEST)
+    def leaderboard_service(
+        self,
+        db: AsyncSession,
+        points_transaction_repository: PointsTransactionRepository,
+    ) -> LeaderboardService:
+        return LeaderboardService(db, points_transaction_repository)
 
     @provide(scope=Scope.REQUEST)
     def role_request_service(
