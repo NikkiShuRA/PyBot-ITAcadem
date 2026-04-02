@@ -6,7 +6,7 @@ from dishka import FromDishka
 
 from ....core.config import settings
 from ....core.constants import RoleEnum
-from ....domain.exceptions import BroadcastMessageNotSpecifiedError
+from ....domain.exceptions import BroadcastAlreadyRunningError, BroadcastMessageNotSpecifiedError, UsersNotFoundError
 from ....dto import BroadcastDTO, CompetenceBroadcastDTO, CompetenceReadDTO, RoleBroadcastDTO
 from ....services.broadcast import BroadcastService
 from ....services.competence import CompetenceService
@@ -93,24 +93,28 @@ async def broadcast_command(
     except BroadcastMessageNotSpecifiedError:
         await message.reply(BROADCAST_MESSAGE_REQUIRED)
         return
+    try:
+        if _extract_all_ping(target_token):
+            await broadcast_service.broadcast_for_all(BroadcastDTO(broadcast_message=broadcast_message))
+            return
 
-    if _extract_all_ping(target_token):
-        await broadcast_service.broadcast_for_all(BroadcastDTO(broadcast_message=broadcast_message))
-        return
+        role = _extract_role(target_token)
+        if role is not None:
+            await broadcast_service.broadcast_for_users_with_role(
+                RoleBroadcastDTO(broadcast_message=broadcast_message, role_name=role.value)
+            )
+            return
 
-    role = _extract_role(target_token)
-    if role is not None:
-        await broadcast_service.broadcast_for_users_with_role(
-            RoleBroadcastDTO(broadcast_message=broadcast_message, role_name=role.value)
-        )
-        return
+        competencies = await competence_service.find_all_competencies()
+        competence = _extract_competence(target_token, competencies)
+        if competence is not None:
+            await broadcast_service.broadcast_for_users_with_competence(
+                CompetenceBroadcastDTO(broadcast_message=broadcast_message, competence_id=competence.id)
+            )
+            return
 
-    competencies = await competence_service.find_all_competencies()
-    competence = _extract_competence(target_token, competencies)
-    if competence is not None:
-        await broadcast_service.broadcast_for_users_with_competence(
-            CompetenceBroadcastDTO(broadcast_message=broadcast_message, competence_id=competence.id)
-        )
-        return
-
-    await message.reply(broadcast_unknown_target(competencies))
+        await message.reply(broadcast_unknown_target(competencies))
+    except UsersNotFoundError:
+        await message.reply("По этой аудитории не найдено ни одного пользователя для рассылки.")
+    except BroadcastAlreadyRunningError:
+        await message.reply("Сейчас уже выполняется другая рассылка. Дождитесь её завершения и попробуйте снова.")
