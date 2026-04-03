@@ -2,6 +2,56 @@
 
 <!-- version list -->
 
+## v0.21.0 (2026-04-03)
+
+### Bug Fixes
+
+- Включил html-рендеринг профиля и ошибку регистрации
+  ([#87](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/87),
+  [`b75db3a`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/b75db3a78517257b00fffabe5a706c79bcd0d531))
+
+- Включил sqlite foreign keys в runtime
+  ([#87](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/87),
+  [`b75db3a`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/b75db3a78517257b00fffabe5a706c79bcd0d531))
+
+- Исправил выборку пользователей по роли
+  ([#87](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/87),
+  [`b75db3a`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/b75db3a78517257b00fffabe5a706c79bcd0d531))
+
+- Исправил реггрессию в тестах с healthAPI
+  ([#87](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/87),
+  [`b75db3a`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/b75db3a78517257b00fffabe5a706c79bcd0d531))
+
+- Исправлеине реггрессий в валидации ([#87](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/87),
+  [`b75db3a`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/b75db3a78517257b00fffabe5a706c79bcd0d531))
+
+- Обработал ожидаемые ошибки рассылки ([#87](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/87),
+  [`b75db3a`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/b75db3a78517257b00fffabe5a706c79bcd0d531))
+
+- Скрываю детали readiness ошибки базы ([#87](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/87),
+  [`b75db3a`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/b75db3a78517257b00fffabe5a706c79bcd0d531))
+
+- Убрал текст из callback role request ([#87](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/87),
+  [`b75db3a`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/b75db3a78517257b00fffabe5a706c79bcd0d531))
+
+### Features
+
+- Добавил журнал транзакций баллов ([#87](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/87),
+  [`b75db3a`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/b75db3a78517257b00fffabe5a706c79bcd0d531))
+
+- Добавил команду leaderboard ([#87](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/87),
+  [`b75db3a`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/b75db3a78517257b00fffabe5a706c79bcd0d531))
+
+- Добавил просмотр каталога и ролей пользователя
+  ([#87](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/87),
+  [`b75db3a`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/b75db3a78517257b00fffabe5a706c79bcd0d531))
+
+### Refactoring
+
+- Упростил async-конфиг alembic ([#87](https://github.com/NikkiShuRA/PyBot-ITAcadem/pull/87),
+  [`b75db3a`](https://github.com/NikkiShuRA/PyBot-ITAcadem/commit/b75db3a78517257b00fffabe5a706c79bcd0d531))
+
+
 ## v0.20.0 (2026-04-01)
 
 ### Features
