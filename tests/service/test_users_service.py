@@ -284,6 +284,40 @@ async def test_find_user_roles_returns_all_assigned_roles(
 
 
 @pytest.mark.asyncio
+async def test_find_all_roles_returns_role_read_dtos_sorted_by_name(
+    dishka_request_container,
+) -> None:
+    # Given
+    db = await dishka_request_container.get(AsyncSession)
+    service = await dishka_request_container.get(UserRolesService)
+    await create_role(db, name="Student")
+    await create_role(db, name="Admin", description="Manages the system")
+    await create_role(db, name="Mentor")
+    await db.commit()
+
+    # When
+    roles = await service.find_all_roles()
+
+    # Then
+    assert [role.name for role in roles] == ["Admin", "Mentor", "Student"]
+    assert roles[0].description == "Manages the system"
+
+
+@pytest.mark.asyncio
+async def test_find_all_roles_returns_empty_list_when_no_roles_exist(
+    dishka_request_container,
+) -> None:
+    # Given
+    service = await dishka_request_container.get(UserRolesService)
+
+    # When
+    roles = await service.find_all_roles()
+
+    # Then
+    assert roles == []
+
+
+@pytest.mark.asyncio
 async def test_get_users_with_competence_id_returns_matching_users(
     dishka_request_container,
 ) -> None:

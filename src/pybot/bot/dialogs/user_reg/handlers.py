@@ -235,7 +235,9 @@ async def _on_competence_submit_impl(
 ) -> None:
     user = await _register_user_from_dialog(manager, user_reg_service)
     if user is None:
-        await callback.answer(REGISTRATION_INTERNAL_ERROR)
+        if callback.message is not None:
+            await callback.message.answer(REGISTRATION_INTERNAL_ERROR)
+        await callback.answer()
         await manager.done()
         return
 
@@ -243,7 +245,7 @@ async def _on_competence_submit_impl(
     if callback.message is not None:
         await callback.message.answer(registration_profile_created(user.first_name))
         user_profile_dto = await user_profile_service.build_profile_view(user)
-        await callback.message.answer(render_profile_message(user_profile_dto))
+        await callback.message.answer(render_profile_message(user_profile_dto), parse_mode="HTML")
     await callback.answer()
     await manager.done()
 

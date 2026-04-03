@@ -26,6 +26,7 @@ from pybot.bot.dialogs.user_reg.handlers import (
 from pybot.bot.keyboards.auth import request_contact_kb
 from pybot.bot.texts import (
     REGISTRATION_CONTACT_PROMPT,
+    REGISTRATION_INTERNAL_ERROR,
     REGISTRATION_NAME_INVALID_SYMBOLS,
     registration_profile_created,
 )
@@ -302,7 +303,7 @@ async def test_competence_submit_registers_user_and_shows_profile_on_success(moc
     render_mock.assert_called_once()
     assert answer_mock.await_count == 2
     answer_mock.assert_any_await(registration_profile_created("Иван"))
-    answer_mock.assert_any_await("profile text")
+    answer_mock.assert_any_await("profile text", parse_mode="HTML")
     callback.answer.assert_awaited_once()
     manager_state.done_mock.assert_awaited_once()
 
@@ -349,8 +350,35 @@ async def test_competence_skip_clears_selection_and_registers_user(mocker: Mocke
     render_mock.assert_called_once()
     assert answer_mock.await_count == 2
     answer_mock.assert_any_await(registration_profile_created("Иван"))
-    answer_mock.assert_any_await("profile text")
+    answer_mock.assert_any_await("profile text", parse_mode="HTML")
     callback.answer.assert_awaited_once()
+    manager_state.done_mock.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_competence_submit_reports_internal_error_with_message_and_finishes(mocker: MockerFixture) -> None:
+    message = _build_message("/start")
+    callback = SimpleNamespace(message=message, answer=mocker.AsyncMock())
+    manager_state = _build_manager(mocker)
+    user_registration_service_state = _build_user_registration_service(mocker)
+    user_profile_service_state = _build_user_profile_service(mocker)
+    answer_mock = mocker.patch.object(Message, "answer", new=mocker.AsyncMock())
+    mocker.patch(
+        "pybot.bot.dialogs.user_reg.handlers.map_dialog_data_to_user_registration_dto",
+        new=mocker.AsyncMock(return_value=None),
+    )
+
+    await _on_competence_submit_impl(
+        callback=cast("CallbackQuery", callback),
+        manager=manager_state.manager,
+        user_reg_service=user_registration_service_state.service,
+        user_profile_service=user_profile_service_state.service,
+    )
+
+    user_registration_service_state.register_student_mock.assert_not_awaited()
+    user_profile_service_state.build_profile_view_mock.assert_not_awaited()
+    answer_mock.assert_awaited_once_with(REGISTRATION_INTERNAL_ERROR)
+    callback.answer.assert_awaited_once_with()
     manager_state.done_mock.assert_awaited_once()
 
 

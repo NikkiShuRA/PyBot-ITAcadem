@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...core.constants import RoleEnum
 from ...domain.exceptions import RoleNotFoundError, UserNotFoundError
-from ...dto import UserReadDTO
+from ...dto import RoleReadDTO, UserReadDTO
 from ...infrastructure.role_repository import RoleRepository
 from ...infrastructure.user_repository import UserRepository
 from ...mappers.user_mappers import map_orm_user_to_user_read_dto
@@ -47,6 +47,17 @@ class UserRolesService:
         user_id: int,
     ) -> Sequence[str]:
         return await self.user_repository.find_user_roles(self.db, user_id)
+
+    async def find_all_roles(self) -> Sequence[RoleReadDTO]:
+        roles = await self.role_repository.find_all_roles(self.db)
+        return [
+            RoleReadDTO(
+                id=role.id,
+                name=role.name,
+                description=role.description,
+            )
+            for role in roles
+        ]
 
     async def add_user_role(
         self,

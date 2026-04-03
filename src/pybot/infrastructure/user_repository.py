@@ -78,7 +78,13 @@ class UserRepository:
         db: AsyncSession,
         role_name: str,
     ) -> Sequence[User]:
-        stmt = select(User).where(User.roles.any(Role.name == role_name)).options(selectinload(User.roles))
+        stmt = (
+            select(User)
+            .join(UserRole, UserRole.user_id == User.id)
+            .join(Role, Role.id == UserRole.role_id)
+            .where(Role.name == role_name)
+            .options(selectinload(User.roles))
+        )
         result = await db.execute(stmt)
 
         users = result.scalars().all()

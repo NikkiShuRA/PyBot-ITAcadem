@@ -6,6 +6,7 @@ from .level import Level
 from .competence import Competence
 from .user_competence import UserCompetence
 from .user_achievement import UserAchievement
+from .points_transaction import PointsTransaction
 from .valuation import Valuation
 from .user_level import UserLevel
 
@@ -18,6 +19,7 @@ __all__ = [
     "Competence",
     "UserCompetence",
     "UserAchievement",
+    "PointsTransaction",
     "UserTask",
     "UserLevel",
     "Valuation",

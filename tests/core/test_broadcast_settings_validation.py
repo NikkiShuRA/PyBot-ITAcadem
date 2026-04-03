@@ -184,7 +184,9 @@ def test_role_request_admin_tg_id_must_be_greater_than_zero() -> None:
         )
 
 
-def test_role_request_admin_tg_id_is_required() -> None:
+def test_role_request_admin_tg_id_is_required(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("ROLE_REQUEST_ADMIN_TG_ID", raising=False)
+
     with pytest.raises(ValidationError) as exc_info:
         BotSettingsWithoutDotenv(
             BOT_TOKEN="123456:prod",

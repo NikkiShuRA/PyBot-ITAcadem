@@ -51,19 +51,19 @@ from ...texts import (
 (role_request_private_router, _, _) = create_chat_type_routers("grand_points")
 
 
-async def _finalize_role_request_callback(callback_query: CallbackQuery, answer_text: str, lock_buttons: bool) -> None:
+async def _finalize_role_request_callback(callback_query: CallbackQuery, status_text: str, lock_buttons: bool) -> None:
     if lock_buttons:
         message = callback_query.message
         if isinstance(message, Message):
             try:
                 rendered_text = role_request_admin_notification_with_status(
                     message.html_text or message.text,
-                    answer_text,
+                    status_text,
                 )
                 await message.edit_text(rendered_text, parse_mode="HTML", reply_markup=None)
             except Exception:
                 logger.exception("Failed to update role-request admin message")
-    await callback_query.answer(answer_text)
+    await callback_query.answer()
 
 
 async def _extract_role(message: Message) -> RoleEnum | None:
@@ -186,7 +186,7 @@ async def accept_role_request(
         answer_text = ROLE_REQUEST_ADMIN_APPROVED
         lock_buttons = True
     finally:
-        await _finalize_role_request_callback(callback_query, answer_text=answer_text, lock_buttons=lock_buttons)
+        await _finalize_role_request_callback(callback_query, status_text=answer_text, lock_buttons=lock_buttons)
 
 
 @role_request_private_router.callback_query(
@@ -238,4 +238,4 @@ async def reject_role_request(
         answer_text = ROLE_REQUEST_ADMIN_REJECTED
         lock_buttons = True
     finally:
-        await _finalize_role_request_callback(callback_query, answer_text=answer_text, lock_buttons=lock_buttons)
+        await _finalize_role_request_callback(callback_query, status_text=answer_text, lock_buttons=lock_buttons)

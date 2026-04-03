@@ -86,9 +86,12 @@ async def test_has_role_returns_true_and_false(db_session) -> None:
 async def test_get_all_users_with_role_filters_and_raises_on_empty(db_session) -> None:
     # Given
     repo = UserRepository()
-    user = await create_user(db_session, spec=UserSpec(telegram_id=500_004))
+    student_user = await create_user(db_session, spec=UserSpec(telegram_id=500_004))
+    admin_user = await create_user(db_session, spec=UserSpec(telegram_id=500_005))
     role_student = await create_role(db_session, name="Student")
-    await attach_user_role(db_session, user=user, role=role_student)
+    role_admin = await create_role(db_session, name="Admin")
+    await attach_user_role(db_session, user=student_user, role=role_student)
+    await attach_user_role(db_session, user=admin_user, role=role_admin)
     await db_session.commit()
 
     # When
@@ -96,7 +99,7 @@ async def test_get_all_users_with_role_filters_and_raises_on_empty(db_session) -
 
     # Then
     assert len(students) == 1
-    assert students[0].id == user.id
+    assert students[0].id == student_user.id
 
     with pytest.raises(UsersNotFoundError):
         await repo.get_all_users_with_role(db_session, "Mentor")

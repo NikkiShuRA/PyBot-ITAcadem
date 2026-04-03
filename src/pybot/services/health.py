@@ -9,6 +9,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.base import Executable
 
+from ..core import logger
 from ..dto.health_dto import HealthCheckDTO, HealthStatusDTO
 
 
@@ -68,12 +69,13 @@ class HealthService:
                 checks=[check],
                 timestamp=datetime.now(UTC),
             )
-        except Exception as exc:
+        except Exception as err:
             latency_ms = int((time.perf_counter() - start) * 1000)
+            logger.exception("Database readiness check failed")
             check = HealthCheckDTO(
                 name="database",
                 status="fail",
-                details=str(exc),
+                details=str(err),
                 latency_ms=latency_ms,
             )
             status = HealthStatusDTO(

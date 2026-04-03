@@ -6,10 +6,12 @@ from .model_factories import attach_user_competence as attach_user_competence
 from .model_factories import attach_user_role as attach_user_role
 from .model_factories import create_competence as create_competence
 from .model_factories import create_level as create_level
+from .model_factories import create_points_transaction as create_points_transaction
 from .model_factories import create_role as create_role
 from .model_factories import create_role_request as create_role_request
 from .model_factories import create_user as create_user
 from .model_factories import create_valuation as create_valuation
+from .model_factories import PointsTransactionSpec as PointsTransactionSpec
 from .model_factories import RoleRequestSpec as RoleRequestSpec
 from .model_factories import UserSpec as UserSpec
 from .model_factories import ValuationSpec as ValuationSpec

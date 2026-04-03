@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pybot.core.constants import PointsTypeEnum
-from pybot.db.models import UserLevel, Valuation
+from pybot.db.models import PointsTransaction, User, UserLevel, Valuation
 from pybot.domain.exceptions import UserNotFoundError, ZeroPointsAdjustmentError
 from pybot.dto import AdjustUserPointsDTO
 from pybot.dto.value_objects import Points
@@ -52,6 +52,13 @@ async def test_change_points_updates_points_level_and_creates_valuation(
     assert valuations[0].points == 20
     assert valuations[0].giver_id == giver.id
 
+    transactions_stmt = select(PointsTransaction).where(PointsTransaction.recipient_id == recipient.id)
+    transactions = (await db.execute(transactions_stmt)).scalars().all()
+    assert len(transactions) == 1
+    assert transactions[0].amount == 20
+    assert transactions[0].points_type == PointsTypeEnum.ACADEMIC
+    assert transactions[0].giver_id == giver.id
+
 
 @pytest.mark.asyncio
 async def test_change_points_does_not_allow_negative_total_score(
@@ -80,6 +87,11 @@ async def test_change_points_does_not_allow_negative_total_score(
 
     # Then
     assert result.academic_points.value == 0
+
+    transactions_stmt = select(PointsTransaction).where(PointsTransaction.recipient_id == recipient.id)
+    transactions = (await db.execute(transactions_stmt)).scalars().all()
+    assert len(transactions) == 1
+    assert transactions[0].amount == -5
 
 
 @pytest.mark.asyncio
@@ -111,6 +123,7 @@ async def test_change_points_raises_when_giver_not_found(
     level_basic = await create_level(db, name="A0", level_type=PointsTypeEnum.ACADEMIC, required_points=0)
     await create_level(db, name="A1", level_type=PointsTypeEnum.ACADEMIC, required_points=100)
     recipient = await create_user(db, spec=UserSpec(telegram_id=800_005, academic_points=10))
+    recipient_id = recipient.id
     await attach_user_level(db, user=recipient, level=level_basic)
     await db.commit()
 
@@ -124,6 +137,20 @@ async def test_change_points_raises_when_giver_not_found(
     # When / Then
     with pytest.raises(UserNotFoundError):
         await service.change_points(dto)
+
+    await db.rollback()
+
+    transactions_stmt = select(PointsTransaction).where(PointsTransaction.recipient_id == recipient_id)
+    transactions = (await db.execute(transactions_stmt)).scalars().all()
+    assert transactions == []
+
+    valuations_stmt = select(Valuation).where(Valuation.recipient_id == recipient_id)
+    valuations = (await db.execute(valuations_stmt)).scalars().all()
+    assert valuations == []
+
+    refreshed_recipient = await db.get(User, recipient_id)
+    assert refreshed_recipient is not None
+    assert refreshed_recipient.academic_points == 10
 
 
 @pytest.mark.asyncio

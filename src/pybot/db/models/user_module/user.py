@@ -27,6 +27,7 @@ if TYPE_CHECKING:
     from ..task_module import Task, TaskSolution
     from ..user_module import (
         Competence,
+        PointsTransaction,
         UserAchievement,
         UserActivityStatus,
         Valuation,
@@ -102,6 +103,18 @@ class User(Base):
     valuations_given: Mapped[list[Valuation]] = relationship(
         "Valuation",
         foreign_keys="Valuation.giver_id",
+        back_populates="giver",
+    )
+
+    points_transactions_received: Mapped[list[PointsTransaction]] = relationship(
+        "PointsTransaction",
+        foreign_keys="PointsTransaction.recipient_id",
+        back_populates="recipient",
+    )
+
+    points_transactions_given: Mapped[list[PointsTransaction]] = relationship(
+        "PointsTransaction",
+        foreign_keys="PointsTransaction.giver_id",
         back_populates="giver",
     )
 

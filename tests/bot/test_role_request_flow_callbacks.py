@@ -86,7 +86,7 @@ async def test_accept_role_request_happy_path_updates_status_and_locks_buttons(
     assert updated.status == RequestStatus.APPROVED
     assert await role_request_service.user_repository.has_role(db, user_id=user.id, role_name=role.name) is True
 
-    answer_mock.assert_awaited_once_with(ROLE_REQUEST_ADMIN_APPROVED)
+    answer_mock.assert_awaited_once_with()
     edit_text_mock.assert_awaited_once_with(
         role_request_admin_notification_with_status(original_text, ROLE_REQUEST_ADMIN_APPROVED),
         parse_mode="HTML",
@@ -131,7 +131,7 @@ async def test_accept_role_request_already_processed_locks_buttons_and_reports_s
     updated = (await db.execute(select(RoleRequest).where(RoleRequest.id == request.id))).scalar_one()
     assert updated.status == RequestStatus.APPROVED
 
-    answer_mock.assert_awaited_once_with(ROLE_REQUEST_ADMIN_ALREADY_PROCESSED)
+    answer_mock.assert_awaited_once_with()
     edit_text_mock.assert_awaited_once_with(
         role_request_admin_notification_with_status(original_text, ROLE_REQUEST_ADMIN_ALREADY_PROCESSED),
         parse_mode="HTML",
@@ -176,7 +176,7 @@ async def test_reject_role_request_happy_path_updates_status_and_locks_buttons(
     updated = (await db.execute(select(RoleRequest).where(RoleRequest.id == request.id))).scalar_one()
     assert updated.status == RequestStatus.REJECTED
 
-    answer_mock.assert_awaited_once_with(ROLE_REQUEST_ADMIN_REJECTED)
+    answer_mock.assert_awaited_once_with()
     edit_text_mock.assert_awaited_once_with(
         role_request_admin_notification_with_status(original_text, ROLE_REQUEST_ADMIN_REJECTED),
         parse_mode="HTML",
@@ -221,7 +221,7 @@ async def test_reject_role_request_already_processed_locks_buttons_and_reports_s
     updated = (await db.execute(select(RoleRequest).where(RoleRequest.id == request.id))).scalar_one()
     assert updated.status == RequestStatus.APPROVED
 
-    answer_mock.assert_awaited_once_with(ROLE_REQUEST_ADMIN_ALREADY_PROCESSED)
+    answer_mock.assert_awaited_once_with()
     edit_text_mock.assert_awaited_once_with(
         role_request_admin_notification_with_status(original_text, ROLE_REQUEST_ADMIN_ALREADY_PROCESSED),
         parse_mode="HTML",

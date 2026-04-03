@@ -32,3 +32,5 @@ from .broadcast_dto import BaseBroadcastDTO as BroadcastDTO
 from .broadcast_dto import BroadcastResult as BroadcastResult
 from .broadcast_dto import CompetenceBroadcastDTO as CompetenceBroadcastDTO
 from .broadcast_dto import RoleBroadcastDTO as RoleBroadcastDTO
+
+from .leaderboard_dto import WeeklyLeaderboardRowDTO as WeeklyLeaderboardRowDTO

@@ -16,6 +16,8 @@ TARGET_FILES = [
     PROJECT_ROOT / "src/pybot/bot/handlers/points/grand_points.py",
     PROJECT_ROOT / "src/pybot/bot/handlers/roles/change_roles.py",
     PROJECT_ROOT / "src/pybot/bot/handlers/roles/change_competences.py",
+    PROJECT_ROOT / "src/pybot/bot/handlers/roles/role_catalog.py",
+    PROJECT_ROOT / "src/pybot/bot/handlers/roles/show_roles.py",
     PROJECT_ROOT / "src/pybot/bot/handlers/roles/role_request_flow.py",
     PROJECT_ROOT / "src/pybot/bot/keyboards/auth.py",
     PROJECT_ROOT / "src/pybot/bot/keyboards/role_request_keyboard.py",

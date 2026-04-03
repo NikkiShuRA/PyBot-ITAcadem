@@ -6,7 +6,18 @@ from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pybot.core.constants import PointsTypeEnum, RequestStatus
-from pybot.db.models import Competence, Level, Role, RoleRequest, User, UserCompetence, UserLevel, UserRole, Valuation
+from pybot.db.models import (
+    Competence,
+    Level,
+    PointsTransaction,
+    Role,
+    RoleRequest,
+    User,
+    UserCompetence,
+    UserLevel,
+    UserRole,
+    Valuation,
+)
 
 
 @dataclass(slots=True)
@@ -36,6 +47,15 @@ class ValuationSpec:
     points: int
     points_type: PointsTypeEnum
     reason: str | None = None
+    created_at: datetime | None = None
+
+
+@dataclass(slots=True)
+class PointsTransactionSpec:
+    recipient: User
+    giver: User | None
+    amount: int
+    points_type: PointsTypeEnum
     created_at: datetime | None = None
 
 
@@ -148,3 +168,21 @@ async def create_valuation(
     db.add(valuation)
     await db.flush()
     return valuation
+
+
+async def create_points_transaction(
+    db: AsyncSession,
+    *,
+    spec: PointsTransactionSpec,
+) -> PointsTransaction:
+    points_transaction = PointsTransaction(
+        recipient_id=spec.recipient.id,
+        giver_id=spec.giver.id if spec.giver is not None else None,
+        amount=spec.amount,
+        points_type=spec.points_type,
+    )
+    if spec.created_at is not None:
+        points_transaction.created_at = spec.created_at
+    db.add(points_transaction)
+    await db.flush()
+    return points_transaction

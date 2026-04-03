@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.5
+    rev: v0.15.9
     hooks:
       - id: ruff
         types: [python]
@@ -9,7 +9,7 @@ repos:
         types: [python]
         args: [--config, pyproject.toml]
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v6.0.0
     hooks:
       - id: detect-private-key
       - id: check-added-large-files
@@ -25,19 +25,15 @@ repos:
     hooks:
       - id: ty
         name: ty-check
-        types: [python]
-        files: ^src/
-        language: python
-        entry: ty check
+        entry: uv run --no-sync ty check --python=.venv/ --target-version 3.12 src/ tests/
+        language: system
         pass_filenames: false
-        args: [
-          "--python=.venv/",
-          "--output-format", "github",
-          "--target-version", "3.12"
-        ]
-        additional_dependencies: [ty]
+        always_run: true
+        # additional_dependencies: [ty]
+        # env:
+        #   - ./.env
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: v3.13.0
+    rev: v4.13.9
     hooks:
       - id: commitizen
         stages: [commit-msg]
