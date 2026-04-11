@@ -2,6 +2,68 @@
 
 <!-- version list -->
 
+## v0.24.0 (2026-04-11)
+
+### Bug Fixes
+
+- Включил html-рендеринг профиля и ошибку регистрации
+  ([#90](https://github.com/Cewerty/PyBot-ITAcadem/pull/90),
+  [`b4fb5f7`](https://github.com/Cewerty/PyBot-ITAcadem/commit/b4fb5f7d328f83a2c11c903edeeebe71539765b4))
+
+- Включил sqlite foreign keys в runtime ([#90](https://github.com/Cewerty/PyBot-ITAcadem/pull/90),
+  [`b4fb5f7`](https://github.com/Cewerty/PyBot-ITAcadem/commit/b4fb5f7d328f83a2c11c903edeeebe71539765b4))
+
+- Исправил выборку пользователей по роли ([#90](https://github.com/Cewerty/PyBot-ITAcadem/pull/90),
+  [`b4fb5f7`](https://github.com/Cewerty/PyBot-ITAcadem/commit/b4fb5f7d328f83a2c11c903edeeebe71539765b4))
+
+- Исправил реггрессию в тестах с healthAPI
+  ([#90](https://github.com/Cewerty/PyBot-ITAcadem/pull/90),
+  [`b4fb5f7`](https://github.com/Cewerty/PyBot-ITAcadem/commit/b4fb5f7d328f83a2c11c903edeeebe71539765b4))
+
+- Исправлеине реггрессий в валидации ([#90](https://github.com/Cewerty/PyBot-ITAcadem/pull/90),
+  [`b4fb5f7`](https://github.com/Cewerty/PyBot-ITAcadem/commit/b4fb5f7d328f83a2c11c903edeeebe71539765b4))
+
+- Обработал ожидаемые ошибки рассылки ([#90](https://github.com/Cewerty/PyBot-ITAcadem/pull/90),
+  [`b4fb5f7`](https://github.com/Cewerty/PyBot-ITAcadem/commit/b4fb5f7d328f83a2c11c903edeeebe71539765b4))
+
+- Скрываю детали readiness ошибки базы ([#90](https://github.com/Cewerty/PyBot-ITAcadem/pull/90),
+  [`b4fb5f7`](https://github.com/Cewerty/PyBot-ITAcadem/commit/b4fb5f7d328f83a2c11c903edeeebe71539765b4))
+
+- Убрал текст из callback role request ([#90](https://github.com/Cewerty/PyBot-ITAcadem/pull/90),
+  [`b4fb5f7`](https://github.com/Cewerty/PyBot-ITAcadem/commit/b4fb5f7d328f83a2c11c903edeeebe71539765b4))
+
+- **ci/cd**: Добавил параметр для перехода к современному node.js для устранения warning при запуске
+  Github actions ([#90](https://github.com/Cewerty/PyBot-ITAcadem/pull/90),
+  [`b4fb5f7`](https://github.com/Cewerty/PyBot-ITAcadem/commit/b4fb5f7d328f83a2c11c903edeeebe71539765b4))
+
+- **docs**: Добавил .gitkeep для overrides
+  ([#90](https://github.com/Cewerty/PyBot-ITAcadem/pull/90),
+  [`b4fb5f7`](https://github.com/Cewerty/PyBot-ITAcadem/commit/b4fb5f7d328f83a2c11c903edeeebe71539765b4))
+
+### Chores
+
+- **docs**: Изменение в настройках MK Doc Material и небольшие правки в тесте
+  ([#90](https://github.com/Cewerty/PyBot-ITAcadem/pull/90),
+  [`b4fb5f7`](https://github.com/Cewerty/PyBot-ITAcadem/commit/b4fb5f7d328f83a2c11c903edeeebe71539765b4))
+
+### Features
+
+- Добавил журнал транзакций баллов ([#90](https://github.com/Cewerty/PyBot-ITAcadem/pull/90),
+  [`b4fb5f7`](https://github.com/Cewerty/PyBot-ITAcadem/commit/b4fb5f7d328f83a2c11c903edeeebe71539765b4))
+
+- Добавил команду leaderboard ([#90](https://github.com/Cewerty/PyBot-ITAcadem/pull/90),
+  [`b4fb5f7`](https://github.com/Cewerty/PyBot-ITAcadem/commit/b4fb5f7d328f83a2c11c903edeeebe71539765b4))
+
+- Добавил просмотр каталога и ролей пользователя
+  ([#90](https://github.com/Cewerty/PyBot-ITAcadem/pull/90),
+  [`b4fb5f7`](https://github.com/Cewerty/PyBot-ITAcadem/commit/b4fb5f7d328f83a2c11c903edeeebe71539765b4))
+
+### Refactoring
+
+- Упростил async-конфиг alembic ([#90](https://github.com/Cewerty/PyBot-ITAcadem/pull/90),
+  [`b4fb5f7`](https://github.com/Cewerty/PyBot-ITAcadem/commit/b4fb5f7d328f83a2c11c903edeeebe71539765b4))
+
+
 ## v0.23.0 (2026-04-11)
 
 ### Bug Fixes
