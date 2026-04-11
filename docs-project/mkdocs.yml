@@ -1,8 +1,9 @@
 site_name: PyBot ITAcadem
+site_url: https://cewerty.github.io/PyBot-ITAcadem/
 site_description: Telegram-бот для ITAcadem StartUP
 site_author: ITAcadem StartUP Team
-repo_url: https://github.com/NikkiShuRA/PyBot-ITAcadem
-repo_name: NikkiShuRA/PyBot-ITAcadem
+repo_url: https://github.com/Cewerty/PyBot-ITAcadem
+repo_name: Cewerty/PyBot-ITAcadem
 copyright: "Copyright © 2026 ITAcadem StartUP"
 
 theme:
@@ -123,7 +124,7 @@ markdown_extensions:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/NikkiShuRA/PyBot-ITAcadem
+      link: https://github.com/Cewerty/PyBot-ITAcadem
       name: GitHub
 
 extra_css:
@@ -131,5 +132,4 @@ extra_css:
 
 extra_javascript:
   - javascripts/mathjax.js
-  - https://polyfill.io/v3/polyfill.min.js?features=es6
-  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mjs.js
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
