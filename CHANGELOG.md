@@ -2,6 +2,59 @@
 
 <!-- version list -->
 
+## v0.22.0 (2026-04-11)
+
+### Bug Fixes
+
+- Включил html-рендеринг профиля и ошибку регистрации
+  ([`e94a740`](https://github.com/Cewerty/PyBot-ITAcadem/commit/e94a7406c4d0c23941eef3d5d605f7f5a439c2cb))
+
+- Включил sqlite foreign keys в runtime
+  ([`a6d7373`](https://github.com/Cewerty/PyBot-ITAcadem/commit/a6d7373df58eb380da332ae028f1ecd37aca2595))
+
+- Исправил выборку пользователей по роли
+  ([`8a79496`](https://github.com/Cewerty/PyBot-ITAcadem/commit/8a79496b403271c59de95057f31dfc7d3b336ee9))
+
+- Исправил реггрессию в тестах с healthAPI
+  ([`aebfdc8`](https://github.com/Cewerty/PyBot-ITAcadem/commit/aebfdc8baf63f993d9614aa2c1722a51a75d597e))
+
+- Исправлеине реггрессий в валидации
+  ([`d9c8c6e`](https://github.com/Cewerty/PyBot-ITAcadem/commit/d9c8c6e279102d8e531fdc0fc86511f4605b4aa0))
+
+- Обработал ожидаемые ошибки рассылки
+  ([`44e88d8`](https://github.com/Cewerty/PyBot-ITAcadem/commit/44e88d82bb94b5132f4cac6141209e2907757e74))
+
+- Скрываю детали readiness ошибки базы
+  ([`485b227`](https://github.com/Cewerty/PyBot-ITAcadem/commit/485b227ea7d6f889427c8b9631b82cac137268ea))
+
+- Убрал текст из callback role request
+  ([`2889692`](https://github.com/Cewerty/PyBot-ITAcadem/commit/28896922f9117487b2e2b77e576e58358132fd5b))
+
+- **docs**: Добавил .gitkeep для overrides
+  ([`9c80d75`](https://github.com/Cewerty/PyBot-ITAcadem/commit/9c80d750004661332b66b6191cd9381684077a8e))
+
+### Chores
+
+- **docs**: Изменение в настройках MK Doc Material и небольшие правки в тесте
+  ([`b73da48`](https://github.com/Cewerty/PyBot-ITAcadem/commit/b73da48a3e8d49e35162e9da78a1ea96e422afe9))
+
+### Features
+
+- Добавил журнал транзакций баллов
+  ([`cd899ce`](https://github.com/Cewerty/PyBot-ITAcadem/commit/cd899ce6bbca3c60aa7126127b8a1dcd21426d9e))
+
+- Добавил команду leaderboard
+  ([`1b9ebf1`](https://github.com/Cewerty/PyBot-ITAcadem/commit/1b9ebf10d156370cc630322533b9ea922f0f2492))
+
+- Добавил просмотр каталога и ролей пользователя
+  ([`95f89bf`](https://github.com/Cewerty/PyBot-ITAcadem/commit/95f89bfa2601d43e654661e47d529b49b34bac76))
+
+### Refactoring
+
+- Упростил async-конфиг alembic
+  ([`b680b36`](https://github.com/Cewerty/PyBot-ITAcadem/commit/b680b3668e74fdcdf582a7ee9841f0c78a98f7de))
+
+
 ## v0.21.0 (2026-04-03)
 
 ### Bug Fixes
