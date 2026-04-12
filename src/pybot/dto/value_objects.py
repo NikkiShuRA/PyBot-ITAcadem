@@ -25,8 +25,7 @@ class BaseValueModel(BaseModel):
 
 
 class Points(BaseValueModel):
-    """
-    Класс для представления количества очков.
+    """Класс для представления количества очков.
 
     Attributes:
         value (int): Количество очков.
@@ -44,8 +43,7 @@ class Points(BaseValueModel):
     point_type: PointsTypeEnum
 
     def adjust(self, delta: int) -> Points:
-        """
-        Меняет количество очков на заданное значение.
+        """Меняет количество очков на заданное значение.
 
         Args:
             delta (int): Заданное изменение количества очков.
@@ -54,7 +52,6 @@ class Points(BaseValueModel):
             Points: Новый объект Points с измененным количеством очков.
 
         """
-
         new_value = self.value + delta
         return Points(value=new_value, point_type=self.point_type)
 

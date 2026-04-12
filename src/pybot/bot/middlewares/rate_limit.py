@@ -28,7 +28,7 @@ class RateLimitMiddleware(BaseMiddleware):
         user_id: int,
         command_type: str,
     ) -> AsyncLimiter:
-        """Получить или создать лимитер для пользователя и команды"""
+        """Получить или создать лимитер для пользователя и команды."""
         key = f"{user_id}:{command_type}"
 
         limiter = await self.cache.get(key)

@@ -13,10 +13,9 @@ ACTIVITY_UPDATE_INTERVAL = timedelta(minutes=1)
 
 
 class UserRepository:
-    """
-    Stateless репозиторий.
-    БЕЗ хранения сессии внутри!
+    """Stateless репозиторий.
 
+    БЕЗ хранения сессии внутри!
     Правильный подход: сессия передаётся в методы.
     """
 

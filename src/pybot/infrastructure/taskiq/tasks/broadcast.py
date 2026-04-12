@@ -16,13 +16,11 @@ async def broadcast_for_all_task(
     message: str,
     service: FromDishka[BroadcastService],
 ) -> dict[str, int]:
-    """
-    Отложенная массовая рассылка для всех пользователей.
+    """Отложенная массовая рассылка для всех пользователей.
 
     Задача выполняется в worker-процессе и использует тот же сервисный слой,
     что и aiogram-хендлеры, но через отдельный request-scope DI-контейнера.
     """
-
     result = await service.broadcast_for_all(BroadcastDTO(broadcast_message=message))
 
     payload = {

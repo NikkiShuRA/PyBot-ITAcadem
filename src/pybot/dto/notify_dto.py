@@ -22,8 +22,7 @@ class NotificationTaskPayload:
 
 
 class NotifyDTO(BaseDTO):
-    """
-    DTO для отправки уведомления пользователю.
+    """DTO для отправки уведомления пользователю.
 
     Поля:
         message (str): текст уведомления.
@@ -37,14 +36,13 @@ class NotifyDTO(BaseDTO):
     @field_validator("message")
     @classmethod
     def validate_message(cls, message: str) -> str:
-        """
-        Валидатор параметра message.
+        """Валидатор параметра message.
 
         Проверяет, что сообщение не пустое и его длина не превышает
         максимально допустимой длины.
 
         Args:
-            value (str): значение параметра message.
+            message (str): значение параметра message.
 
         Returns:
             str: отформатированное значение параметра message.
@@ -81,14 +79,13 @@ class NotifyUserDTO(BaseDTO):
     @field_validator("message")
     @classmethod
     def validate_message(cls, message: str) -> str:
-        """
-        Валидатор параметра message.
+        """Валидатор параметра message.
 
         Проверяет, что сообщение не пустое и его длина не превышает
         максимально допустимой длины.
 
         Args:
-            value (str): значение параметра message.
+            message (str): значение параметра message.
 
         Returns:
             str: отформатированное значение параметра message.

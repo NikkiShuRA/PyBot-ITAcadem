@@ -4,8 +4,7 @@ from .chat_filters import IS_ANY_CHAT, IS_GROUP, IS_PRIVATE
 
 
 def create_chat_type_routers(name_prefix: str) -> tuple[Router, Router, Router]:
-    """
-    Создает тройку роутеров для разных типов чатов.
+    """Создает тройку роутеров для разных типов чатов.
 
     Пример использования:
     private_router, group_router, global_router = create_chat_type_routers("start")

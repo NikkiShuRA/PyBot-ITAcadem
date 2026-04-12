@@ -112,11 +112,34 @@ select = [
     "ANN",
     "S",
     "N",
+    "D",
 ]
 fixable = ["ALL"]
 unfixable = []
-ignore = ["PLR6301", "TRY003", "D212", "D211", "RUF002", "D203", "PLC0414", "ANN401", "RUF029", "RUF001", "RUF003"]
+ignore = [
+    "PLR6301",
+    "TRY003",
+    "RUF002",
+    "PLC0414",
+    "ANN401",
+    "RUF029",
+    "RUF001",
+    "RUF003",
+    # D1xx — не требовать обязательное наличие docstrings
+    "D100",  # Missing docstring in public module
+    "D101",  # Missing docstring in public class
+    "D102",  # Missing docstring in public method
+    "D103",  # Missing docstring in public function
+    "D104",  # Missing docstring in public package
+    "D105",  # Missing docstring in magic method
+    "D106",  # Missing docstring in public nested class
+    "D107",  # Missing docstring in __init__
+    "D212",  # Multi-line summary first line (конфликтует с Google convention)
+]
 exclude = ['test_*', '__init__.py']
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
 

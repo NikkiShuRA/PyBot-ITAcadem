@@ -12,8 +12,7 @@ MAX_PHONE_LENGTH = 15
 
 @lru_cache(maxsize=512)
 def normalize_phone(phone: str | None, strict: bool = True) -> str:
-    """
-    Нормализует телефон РФ в E.164 (+79XXXXXXXXX).
+    """Нормализует телефон РФ в E.164 (+79XXXXXXXXX).
 
     Args:
         phone: Номер в любом формате (+7..., 8..., с пробелами, скобками)

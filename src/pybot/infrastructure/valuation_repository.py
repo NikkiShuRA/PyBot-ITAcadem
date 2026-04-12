@@ -9,9 +9,7 @@ from ..db.models import Valuation
 
 
 class ValuationRepository:
-    """
-    Отвечает за доступ к операциям с баллами (Valuation).
-    """
+    """Отвечает за доступ к операциям с баллами (Valuation)."""
 
     async def find_history_by_recipient(
         self,
@@ -20,9 +18,7 @@ class ValuationRepository:
         points_type: PointsTypeEnum,
         limit: int = 10,
     ) -> Sequence[Valuation]:
-        """
-        Возвращает последние N записей о начислении баллов для конкретного студента.
-        """
+        """Возвращает последние N записей о начислении баллов для конкретного студента."""
         stmt = (
             select(Valuation)
             .options(selectinload(Valuation.giver))

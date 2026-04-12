@@ -94,8 +94,7 @@ class UserCreateDTO(BaseDTO):
 
 
 class UserReadDTO(BaseDTO):
-    """
-    DTO для отображения данных пользователя.
+    """DTO для отображения данных пользователя.
 
     Атрибуты:
         id (int): Идентификатор пользователя.
@@ -131,18 +130,14 @@ class UpdateUserLevelDTO(BaseDTO):
 
 
 class UserLevelReadDTO(BaseDTO):
-    """
-    DTO для отображения прогресса уровня пользователя.
-    """
+    """DTO для отображения прогресса уровня пользователя."""
 
     current_level: LevelReadDTO
     next_level: LevelReadDTO
 
 
 class UserProfileReadDTO(BaseDTO):
-    """
-    DTO для отображения расширенного списка данных пользователя.
-    """
+    """DTO для отображения расширенного списка данных пользователя."""
 
     user: UserReadDTO
     competences: Sequence[CompetenceReadDTO]

@@ -9,8 +9,7 @@ from ...db.models import RoleRequest
 
 
 class RoleRequestRepository:
-    """
-    Репозиторий для работы с RoleRequest.
+    """Репозиторий для работы с RoleRequest.
 
     Attributes:
         _session_factory (Session): Фабрика для создания сессии БД
