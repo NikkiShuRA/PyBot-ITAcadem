@@ -1,4 +1,4 @@
-"""change attribute to cascade
+"""change attribute to cascade.
 
 Revision ID: bcba3b7e67b2
 Revises:
