@@ -44,6 +44,16 @@ async def test_get_previous_calendar_week_leaderboard_uses_previous_week_bounds(
         spec=PointsTransactionSpec(
             recipient=second_user,
             giver=giver,
+            amount=-6,
+            points_type=PointsTypeEnum.ACADEMIC,
+            created_at=datetime(2026, 3, 27, 16, 0, 0),
+        ),
+    )
+    await create_points_transaction(
+        db,
+        spec=PointsTransactionSpec(
+            recipient=second_user,
+            giver=giver,
             amount=9,
             points_type=PointsTypeEnum.ACADEMIC,
             created_at=datetime(2026, 3, 28, 12, 0, 0),

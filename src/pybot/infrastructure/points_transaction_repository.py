@@ -35,6 +35,9 @@ class PointsTransactionRepository:
             .join(PointsTransaction, PointsTransaction.recipient_id == User.id)
             .where(
                 PointsTransaction.points_type == points_type,
+                # Leaderboard shows weekly growth only, so negative adjustments
+                # do not reduce the aggregated score.
+                PointsTransaction.amount > 0,
                 PointsTransaction.created_at >= start_at,
                 PointsTransaction.created_at < end_at,
             )

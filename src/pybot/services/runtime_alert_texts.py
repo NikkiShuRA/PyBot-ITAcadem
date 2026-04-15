@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 
+# TODO перенести их в утилиты
 def runtime_startup_notification(*, bot_mode: str, health_api_enabled: bool) -> str:
     health_status = "enabled" if health_api_enabled else "disabled"
     return f"PyBot ITAcadem runtime alert\n\nEvent: bot startup\nMode: {bot_mode}\nHealth API: {health_status}"
