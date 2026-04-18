@@ -20,6 +20,7 @@ async def handle_leaderboard(
 ) -> None:
     """Форматирует текст для таблицы лидеров."""
     try:
+        period = leaderboard_service.get_previous_calendar_week_period()
         academic_rows = await leaderboard_service.get_previous_calendar_week_leaderboard(
             points_type=PointsTypeEnum.ACADEMIC,
         )
@@ -35,6 +36,7 @@ async def handle_leaderboard(
         render_leaderboard_message(
             academic_rows=academic_rows,
             reputation_rows=reputation_rows,
+            period=period,
         ),
         parse_mode="HTML",
     )

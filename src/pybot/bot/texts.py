@@ -8,6 +8,7 @@ from datetime import timedelta
 
 from ..core.constants import PointsTypeEnum, RequestStatus, RoleEnum
 from ..dto import CompetenceReadDTO, ProfileViewDTO, RoleReadDTO, WeeklyLeaderboardRowDTO
+from ..dto.leaderboard_dto import LeaderboardPeriod
 from ..dto.value_objects import Points
 from ..utils import telegram_user_link
 
@@ -532,10 +533,11 @@ def render_leaderboard_message(
     *,
     academic_rows: Sequence[WeeklyLeaderboardRowDTO],
     reputation_rows: Sequence[WeeklyLeaderboardRowDTO],
+    period: LeaderboardPeriod | None = None,
 ) -> str:
     """Форматирует текст для таблицы лидеров."""
     title_lines = [LEADERBOARD_TITLE]
-    period_line = _leaderboard_period_line(academic_rows, reputation_rows)
+    period_line = _leaderboard_period_line(academic_rows, reputation_rows, period=period)
     if period_line is not None:
         title_lines.append(period_line)
     academic_block = _render_leaderboard_section(LEADERBOARD_ACADEMIC_TITLE, academic_rows)
@@ -623,6 +625,8 @@ def render_profile_message(user_profile_data: ProfileViewDTO) -> str:
 def _leaderboard_period_line(
     academic_rows: Sequence[WeeklyLeaderboardRowDTO],
     reputation_rows: Sequence[WeeklyLeaderboardRowDTO],
+    *,
+    period: LeaderboardPeriod | None = None,
 ) -> str | None:
     sample_row: WeeklyLeaderboardRowDTO | None = None
     if academic_rows:
@@ -630,11 +634,17 @@ def _leaderboard_period_line(
     elif reputation_rows:
         sample_row = reputation_rows[0]
 
-    if sample_row is None:
+    if sample_row is not None:
+        period_start_raw = sample_row.period_start
+        period_end_raw = sample_row.period_end
+    elif period is not None:
+        period_start_raw = period.start
+        period_end_raw = period.end
+    else:
         return None
 
-    period_start = sample_row.period_start.strftime("%d.%m.%Y")
-    period_end = (sample_row.period_end - timedelta(days=1)).strftime("%d.%m.%Y")
+    period_start = period_start_raw.strftime("%d.%m.%Y")
+    period_end = (period_end_raw - timedelta(days=1)).strftime("%d.%m.%Y")
     return f"{period_start} - {period_end}"
 
 

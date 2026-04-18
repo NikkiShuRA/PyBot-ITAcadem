@@ -26,6 +26,9 @@ class WeeklyLeaderboardPublisherService:
         business_tz: str,
     ) -> None:
         """Build and send weekly leaderboard message in HTML mode."""
+        period = self._leaderboard_service.get_previous_calendar_week_period(
+            business_tz=business_tz,
+        )
         academic_rows = await self._leaderboard_service.get_previous_calendar_week_leaderboard(
             points_type=PointsTypeEnum.ACADEMIC,
             limit=limit,
@@ -40,6 +43,7 @@ class WeeklyLeaderboardPublisherService:
         message = render_leaderboard_message(
             academic_rows=academic_rows,
             reputation_rows=reputation_rows,
+            period=period,
         )
         await self._notification_port.send_message(
             NotifyDTO(

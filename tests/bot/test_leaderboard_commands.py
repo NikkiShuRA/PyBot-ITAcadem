@@ -12,6 +12,7 @@ from pybot.bot.handlers.points.leaderboard import handle_leaderboard
 from pybot.bot.texts import LEADERBOARD_UNEXPECTED_ERROR
 from pybot.core.constants import PointsTypeEnum
 from pybot.dto import WeeklyLeaderboardRowDTO
+from pybot.dto.leaderboard_dto import LeaderboardPeriod
 from pybot.services import LeaderboardService
 
 
@@ -53,6 +54,17 @@ class StubLeaderboardService:
     responses_by_type: dict[PointsTypeEnum, list[WeeklyLeaderboardRowDTO]] = field(default_factory=dict)
     calls: list[PointsTypeEnum] = field(default_factory=list)
     should_raise: bool = False
+
+    def get_previous_calendar_week_period(
+        self,
+        *,
+        business_tz: str = "Asia/Yekaterinburg",
+    ) -> LeaderboardPeriod:
+        del business_tz
+        return LeaderboardPeriod(
+            start=datetime(2026, 3, 24, 0, 0, 0, tzinfo=UTC),
+            end=datetime(2026, 3, 31, 0, 0, 0, tzinfo=UTC),
+        )
 
     async def get_previous_calendar_week_leaderboard(
         self,
@@ -103,6 +115,7 @@ async def test_handle_leaderboard_renders_both_sections_as_html(
     assert await_args is not None
     assert await_args.kwargs["parse_mode"] == "HTML"
     response_text = str(await_args.args[0])
+    assert "24.03.2026 - 30.03.2026" in response_text
     assert "<b>Академические баллы</b>" in response_text
     assert "<b>Репутационные баллы</b>" in response_text
     assert "Иван Петров" in response_text

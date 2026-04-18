@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 from pybot.bot.texts import LEADERBOARD_EMPTY, render_leaderboard_message
 from pybot.core.constants import PointsTypeEnum
 from pybot.dto import WeeklyLeaderboardRowDTO
+from pybot.dto.leaderboard_dto import LeaderboardPeriod
 
 
 def _row(
@@ -61,4 +62,18 @@ def test_render_leaderboard_message_keeps_empty_state_per_section() -> None:
 
     assert "<b>Академические баллы</b>" in rendered
     assert "<b>Репутационные баллы</b>" in rendered
+    assert rendered.count(LEADERBOARD_EMPTY) == 2
+
+
+def test_render_leaderboard_message_shows_period_for_empty_sections_when_period_provided() -> None:
+    rendered = render_leaderboard_message(
+        academic_rows=[],
+        reputation_rows=[],
+        period=LeaderboardPeriod(
+            start=datetime(2026, 3, 24, 0, 0, 0, tzinfo=UTC),
+            end=datetime(2026, 3, 31, 0, 0, 0, tzinfo=UTC),
+        ),
+    )
+
+    assert "24.03.2026 - 30.03.2026" in rendered
     assert rendered.count(LEADERBOARD_EMPTY) == 2
