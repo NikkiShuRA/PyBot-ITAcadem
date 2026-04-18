@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from importlib import import_module
-from typing import TYPE_CHECKING, Any
 
 from dishka import AsyncContainer
 from dishka.integrations.taskiq import setup_dishka
@@ -11,13 +9,18 @@ from taskiq_redis import ListRedisScheduleSource, RedisStreamBroker
 
 from ...core import logger, settings
 from ...di.containers import setup_taskiq_container
-
-if TYPE_CHECKING:
-    from taskiq.kicker import AsyncKicker
-    from taskiq.scheduler.scheduled_task import ScheduledTask
-
-LEADERBOARD_WEEKLY_SCHEDULE_ID = "leaderboard:weekly"
-LEADERBOARD_WEEKLY_TASK_NAME = "leaderboard.publish_weekly"
+from .taskiq_weekly_leaderboard_schedule import (
+    LEADERBOARD_WEEKLY_SCHEDULE_ID,
+    LEADERBOARD_WEEKLY_TASK_NAME,
+    WeeklyLeaderboardScheduleSpec,
+)
+from .taskiq_weekly_leaderboard_schedule import (
+    ensure_weekly_leaderboard_schedule as ensure_weekly_leaderboard_schedule_in_source,
+)
+from .taskiq_weekly_leaderboard_schedule import (
+    resolve_publish_weekly_leaderboard_kicker as _resolve_publish_weekly_leaderboard_kicker,
+)
+from .taskiq_weekly_leaderboard_wiring import register_weekly_leaderboard_wiring
 
 
 @dataclass(slots=True)
@@ -58,30 +61,6 @@ async def _on_worker_shutdown(_state: TaskiqState) -> None:
     logger.info("событие=завершение_taskiq_worker status=success")
 
 
-def _resolve_publish_weekly_leaderboard_kicker() -> AsyncKicker[Any, Any]:
-    task_module = import_module(".tasks.leaderboard", package=__package__)
-    task = task_module.publish_weekly_leaderboard_task
-    return task.kicker()
-
-
-def _is_expected_weekly_schedule(
-    schedule: ScheduledTask,
-    *,
-    cron_expression: str,
-    timezone_name: str,
-    recipient_id: int,
-    limit: int,
-) -> bool:
-    if schedule.task_name != LEADERBOARD_WEEKLY_TASK_NAME:
-        return False
-    if schedule.cron != cron_expression:
-        return False
-    if str(schedule.cron_offset) != timezone_name:
-        return False
-
-    return schedule.kwargs.get("recipient_id") == recipient_id and schedule.kwargs.get("limit") == limit
-
-
 async def ensure_weekly_leaderboard_schedule(
     *,
     broker: AsyncBroker | None = None,
@@ -101,56 +80,19 @@ async def ensure_weekly_leaderboard_schedule(
     if recipient_id is None:
         raise RuntimeError("LEADERBOARD_WEEKLY_RECIPIENT_ID must be set when LEADERBOARD_WEEKLY_ENABLED=true")
 
-    cron_expression = str(settings.leaderboard_weekly_cron)
-    timezone_name = str(settings.leaderboard_weekly_timezone)
-    limit = settings.leaderboard_weekly_limit
-
     source = schedule_source or get_taskiq_schedule_source()
-    existing_schedule = next(
-        (item for item in await source.get_schedules() if item.schedule_id == LEADERBOARD_WEEKLY_SCHEDULE_ID),
-        None,
-    )
-
-    if existing_schedule is not None and _is_expected_weekly_schedule(
-        existing_schedule,
-        cron_expression=cron_expression,
-        timezone_name=timezone_name,
-        recipient_id=recipient_id,
-        limit=limit,
-    ):
-        logger.info(
-            "событие=leaderboard_weekly_ensure status=up_to_date schedule_id={schedule_id}",
-            schedule_id=LEADERBOARD_WEEKLY_SCHEDULE_ID,
-        )
-        return
-
-    if existing_schedule is not None:
-        await source.delete_schedule(LEADERBOARD_WEEKLY_SCHEDULE_ID)
-        logger.info(
-            "событие=leaderboard_weekly_ensure status=replaced schedule_id={schedule_id}",
-            schedule_id=LEADERBOARD_WEEKLY_SCHEDULE_ID,
-        )
-
-    await (
-        _resolve_publish_weekly_leaderboard_kicker()
-        .with_schedule_id(LEADERBOARD_WEEKLY_SCHEDULE_ID)
-        .with_labels(cron_offset=timezone_name)
-        .schedule_by_cron(
-            source,
-            cron_expression,
+    await ensure_weekly_leaderboard_schedule_in_source(
+        source=source,
+        spec=WeeklyLeaderboardScheduleSpec(
             recipient_id=recipient_id,
-            limit=limit,
-        )
+            cron_expression=str(settings.leaderboard_weekly_cron),
+            timezone_name=str(settings.leaderboard_weekly_timezone),
+            limit=settings.leaderboard_weekly_limit,
+            schedule_id=LEADERBOARD_WEEKLY_SCHEDULE_ID,
+            task_name=LEADERBOARD_WEEKLY_TASK_NAME,
+        ),
+        resolve_kicker=_resolve_publish_weekly_leaderboard_kicker,
     )
-    logger.info(
-        "событие=leaderboard_weekly_ensure status=created schedule_id={schedule_id}",
-        schedule_id=LEADERBOARD_WEEKLY_SCHEDULE_ID,
-    )
-
-
-async def _on_client_startup(_state: TaskiqState) -> None:
-    """Scheduler startup hook for periodic schedules ensure."""
-    await ensure_weekly_leaderboard_schedule()
 
 
 def get_taskiq_broker() -> AsyncBroker:
@@ -161,7 +103,10 @@ def get_taskiq_broker() -> AsyncBroker:
     broker = RedisStreamBroker(settings.redis_url)
     broker.add_event_handler(TaskiqEvents.WORKER_STARTUP, _on_worker_startup)
     broker.add_event_handler(TaskiqEvents.WORKER_SHUTDOWN, _on_worker_shutdown)
-    broker.add_event_handler(TaskiqEvents.CLIENT_STARTUP, _on_client_startup)
+    register_weekly_leaderboard_wiring(
+        broker,
+        ensure_weekly_leaderboard_schedule=ensure_weekly_leaderboard_schedule,
+    )
 
     _runtime_state.broker = broker
     return _runtime_state.broker
