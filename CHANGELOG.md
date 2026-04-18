@@ -2,6 +2,32 @@
 
 <!-- version list -->
 
+## v0.25.0 (2026-04-18)
+
+### Bug Fixes
+
+- Исправил бизнес-логику лидерборда на учитывание только повышения очков, а не изменения очков в
+  целом
+  ([`0047f7a`](https://github.com/Cewerty/PyBot-ITAcadem/commit/0047f7a037bb94e98368a8922488c63a356b9b64))
+
+- **leaderboard**: Apply net weekly delta and tz-aware period
+  ([`4166a58`](https://github.com/Cewerty/PyBot-ITAcadem/commit/4166a58c557cad8451ad33a840418f86d78807a0))
+
+### Features
+
+- Weekly leaderboard publishing via taskiq
+  ([`62227cf`](https://github.com/Cewerty/PyBot-ITAcadem/commit/62227cf3c771d62b46c12c7f7438ac639b9e8ab9))
+
+- Добавил команду для получения id чата для удобного получения id для еженедельной рассылки и прочих
+  рассылок по времени в определённый чат
+  ([`87b6347`](https://github.com/Cewerty/PyBot-ITAcadem/commit/87b6347b9064599779bd0500110dc28bc7cd6fcc))
+
+### Refactoring
+
+- **taskiq**: Extract weekly leaderboard schedule wiring
+  ([`2df7e12`](https://github.com/Cewerty/PyBot-ITAcadem/commit/2df7e12989c88ceb406f73a68067d864fd8da088))
+
+
 ## v0.24.0 (2026-04-11)
 
 ### Bug Fixes
