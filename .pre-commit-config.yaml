@@ -32,6 +32,14 @@ repos:
         # additional_dependencies: [ty]
         # env:
         #   - ./.env
+  - repo: local
+    hooks:
+      - id: tach
+        name: tach-architecture-check
+        entry: uv run tach check
+        language: system
+        pass_filenames: false
+        always_run: true
   - repo: https://github.com/commitizen-tools/commitizen
     rev: v4.13.9
     hooks:
