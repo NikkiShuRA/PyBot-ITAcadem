@@ -2,6 +2,67 @@
 
 <!-- version list -->
 
+## v0.27.0 (2026-04-19)
+
+### Bug Fixes
+
+- Resolve Ruff E402 and F821 typing issues in config.py
+  ([`b3dc264`](https://github.com/Cewerty/PyBot-ITAcadem/commit/b3dc26403453674be26c08fd36efc2de394fdcc1))
+
+- Исправил автоматическую подгрузку .env в скрипте заполнения БД
+  ([`ea5d2a2`](https://github.com/Cewerty/PyBot-ITAcadem/commit/ea5d2a2a858743c133e0c6cd7c5767bada33d704))
+
+- Исправил конфигурацию тестов, для того чтобы тесты не читали объект конфигурации до запуска
+  фикстур
+  ([`7cceb66`](https://github.com/Cewerty/PyBot-ITAcadem/commit/7cceb66b75d095f4e74f728df1fdd82da652a2fb))
+
+- Исправил ошибки в текста и убрал лишний github action
+  ([`76996c0`](https://github.com/Cewerty/PyBot-ITAcadem/commit/76996c0481c51b8af167a6491a6c5a4f24bbb8ab))
+
+- Исправил ошибку с обработкой .env при pybot-seed
+  ([`f5cdb72`](https://github.com/Cewerty/PyBot-ITAcadem/commit/f5cdb724bd6c1003bc5e820420f664fc5b242ddd))
+
+- Исправил создание экземпляра движка БД
+  ([`9a2ad1f`](https://github.com/Cewerty/PyBot-ITAcadem/commit/9a2ad1f35ee640f33d5af29a1a5318349fbb6136))
+
+- **test**: Support monkeypatching config properties on SettingsProxy
+  ([`ac9fc9c`](https://github.com/Cewerty/PyBot-ITAcadem/commit/ac9fc9c0c409294233a1e13102acaaf8efea6344))
+
+### Build System
+
+- Move faker to dev dependencies and enable hatchling packaging
+  ([`646eb4f`](https://github.com/Cewerty/PyBot-ITAcadem/commit/646eb4faa72471c1e20c16212493a012e9528d72))
+
+### Continuous Integration
+
+- **docker**: Align local docker-compose with production and extract migrate service
+  ([`ad7508f`](https://github.com/Cewerty/PyBot-ITAcadem/commit/ad7508f4e00380bc81c11b348ed8b49194c5ddad))
+
+- **docker**: Handle graceful shutdown in entrypoint and apply explicit project installation
+  ([`6f6eab3`](https://github.com/Cewerty/PyBot-ITAcadem/commit/6f6eab31747b8ef50f44e514501139938875bb24))
+
+### Documentation
+
+- **architecture**: Document SQLite bottlenecks, rate limit design, and health API ADR
+  ([`beede99`](https://github.com/Cewerty/PyBot-ITAcadem/commit/beede997b33fe6a13df70f494e1faa02b4babd56))
+
+### Features
+
+- **config**: Wrap settings instantiation in lru_cache for testability
+  ([`3bcabd0`](https://github.com/Cewerty/PyBot-ITAcadem/commit/3bcabd06e83fd6953770fb23847d9f45b55054fc))
+
+- **logging**: Support structured JSON log format and tracing
+  ([`c7e920c`](https://github.com/Cewerty/PyBot-ITAcadem/commit/c7e920cc0024a0131614299956b060189a56944b))
+
+### Refactoring
+
+- Убрал лишний прокси класс вокруг кэшированной функции-фабрики объекта конфигурации
+  ([`7bec899`](https://github.com/Cewerty/PyBot-ITAcadem/commit/7bec899b8364d6d21e30166ad2f72c07117f04ae))
+
+- **cli**: Move seed script to cli module and configure entrypoint
+  ([`2fcd049`](https://github.com/Cewerty/PyBot-ITAcadem/commit/2fcd049fdb2381605bb1eb0103ddeef16db1c750))
+
+
 ## v0.26.1 (2026-04-19)
 
 ### Bug Fixes
