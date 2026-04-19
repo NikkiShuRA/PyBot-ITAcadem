@@ -104,3 +104,20 @@ depends_on = ["pybot.core"]
 [[modules]]
 path = "pybot.health"
 depends_on = ["pybot.services", "pybot.core", "pybot.di", "pybot.dto"]
+
+# ── pybot.cli — CLI entrypoints (seed, admin tools) ──────────────────────────────
+# The seed script needs access to all application layers to bootstrap data through
+# the real service/repository stack. This mirrors the dependency profile of pybot.di.
+[[modules]]
+path = "pybot.cli"
+depends_on = [
+    "pybot.core",
+    "pybot.dto",
+    "pybot.db",
+    "pybot.domain",
+    "pybot.infrastructure",
+    "pybot.services",
+    "pybot.di",
+    "pybot.utils",
+    "pybot.mappers",
+]
