@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import functools
-from typing import Annotated, Any, Literal, Self, cast
+from typing import Annotated, Literal, Self
 
 from pydantic import Field, field_validator, model_validator
 from pydantic_extra_types.cron import CronStr
@@ -336,15 +336,4 @@ def get_settings() -> BotSettings:
     return BotSettings()
 
 
-# TODO Проверить надобность
-class SettingsProxy:
-    """Lazy proxy to defer BotSettings evaluation until an attribute is actually accessed."""
-
-    def __getattr__(self, name: str) -> Any:
-        return getattr(get_settings(), name)
-
-    def __setattr__(self, name: str, value: Any) -> None:
-        setattr(get_settings(), name, value)
-
-
-settings: BotSettings = cast(BotSettings, SettingsProxy())
+settings: BotSettings = get_settings()
