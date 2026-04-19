@@ -69,8 +69,8 @@ jobs:
       - name: Install dependencies (including dev-group)
         run: uv sync --dev
 
-      - name: Smoke-check fill_point_db CLI help
-        run: uv run python fill_point_db.py --help
+      - name: Smoke-check pybot-seed CLI help
+        run: uv run pybot-seed --help
 
   quality-checks:
     name: Lint, Format Check, Type Check & Architecture Check

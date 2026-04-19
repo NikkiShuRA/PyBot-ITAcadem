@@ -1,8 +1,7 @@
-x-app-service: &app-service
+x-app-base: &app-base
   build:
     context: .
     dockerfile: Dockerfile
-  restart: unless-stopped
   env_file:
     - .env
   environment:
@@ -11,17 +10,21 @@ x-app-service: &app-service
     TELEGRAM_PROXY_URL: ${TELEGRAM_PROXY_URL:-}
     FSM_STORAGE_BACKEND: ${FSM_STORAGE_BACKEND:-redis}
     REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+  volumes:
+    - pybot_data:/app/data
+
+x-app-service: &app-service
+  <<: *app-base
+  restart: unless-stopped
   depends_on:
     redis:
       condition: service_healthy
-  volumes:
-    - pybot_data:/app/data
 
 services:
   bot:
     <<: *app-service
     container_name: pybot-bot
-    command: ["/app/scripts/docker-entrypoint.sh"]
+    command: ["python", "run.py"]
 
   taskiq-worker:
     <<: *app-service
@@ -45,6 +48,20 @@ services:
         "src.pybot.infrastructure.taskiq.entrypoint:scheduler",
         "--skip-first-run",
       ]
+
+  migrate:
+    <<: *app-base
+    container_name: pybot-migrate
+    profiles: ["migration"]
+    restart: "no"
+    command: ["alembic", "upgrade", "head"]
+
+  seed:
+    <<: *app-base
+    container_name: pybot-seed
+    profiles: ["seed"]
+    restart: "no"
+    command: ["pybot-seed"]
 
   redis:
     image: redis:7-alpine
