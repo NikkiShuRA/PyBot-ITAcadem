@@ -45,9 +45,8 @@ docs = [
     "Pygments>=2.17.0",
 ]
 
-[tool.uv]
-package = true
-dev-dependencies = [
+[dependency-groups]
+dev = [
     "pytest-coverage>=0.0",
     "pre-commit>=4.5.0",
     "pytest>=9.0.1",
@@ -61,9 +60,11 @@ dev-dependencies = [
     "httpie>=3.2.4",
     "pytest-aiogram>=0.1.0",
     "tach>=0.34.1",
-    # Seed script dependency — not needed in the production runtime image.
     "faker>=38.2.0",
 ]
+
+[tool.uv]
+package = true
 
 [tool.ruff]
 exclude = [
