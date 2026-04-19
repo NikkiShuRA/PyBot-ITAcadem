@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from ..core import logger
 from ..core.config import settings
-from ..db.database import engine as global_engine
+from ..db.database import get_configured_database_engine
 from ..domain.services.level_calculator import LevelCalculator
 from ..infrastructure import (
     CompetenceRepository,
@@ -41,6 +41,8 @@ from ..services.points import PointsService
 from ..services.ports import NotificationDispatchPort, NotificationPort
 from ..services.role_request import RoleRequestService
 
+global_engine: AsyncEngine | None = None
+
 
 class DatabaseProvider(Provider):
     """Providers for database resources."""
@@ -48,7 +50,7 @@ class DatabaseProvider(Provider):
     @provide(scope=Scope.APP)
     async def engine(self) -> AsyncGenerator[AsyncEngine, None]:
         """Provide one SQLAlchemy engine for the whole app lifecycle."""
-        engine = global_engine
+        engine = get_configured_database_engine() if global_engine is None else global_engine
         try:
             yield engine
         finally:

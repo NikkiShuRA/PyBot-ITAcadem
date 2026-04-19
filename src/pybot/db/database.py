@@ -35,4 +35,6 @@ def create_database_engine(database_url: str) -> AsyncEngine:
     return engine
 
 
-engine = create_database_engine(settings.database_url)
+def get_configured_database_engine() -> AsyncEngine:
+    """Build database engine using the current runtime settings."""
+    return create_database_engine(settings.database_url)
