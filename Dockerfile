@@ -16,6 +16,7 @@ RUN uv sync --frozen --no-dev --no-install-project
 
 # 2. Исходный код и runtime-файлы копируются отдельным слоем.
 COPY src ./src
+COPY README.md ./
 COPY run.py ./
 COPY fill_point_db.py ./
 COPY alembic ./alembic
