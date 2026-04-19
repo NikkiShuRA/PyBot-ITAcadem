@@ -29,10 +29,14 @@ style: # Run formatting check and lint and type check
     just lint
     just type-check
 
-quality-gate: # Full code quality gate (format check + lint + type check)
+arch-check: # Check architecture invariants with Tach
+    uv run tach check
+
+quality-gate: # Full code quality gate (format check + lint + type check + arch check)
     just format-check
     just lint
     just type-check
+    just arch-check
 
 docs-install: # Install optional documentation dependencies
     uv sync --extra docs

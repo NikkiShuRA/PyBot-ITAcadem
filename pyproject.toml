@@ -57,6 +57,7 @@ dev = [
     "polyfactory>=3.2.0",
     "httpie>=3.2.4",
     "pytest-aiogram>=0.1.0",
+    "tach>=0.34.1",
 ]
 
 [tool.ruff]

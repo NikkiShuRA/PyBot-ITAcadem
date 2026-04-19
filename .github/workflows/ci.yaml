@@ -73,7 +73,7 @@ jobs:
         run: uv run python fill_point_db.py --help
 
   quality-checks:
-    name: Lint, Format Check & Type Check
+    name: Lint, Format Check, Type Check & Architecture Check
     runs-on: ubuntu-latest
 
     steps:
@@ -96,7 +96,7 @@ jobs:
       - name: Install dependencies (including dev-group)
         run: just install-dev
 
-      - name: Run quality-gate (format check + lint + type check)
+      - name: Run quality-gate (format check + lint + type check + arch check)
         run: just quality-gate
 
   tests-and-coverage:

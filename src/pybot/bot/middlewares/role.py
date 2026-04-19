@@ -7,10 +7,10 @@ from aiogram import BaseMiddleware
 from aiogram.dispatcher.flags import get_flag
 from aiogram.types import Message, TelegramObject
 from dishka.integrations.aiogram import CONTAINER_NAME
-from sqlalchemy.ext.asyncio import AsyncSession
+
+from pybot.services import UserService
 
 from ...core import logger
-from ...infrastructure.user_repository import UserRepository
 from ...utils import has_any_role
 from ..texts import ROLE_ACCESS_DENIED, ROLE_AUTH_ERROR
 
@@ -47,16 +47,14 @@ class RoleMiddleware(BaseMiddleware):
             return await handler(event, data)
 
         async with container() as request_container:
-            db = await request_container.get(AsyncSession)
-            repo: UserRepository = await request_container.get(UserRepository)
-            has_permission = await repo.find_all_user_roles_by_pk(
-                db=db,
+            service: UserService = await request_container.get(UserService)
+            permissions = await service.find_all_user_roles(
                 user_id=user_db_id,
             )
 
         logger.info("Checking role '{required_role}' for user {user_id}", required_role=required_role, user_id=user.id)
 
-        if has_any_role(has_permission, required_role):
+        if permissions is not None and has_any_role(permissions, required_role):
             return await handler(event, data)
 
         logger.warning(
