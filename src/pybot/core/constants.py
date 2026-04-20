@@ -30,3 +30,7 @@ class TaskScheduleKind(StrEnum):
     AT = "at"
     INTERVAL = "interval"
     CRON = "cron"
+
+
+class RolePolicyKey(StrEnum):
+    BROADCAST = "broadcast_allowed_roles"
