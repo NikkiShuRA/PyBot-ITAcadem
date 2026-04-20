@@ -4,6 +4,7 @@ import pytest
 from aiogram import Bot
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
+from pybot.core.config import settings
 from pybot.di import containers as di_containers
 from pybot.services.user_services import UserService
 
@@ -22,8 +23,8 @@ async def test_setup_container_smoke_resolves_key_dependencies(
             self.session = session or SimpleNamespace(close=mocker.AsyncMock())
 
     monkeypatch.setattr(di_containers, "Bot", FakeBot)
-    monkeypatch.setattr(di_containers.settings, "bot_token_test", "123456:SMOKE_TOKEN")
-    monkeypatch.setattr(di_containers.settings, "telegram_proxy_url", None)
+    monkeypatch.setattr(settings, "bot_token_test", "123456:SMOKE_TOKEN")
+    monkeypatch.setattr(settings, "telegram_proxy_url", None)
 
     container = await di_containers.setup_container()
     try:
@@ -87,8 +88,8 @@ async def test_container_lifecycle_closes_session_and_disposes_engine(
         return FakeSessionMaker(fake_session)
 
     monkeypatch.setattr(di_containers, "Bot", FakeBot)
-    monkeypatch.setattr(di_containers.settings, "bot_token_test", "123456:LIFECYCLE_TOKEN")
-    monkeypatch.setattr(di_containers.settings, "telegram_proxy_url", None)
+    monkeypatch.setattr(settings, "bot_token_test", "123456:LIFECYCLE_TOKEN")
+    monkeypatch.setattr(settings, "telegram_proxy_url", None)
     monkeypatch.setattr(di_containers, "global_engine", fake_engine)
     monkeypatch.setattr(di_containers, "async_sessionmaker", fake_async_sessionmaker)
 

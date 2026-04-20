@@ -3,6 +3,7 @@ from types import SimpleNamespace
 import pytest
 from dishka import make_async_container
 
+from pybot.core.config import settings
 from pybot.di import containers as di_containers
 from pybot.infrastructure.ports import LoggingNotificationService, TelegramNotificationService
 from pybot.services.ports import NotificationPort
@@ -15,9 +16,9 @@ def _configure_fake_bot(monkeypatch: pytest.MonkeyPatch, mocker) -> None:
             self.session = session or SimpleNamespace(close=mocker.AsyncMock())
 
     monkeypatch.setattr(di_containers, "Bot", FakeBot)
-    monkeypatch.setattr(di_containers.settings, "bot_mode", "test")
-    monkeypatch.setattr(di_containers.settings, "bot_token_test", "123456:NOTIF_TEST_TOKEN")
-    monkeypatch.setattr(di_containers.settings, "telegram_proxy_url", None)
+    monkeypatch.setattr(settings, "bot_mode", "test")
+    monkeypatch.setattr(settings, "bot_token_test", "123456:NOTIF_TEST_TOKEN")
+    monkeypatch.setattr(settings, "telegram_proxy_url", None)
 
 
 @pytest.mark.asyncio
@@ -26,9 +27,10 @@ async def test_ports_provider_resolves_logging_backend(
     mocker,
 ) -> None:
     _configure_fake_bot(monkeypatch, mocker)
-    monkeypatch.setattr(di_containers.settings, "notification_backend", "logging")
+    monkeypatch.setattr(settings, "notification_backend", "logging")
 
     container = make_async_container(
+        di_containers.ConfigProvider(),
         di_containers.BotProvider(),
         di_containers.PortsProvider(),
     )
@@ -45,9 +47,10 @@ async def test_ports_provider_resolves_telegram_backend(
     mocker,
 ) -> None:
     _configure_fake_bot(monkeypatch, mocker)
-    monkeypatch.setattr(di_containers.settings, "notification_backend", "telegram")
+    monkeypatch.setattr(settings, "notification_backend", "telegram")
 
     container = make_async_container(
+        di_containers.ConfigProvider(),
         di_containers.BotProvider(),
         di_containers.PortsProvider(),
     )
@@ -64,9 +67,10 @@ async def test_ports_provider_raises_on_invalid_backend(
     mocker,
 ) -> None:
     _configure_fake_bot(monkeypatch, mocker)
-    monkeypatch.setattr(di_containers.settings, "notification_backend", "invalid")
+    monkeypatch.setattr(settings, "notification_backend", "invalid")
 
     container = make_async_container(
+        di_containers.ConfigProvider(),
         di_containers.BotProvider(),
         di_containers.PortsProvider(),
     )
