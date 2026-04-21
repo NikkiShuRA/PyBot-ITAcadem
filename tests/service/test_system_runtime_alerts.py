@@ -1,5 +1,6 @@
 import pytest
 
+from pybot.core.config import settings
 from pybot.core.constants import TaskScheduleKind
 from pybot.dto import NotifyDTO
 from pybot.services.notification_facade import NotificationFacade
@@ -35,10 +36,10 @@ class NotificationPortSpy(NotificationPort):
 async def test_runtime_alerts_service_skips_when_alerts_are_disabled(monkeypatch: pytest.MonkeyPatch) -> None:
     startup_facade = NotificationFacadeSpy()
     notification_port = NotificationPortSpy()
-    service = SystemRuntimeAlertsService(startup_facade, notification_port)
+    service = SystemRuntimeAlertsService(startup_facade, notification_port, settings)
 
-    monkeypatch.setattr("pybot.services.system_runtime_alerts.settings.runtime_alerts_enabled", False)
-    monkeypatch.setattr("pybot.services.system_runtime_alerts.settings.runtime_alerts_chat_id", None)
+    monkeypatch.setattr(settings, "runtime_alerts_enabled", False)
+    monkeypatch.setattr(settings, "runtime_alerts_chat_id", None)
 
     await service.notify_startup()
     await service.notify_shutdown()
@@ -53,12 +54,12 @@ async def test_runtime_alerts_service_dispatches_startup_via_notification_facade
 ) -> None:
     startup_facade = NotificationFacadeSpy()
     notification_port = NotificationPortSpy()
-    service = SystemRuntimeAlertsService(startup_facade, notification_port)
+    service = SystemRuntimeAlertsService(startup_facade, notification_port, settings)
 
-    monkeypatch.setattr("pybot.services.system_runtime_alerts.settings.runtime_alerts_enabled", True)
-    monkeypatch.setattr("pybot.services.system_runtime_alerts.settings.runtime_alerts_chat_id", 123456789)
-    monkeypatch.setattr("pybot.services.system_runtime_alerts.settings.bot_mode", "prod")
-    monkeypatch.setattr("pybot.services.system_runtime_alerts.settings.health_api_enabled", True)
+    monkeypatch.setattr(settings, "runtime_alerts_enabled", True)
+    monkeypatch.setattr(settings, "runtime_alerts_chat_id", 123456789)
+    monkeypatch.setattr(settings, "bot_mode", "prod")
+    monkeypatch.setattr(settings, "health_api_enabled", True)
 
     await service.notify_startup()
 
@@ -78,11 +79,11 @@ async def test_runtime_alerts_service_sends_shutdown_directly_via_notification_p
 ) -> None:
     startup_facade = NotificationFacadeSpy()
     notification_port = NotificationPortSpy()
-    service = SystemRuntimeAlertsService(startup_facade, notification_port)
+    service = SystemRuntimeAlertsService(startup_facade, notification_port, settings)
 
-    monkeypatch.setattr("pybot.services.system_runtime_alerts.settings.runtime_alerts_enabled", True)
-    monkeypatch.setattr("pybot.services.system_runtime_alerts.settings.runtime_alerts_chat_id", 987654321)
-    monkeypatch.setattr("pybot.services.system_runtime_alerts.settings.bot_mode", "test")
+    monkeypatch.setattr(settings, "runtime_alerts_enabled", True)
+    monkeypatch.setattr(settings, "runtime_alerts_chat_id", 987654321)
+    monkeypatch.setattr(settings, "bot_mode", "test")
 
     await service.notify_shutdown()
 

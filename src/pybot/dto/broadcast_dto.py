@@ -34,7 +34,7 @@ class BaseBroadcastDTO(BaseDTO):
     @classmethod
     def _normalize_message(cls, message: str) -> str:
         """Нормализует текст сообщения перед отправкой."""
-        message = normalize_message(message)
+        message = normalize_message(message, max_length=4096)
         return message
 
 

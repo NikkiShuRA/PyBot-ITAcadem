@@ -26,7 +26,13 @@ from pybot.core.config import settings
 from pybot.db.models import Base
 from pybot.db.models.role_module.role_request import RoleRequest
 from pybot.di import containers as di_containers
-from pybot.di.containers import DomainServiceProvider, HealthProvider, RepositoryProvider, ServiceProvider
+from pybot.di.containers import (
+    ConfigProvider,
+    DomainServiceProvider,
+    HealthProvider,
+    RepositoryProvider,
+    ServiceProvider,
+)
 from tests.providers import TestDatabaseProvider, TestOverridesProvider
 
 
@@ -149,6 +155,7 @@ async def dishka_test_container(
         ServiceProvider(),
         DomainServiceProvider(),
         HealthProvider(),
+        ConfigProvider(),
         TestOverridesProvider(),
     )
 

@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ...core.config import settings
+from ...core.config import BotSettings
 from ...core.constants import RoleEnum
 from ...domain.exceptions import InitialLevelsNotFoundError, RoleNotFoundError, UserNotFoundError
 from ...dto import UserCreateDTO, UserReadDTO
@@ -17,11 +17,13 @@ class UserService:
         user_repository: UserRepository,
         level_repository: LevelRepository,
         role_repository: RoleRepository,
+        settings: BotSettings,
     ) -> None:
         self.db: AsyncSession = db
         self.user_repository: UserRepository = user_repository
         self.level_repository: LevelRepository = level_repository
         self.role_repository: RoleRepository = role_repository
+        self._settings = settings
 
     async def register_student(self, dto: UserCreateDTO) -> UserReadDTO:
         initial_levels = await self.level_repository.find_initial_levels(self.db)
@@ -37,7 +39,7 @@ class UserService:
         user.set_initial_levels(initial_levels)
         user.add_role(student_role)
 
-        if dto.tg_id in settings.auto_admin_telegram_ids:
+        if dto.tg_id in self._settings.auto_admin_telegram_ids:
             admin_role = await self.role_repository.find_role_by_name(self.db, RoleEnum.ADMIN.value)
             if not admin_role:
                 raise RoleNotFoundError("Роль 'Admin' не найдена в базе данных. Сначала создайте её!")

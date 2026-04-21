@@ -13,7 +13,6 @@ from pytest_mock import MockerFixture
 from pybot.bot.keyboards.role_request_keyboard import get_admin_decision_kb
 from pybot.core.config import settings
 from pybot.dto import NotifyDTO
-from pybot.infrastructure.ports import telegram_notification_service as notification_module
 from pybot.infrastructure.ports.telegram_notification_service import TelegramNotificationService
 from pybot.services.ports import NotificationPermanentError, NotificationTemporaryError
 
@@ -55,9 +54,9 @@ async def test_send_role_request_to_admin_sends_message_with_keyboard(
     monkeypatch: pytest.MonkeyPatch,
     fake_bot: BotFixture,
 ) -> None:
-    service = TelegramNotificationService(fake_bot.bot)
+    service = TelegramNotificationService(fake_bot.bot, settings)
 
-    monkeypatch.setattr(notification_module.settings, "role_request_admin_tg_id", ADMIN_TG_ID)
+    monkeypatch.setattr(settings, "role_request_admin_tg_id", ADMIN_TG_ID)
 
     await service.send_role_request_to_admin(
         request_id=REQUEST_ID,
@@ -94,9 +93,9 @@ async def test_send_role_request_to_admin_maps_retry_after_to_temporary_error(
     fake_bot: BotFixture,
 ) -> None:
     fake_bot.send_message.side_effect = TelegramRetryAfter(_dummy_method(), "retry later", int(RETRY_AFTER_SECONDS))
-    service = TelegramNotificationService(fake_bot.bot)
+    service = TelegramNotificationService(fake_bot.bot, settings)
 
-    monkeypatch.setattr(notification_module.settings, "role_request_admin_tg_id", 123_456_789)
+    monkeypatch.setattr(settings, "role_request_admin_tg_id", 123_456_789)
 
     with pytest.raises(NotificationTemporaryError) as exc_info:
         await service.send_role_request_to_admin(request_id=7, requester_user_id=8, role_name="Mentor")
@@ -115,9 +114,9 @@ async def test_send_role_request_to_admin_maps_network_error_to_temporary_error(
     fake_bot: BotFixture,
 ) -> None:
     fake_bot.send_message.side_effect = TelegramNetworkError(_dummy_method(), "network down")
-    service = TelegramNotificationService(fake_bot.bot)
+    service = TelegramNotificationService(fake_bot.bot, settings)
 
-    monkeypatch.setattr(notification_module.settings, "role_request_admin_tg_id", 123_456_789)
+    monkeypatch.setattr(settings, "role_request_admin_tg_id", 123_456_789)
 
     with pytest.raises(NotificationTemporaryError):
         await service.send_role_request_to_admin(request_id=7, requester_user_id=8, role_name="Mentor")
@@ -131,9 +130,9 @@ async def test_send_role_request_to_admin_maps_bad_request_to_permanent_error(
     fake_bot: BotFixture,
 ) -> None:
     fake_bot.send_message.side_effect = TelegramBadRequest(_dummy_method(), "bad request")
-    service = TelegramNotificationService(fake_bot.bot)
+    service = TelegramNotificationService(fake_bot.bot, settings)
 
-    monkeypatch.setattr(notification_module.settings, "role_request_admin_tg_id", 123_456_789)
+    monkeypatch.setattr(settings, "role_request_admin_tg_id", 123_456_789)
 
     with pytest.raises(NotificationPermanentError):
         await service.send_role_request_to_admin(request_id=7, requester_user_id=8, role_name="Mentor")
@@ -147,9 +146,9 @@ async def test_send_role_request_to_admin_maps_generic_api_error_to_permanent_er
     fake_bot: BotFixture,
 ) -> None:
     fake_bot.send_message.side_effect = TelegramAPIError(_dummy_method(), "api failure")
-    service = TelegramNotificationService(fake_bot.bot)
+    service = TelegramNotificationService(fake_bot.bot, settings)
 
-    monkeypatch.setattr(notification_module.settings, "role_request_admin_tg_id", 123_456_789)
+    monkeypatch.setattr(settings, "role_request_admin_tg_id", 123_456_789)
 
     with pytest.raises(NotificationPermanentError):
         await service.send_role_request_to_admin(request_id=7, requester_user_id=8, role_name="Mentor")
@@ -163,9 +162,9 @@ async def test_send_role_request_to_admin_maps_unexpected_error_to_permanent_err
     fake_bot: BotFixture,
 ) -> None:
     fake_bot.send_message.side_effect = RuntimeError("telegram error")
-    service = TelegramNotificationService(fake_bot.bot)
+    service = TelegramNotificationService(fake_bot.bot, settings)
 
-    monkeypatch.setattr(notification_module.settings, "role_request_admin_tg_id", 123_456_789)
+    monkeypatch.setattr(settings, "role_request_admin_tg_id", 123_456_789)
 
     with pytest.raises(NotificationPermanentError, match="Unexpected notification delivery failure"):
         await service.send_role_request_to_admin(request_id=7, requester_user_id=8, role_name="Mentor")
@@ -175,7 +174,7 @@ async def test_send_role_request_to_admin_maps_unexpected_error_to_permanent_err
 
 @pytest.mark.asyncio
 async def test_send_message_sends_trimmed_text(fake_bot: BotFixture) -> None:
-    service = TelegramNotificationService(fake_bot.bot)
+    service = TelegramNotificationService(fake_bot.bot, settings)
 
     await service.send_message(NotifyDTO(recipient_id=RECIPIENT_USER_ID, message="  hello  "))
 
@@ -184,7 +183,7 @@ async def test_send_message_sends_trimmed_text(fake_bot: BotFixture) -> None:
 
 @pytest.mark.asyncio
 async def test_send_message_passes_parse_mode_only_when_set(fake_bot: BotFixture) -> None:
-    service = TelegramNotificationService(fake_bot.bot)
+    service = TelegramNotificationService(fake_bot.bot, settings)
 
     await service.send_message(NotifyDTO(recipient_id=RECIPIENT_USER_ID, message="hello", parse_mode="HTML"))
 
@@ -206,7 +205,7 @@ async def test_send_message_raises_on_blank_text(fake_bot: BotFixture) -> None:
 @pytest.mark.asyncio
 async def test_send_message_maps_retry_after_to_temporary_error(fake_bot: BotFixture) -> None:
     fake_bot.send_message.side_effect = TelegramRetryAfter(_dummy_method(), "retry later", int(RETRY_AFTER_SECONDS))
-    service = TelegramNotificationService(fake_bot.bot)
+    service = TelegramNotificationService(fake_bot.bot, settings)
 
     with pytest.raises(NotificationTemporaryError) as exc_info:
         await service.send_message(NotifyDTO(recipient_id=RECIPIENT_USER_ID, message="hello"))
@@ -222,7 +221,7 @@ async def test_send_message_maps_retry_after_to_temporary_error(fake_bot: BotFix
 @pytest.mark.asyncio
 async def test_send_message_maps_network_error_to_temporary_error(fake_bot: BotFixture) -> None:
     fake_bot.send_message.side_effect = TelegramNetworkError(_dummy_method(), "network down")
-    service = TelegramNotificationService(fake_bot.bot)
+    service = TelegramNotificationService(fake_bot.bot, settings)
 
     with pytest.raises(NotificationTemporaryError):
         await service.send_message(NotifyDTO(recipient_id=RECIPIENT_USER_ID, message="hello"))
@@ -233,7 +232,7 @@ async def test_send_message_maps_network_error_to_temporary_error(fake_bot: BotF
 @pytest.mark.asyncio
 async def test_send_message_maps_bad_request_to_permanent_error(fake_bot: BotFixture) -> None:
     fake_bot.send_message.side_effect = TelegramBadRequest(_dummy_method(), "bad request")
-    service = TelegramNotificationService(fake_bot.bot)
+    service = TelegramNotificationService(fake_bot.bot, settings)
 
     with pytest.raises(NotificationPermanentError):
         await service.send_message(NotifyDTO(recipient_id=RECIPIENT_USER_ID, message="hello"))
@@ -244,7 +243,7 @@ async def test_send_message_maps_bad_request_to_permanent_error(fake_bot: BotFix
 @pytest.mark.asyncio
 async def test_send_message_maps_generic_api_error_to_permanent_error(fake_bot: BotFixture) -> None:
     fake_bot.send_message.side_effect = TelegramAPIError(_dummy_method(), "api failure")
-    service = TelegramNotificationService(fake_bot.bot)
+    service = TelegramNotificationService(fake_bot.bot, settings)
 
     with pytest.raises(NotificationPermanentError):
         await service.send_message(NotifyDTO(recipient_id=RECIPIENT_USER_ID, message="hello"))
@@ -255,7 +254,7 @@ async def test_send_message_maps_generic_api_error_to_permanent_error(fake_bot: 
 @pytest.mark.asyncio
 async def test_send_message_maps_unexpected_error_to_permanent_error(fake_bot: BotFixture) -> None:
     fake_bot.send_message.side_effect = RuntimeError("send failed")
-    service = TelegramNotificationService(fake_bot.bot)
+    service = TelegramNotificationService(fake_bot.bot, settings)
 
     with pytest.raises(NotificationPermanentError, match="Unexpected notification delivery failure"):
         await service.send_message(NotifyDTO(recipient_id=RECIPIENT_USER_ID, message="hello"))

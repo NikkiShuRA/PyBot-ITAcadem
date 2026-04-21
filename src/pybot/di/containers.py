@@ -115,8 +115,9 @@ class ServiceProvider(Provider):
         user_repository: UserRepository,
         level_repository: LevelRepository,
         role_repository: RoleRepository,
+        settings: BotSettings,
     ) -> UserService:
-        return UserService(db, user_repository, level_repository, role_repository)
+        return UserService(db, user_repository, level_repository, role_repository, settings)
 
     @provide(scope=Scope.REQUEST)
     def user_roles_service(
@@ -164,15 +165,18 @@ class ServiceProvider(Provider):
         return WeeklyLeaderboardPublisherService(leaderboard_service, notification_service)
 
     @provide(scope=Scope.REQUEST)
-    def role_request_service(
+    def role_request_service(  # noqa: PLR0913
         self,
         db: AsyncSession,
         role_repository: RoleRepository,
         user_repository: UserRepository,
         role_request_repository: RoleRequestRepository,
         notification_service: NotificationPort,
+        settings: BotSettings,
     ) -> RoleRequestService:
-        return RoleRequestService(db, role_repository, user_repository, role_request_repository, notification_service)
+        return RoleRequestService(
+            db, role_repository, user_repository, role_request_repository, notification_service, settings
+        )
 
     @provide(scope=Scope.REQUEST)
     def broadcast_service(
@@ -180,8 +184,9 @@ class ServiceProvider(Provider):
         db: AsyncSession,
         user_repository: UserRepository,
         notification_service: NotificationPort,
+        settings: BotSettings,
     ) -> BroadcastService:
-        return BroadcastService(db, user_repository, notification_service)
+        return BroadcastService(db, user_repository, notification_service, settings)
 
     @provide(scope=Scope.REQUEST)
     def competence_service(
@@ -205,15 +210,18 @@ class ServiceProvider(Provider):
         return UserProfileService(level_service, user_competence_service, user_roles_service)
 
     @provide(scope=Scope.REQUEST)
-    def user_registration_service(
+    def user_registration_service(  # noqa: PLR0913
         self,
         db: AsyncSession,
         user_repository: UserRepository,
         level_repository: LevelRepository,
         role_repository: RoleRepository,
         competence_repository: CompetenceRepository,
+        settings: BotSettings,
     ) -> UserRegistrationService:
-        return UserRegistrationService(db, user_repository, level_repository, role_repository, competence_repository)
+        return UserRegistrationService(
+            db, user_repository, level_repository, role_repository, competence_repository, settings
+        )
 
 
 class HealthProvider(Provider):
@@ -263,9 +271,9 @@ class PortsProvider(Provider):
     @provide(scope=Scope.APP)
     async def notification_port(self, settings: BotSettings, bot: Bot) -> NotificationPort:
         if settings.notification_backend == "telegram":
-            return TelegramNotificationService(bot)
+            return TelegramNotificationService(bot, settings)
         if settings.notification_backend == "logging":
-            return LoggingNotificationService()
+            return LoggingNotificationService(settings)
         raise ValueError(f"Unsupported NOTIFICATION_BACKEND value: {settings.notification_backend}")
 
     @provide(scope=Scope.APP)
@@ -283,8 +291,9 @@ class FacadeProvider(Provider):
         self,
         notification_facade: NotificationFacade,
         notification_service: NotificationPort,
+        settings: BotSettings,
     ) -> SystemRuntimeAlertsService:
-        return SystemRuntimeAlertsService(notification_facade, notification_service)
+        return SystemRuntimeAlertsService(notification_facade, notification_service, settings)
 
 
 async def setup_container() -> AsyncContainer:

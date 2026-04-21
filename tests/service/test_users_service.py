@@ -171,6 +171,7 @@ async def test_user_registration_service_register_student_accepts_duplicate_comp
         level_repository=level_repository,
         role_repository=role_repository,
         competence_repository=competence_repository,
+        settings=settings,
     )
     await create_role(db, name="Student")
     await create_level(db, name="A0", level_type=PointsTypeEnum.ACADEMIC, required_points=0)

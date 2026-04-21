@@ -113,7 +113,7 @@ async def test_broadcast_for_all_happy_path(monkeypatch: pytest.MonkeyPatch) -> 
     users = [_mk_user(1), _mk_user(2), _mk_user(3)]
     user_repository = FakeUserRepository(users=users, role_users={})
     notification_port = ScriptedNotificationPort()
-    service = BroadcastService(AsyncMock(spec=AsyncSession), user_repository, notification_port)
+    service = BroadcastService(AsyncMock(spec=AsyncSession), user_repository, notification_port, settings)
 
     sleep_mock = AsyncMock()
     monkeypatch.setattr(asyncio, "sleep", sleep_mock)
@@ -138,7 +138,7 @@ async def test_broadcast_for_all_handles_partial_permanent_failure(monkeypatch: 
             20: [DeliveryOutcome.PERMANENT],
         }
     )
-    service = BroadcastService(AsyncMock(spec=AsyncSession), user_repository, notification_port)
+    service = BroadcastService(AsyncMock(spec=AsyncSession), user_repository, notification_port, settings)
 
     result = await service.broadcast_for_all(BroadcastDTO(broadcast_message="hello"))
 
@@ -158,7 +158,7 @@ async def test_broadcast_for_all_retries_temporary_then_succeeds(monkeypatch: py
             100: [DeliveryOutcome.TEMPORARY, DeliveryOutcome.OK],
         }
     )
-    service = BroadcastService(AsyncMock(spec=AsyncSession), user_repository, notification_port)
+    service = BroadcastService(AsyncMock(spec=AsyncSession), user_repository, notification_port, settings)
 
     sleep_mock = AsyncMock()
     monkeypatch.setattr(asyncio, "sleep", sleep_mock)
@@ -180,7 +180,7 @@ async def test_broadcast_for_all_marks_temporary_failure_when_retry_exhausted(mo
             200: [DeliveryOutcome.TEMPORARY, DeliveryOutcome.TEMPORARY, DeliveryOutcome.OK],
         }
     )
-    service = BroadcastService(AsyncMock(spec=AsyncSession), user_repository, notification_port)
+    service = BroadcastService(AsyncMock(spec=AsyncSession), user_repository, notification_port, settings)
 
     result = await service.broadcast_for_all(BroadcastDTO(broadcast_message="hello"))
 
@@ -198,7 +198,7 @@ async def test_broadcast_for_all_raises_when_already_running(monkeypatch: pytest
     started_event = asyncio.Event()
     release_event = asyncio.Event()
     notification_port = ScriptedNotificationPort(started_event=started_event, release_event=release_event)
-    service = BroadcastService(AsyncMock(spec=AsyncSession), user_repository, notification_port)
+    service = BroadcastService(AsyncMock(spec=AsyncSession), user_repository, notification_port, settings)
 
     first_task = asyncio.create_task(service.broadcast_for_all(BroadcastDTO(broadcast_message="hello")))
     await started_event.wait()
@@ -231,7 +231,7 @@ async def test_broadcast_for_users_with_role_uses_broadcast_message(monkeypatch:
     users = [_mk_user(350)]
     user_repository = FakeUserRepository(users=[], role_users={"Admin": users})
     notification_port = ScriptedNotificationPort()
-    service = BroadcastService(AsyncMock(spec=AsyncSession), user_repository, notification_port)
+    service = BroadcastService(AsyncMock(spec=AsyncSession), user_repository, notification_port, settings)
 
     result = await service.broadcast_for_users_with_role(
         RoleBroadcastDTO(role_name="Admin", broadcast_message="hello role")
@@ -247,7 +247,7 @@ async def test_broadcast_for_users_with_competence_happy_path(monkeypatch: pytes
     users = [_mk_user(400), _mk_user(500), _mk_user(600)]
     user_repository = FakeUserRepository(users=[], competence_users={1: users})
     notification_port = ScriptedNotificationPort()
-    service = BroadcastService(AsyncMock(spec=AsyncSession), user_repository, notification_port)
+    service = BroadcastService(AsyncMock(spec=AsyncSession), user_repository, notification_port, settings)
 
     sleep_mock = AsyncMock()
     monkeypatch.setattr(asyncio, "sleep", sleep_mock)
@@ -276,7 +276,7 @@ async def test_broadcast_crops_text_with_ellipsis_when_message_exceeds_limit(mon
     _configure_broadcast_settings(monkeypatch, max_text_length=10)
     user_repository = FakeUserRepository(users=[_mk_user(700)])
     notification_port = ScriptedNotificationPort()
-    service = BroadcastService(AsyncMock(spec=AsyncSession), user_repository, notification_port)
+    service = BroadcastService(AsyncMock(spec=AsyncSession), user_repository, notification_port, settings)
 
     await service.broadcast_for_all(BroadcastDTO(broadcast_message="0123456789abcdef"))
 
@@ -288,7 +288,7 @@ async def test_broadcast_keeps_text_as_is_when_message_within_limit(monkeypatch:
     _configure_broadcast_settings(monkeypatch, max_text_length=10)
     user_repository = FakeUserRepository(users=[_mk_user(701)])
     notification_port = ScriptedNotificationPort()
-    service = BroadcastService(AsyncMock(spec=AsyncSession), user_repository, notification_port)
+    service = BroadcastService(AsyncMock(spec=AsyncSession), user_repository, notification_port, settings)
 
     await service.broadcast_for_all(BroadcastDTO(broadcast_message="0123456789"))
 
