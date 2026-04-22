@@ -2,7 +2,9 @@
 
 ## Дата: 19-04-2026
 
-## Статус: Accepted
+## Статус: Deprecated
+
+> Superseded by [ADR 0014: Health API как отдельный process type через Docker Compose и Uvicorn](014-health-api-as-dedicated-process-type.md).
 
 ## Контекст
 
