@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from importlib import import_module
-from typing import TYPE_CHECKING, Any
+from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 from ...core.constants import TaskScheduleKind
 from ...domain.exceptions import TaskScheduleUnknownKindError
@@ -10,21 +10,35 @@ from ...dto.value_objects import TaskSchedule
 from ...services.ports import NotificationDispatchPort
 
 if TYPE_CHECKING:
+    from taskiq import AsyncTaskiqDecoratedTask
     from taskiq_redis import ListRedisScheduleSource
+
+    from ...dto import NotificationTaskPayload
 
 
 class TaskIQNotificationDispatcher(NotificationDispatchPort):
-    def __init__(self, schedule_source: ListRedisScheduleSource | None = None) -> None:
-        if schedule_source is None:
-            taskiq_app = import_module(".taskiq_app", package=__package__)
-            schedule_source = taskiq_app.get_taskiq_schedule_source()
-        self._schedule_source = schedule_source
+    def __init__(
+        self,
+        schedule_source: ListRedisScheduleSource | None = None,
+        notification_task_resolver: Callable[[], AsyncTaskiqDecoratedTask[..., NotificationTaskPayload]] | None = None,
+    ) -> None:
+        self._schedule_source = schedule_source or self._resolve_schedule_source()
+        self._notification_task_resolver = notification_task_resolver or self._resolve_notification_task
 
     @staticmethod
-    def _task() -> Any:
-        # TaskIQ + Dishka currently confuses static typing on producer-side calls.
-        notification_module = import_module(".tasks.notification", package=__package__)
-        return notification_module.send_notification_task
+    def _resolve_schedule_source() -> ListRedisScheduleSource:
+        from .taskiq_app import get_taskiq_schedule_source  # noqa: PLC0415
+
+        return get_taskiq_schedule_source()
+
+    @staticmethod
+    def _resolve_notification_task() -> AsyncTaskiqDecoratedTask[..., NotificationTaskPayload]:
+        from .taskiq_app import get_taskiq_notification_task  # noqa: PLC0415
+
+        return get_taskiq_notification_task()
+
+    def _task(self) -> AsyncTaskiqDecoratedTask[..., NotificationTaskPayload]:
+        return self._notification_task_resolver()
 
     async def dispatch_message(
         self,

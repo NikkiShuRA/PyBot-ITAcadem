@@ -8,11 +8,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from tenacity import AsyncRetrying, RetryCallState, retry_if_exception_type, stop_after_attempt
 
 from ..core import logger
-from ..core.config import settings
+from ..core.config import BotSettings
 from ..db.models import User
 from ..domain.exceptions import BroadcastAlreadyRunningError
 from ..dto import BroadcastDTO, BroadcastResult, CompetenceBroadcastDTO, NotifyDTO, RoleBroadcastDTO
 from ..infrastructure.user_repository import UserRepository
+from ..utils import normalize_message
 from .ports import NotificationPermanentError, NotificationPort, NotificationTemporaryError
 
 
@@ -25,10 +26,12 @@ class BroadcastService:
         db: AsyncSession,
         user_repository: UserRepository,
         notification_service: NotificationPort,
+        settings: BotSettings,
     ) -> None:
         self.db = db
         self.user_repository = user_repository
         self.notification_service = notification_service
+        self._settings = settings
 
     @classmethod
     def _get_broadcast_lock(cls) -> asyncio.Lock:
@@ -45,17 +48,19 @@ class BroadcastService:
             if isinstance(exception, NotificationTemporaryError) and exception.retry_after_seconds is not None:
                 return max(0.0, exception.retry_after_seconds)
 
-        exponential = min(float(settings.broadcast_retry_max_wait_s), float(2 ** (retry_state.attempt_number - 1)))
+        exponential = min(
+            float(self._settings.broadcast_retry_max_wait_s), float(2 ** (retry_state.attempt_number - 1))
+        )
         jitter = random.uniform(0.0, 1.0)  # noqa: S311
-        return min(float(settings.broadcast_retry_max_wait_s), exponential + jitter)
+        return min(float(self._settings.broadcast_retry_max_wait_s), exponential + jitter)
 
     def _batch_pause_seconds(self) -> float:
-        jitter_ms = random.randint(settings.broadcast_jitter_min_ms, settings.broadcast_jitter_max_ms)  # noqa: S311
-        return (settings.broadcast_batch_pause_ms + jitter_ms) / 1000
+        jitter_ms = random.randint(self._settings.broadcast_jitter_min_ms, self._settings.broadcast_jitter_max_ms)  # noqa: S311
+        return (self._settings.broadcast_batch_pause_ms + jitter_ms) / 1000
 
     async def _send_with_retry(self, recipient_id: int, message: str) -> None:
         retrying = AsyncRetrying(
-            stop=stop_after_attempt(settings.broadcast_retry_attempts),
+            stop=stop_after_attempt(self._settings.broadcast_retry_attempts),
             retry=retry_if_exception_type(NotificationTemporaryError),
             wait=self._wait_for_retry,
             reraise=True,
@@ -93,7 +98,7 @@ class BroadcastService:
             result.sent += 1
 
     async def _send_batch(self, users: Sequence[User], message: str, result: BroadcastResult) -> None:
-        semaphore = asyncio.Semaphore(settings.broadcast_max_concurrency)
+        semaphore = asyncio.Semaphore(self._settings.broadcast_max_concurrency)
 
         async def worker(user: User) -> None:
             async with semaphore:
@@ -107,7 +112,7 @@ class BroadcastService:
 
     async def _broadcast_users(self, users: Sequence[User], message: str) -> BroadcastResult:
         result = BroadcastResult()
-        bulk_size = settings.broadcast_bulk_size
+        bulk_size = self._settings.broadcast_bulk_size
 
         for index in range(0, len(users), bulk_size):
             batch_users = users[index : index + bulk_size]
@@ -130,7 +135,8 @@ class BroadcastService:
             raise BroadcastAlreadyRunningError("Broadcast is already running")
 
         async with broadcast_lock:
-            result = await self._broadcast_users(users, message)
+            normalized_message = normalize_message(message, max_length=self._settings.broadcast_max_text_length)
+            result = await self._broadcast_users(users, normalized_message)
             logger.info(
                 summary_message,
                 attempted=result.attempted,

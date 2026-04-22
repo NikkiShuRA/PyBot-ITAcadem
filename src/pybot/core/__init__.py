@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from .config import settings
 from .logger import setup_logger
 
 if TYPE_CHECKING:
@@ -26,4 +25,4 @@ class LoggerProxy:
 
 logger = LoggerProxy()
 
-__all__ = ["settings", "logger"]
+__all__ = ["logger"]

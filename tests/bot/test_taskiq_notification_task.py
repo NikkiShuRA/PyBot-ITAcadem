@@ -6,9 +6,10 @@ from unittest.mock import AsyncMock
 
 import pytest
 from pydantic import ValidationError
+from taskiq.brokers.inmemory_broker import InMemoryBroker
 
 from pybot.dto import NotificationTaskPayload, NotifyDTO
-from pybot.infrastructure.taskiq.tasks.notification import send_notification_task
+from pybot.infrastructure.taskiq.tasks.notification import register_tasks, send_notification_task
 from pybot.services.ports import NotificationPermanentError, NotificationPort, NotificationTemporaryError
 
 
@@ -69,9 +70,15 @@ class DishkaContainerStub:
         return self._notification_port
 
 
+def _build_task() -> TaskCallable:
+    broker = InMemoryBroker()
+    task = register_tasks(broker=broker)
+    return cast(TaskCallable, task)
+
+
 async def _run_task(notification_port: NotificationPort, notification_data: NotifyDTO) -> NotificationTaskPayload:
     dishka_container = DishkaContainerStub(notification_port)
-    task = cast(TaskCallable, send_notification_task)
+    task = _build_task()
     task_call = task(notification_data=notification_data, dishka_container=dishka_container)
     assert isinstance(task_call, Awaitable)
     return await task_call
@@ -134,3 +141,4 @@ async def test_send_notification_task_preserves_parse_mode() -> None:
     notification_port.send_message_mock.assert_awaited_once_with(
         NotifyDTO(recipient_id=555, message="<b>hello</b>", parse_mode="HTML")
     )
+    assert callable(send_notification_task)

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from importlib import import_module
 from typing import TYPE_CHECKING, Any
 
 from ...core import logger
@@ -26,12 +25,6 @@ class WeeklyLeaderboardScheduleSpec:
     task_name: str = LEADERBOARD_WEEKLY_TASK_NAME
 
 
-def resolve_publish_weekly_leaderboard_kicker() -> AsyncKicker[Any, Any]:
-    task_module = import_module(".tasks.leaderboard", package=__package__)
-    task = task_module.publish_weekly_leaderboard_task
-    return task.kicker()
-
-
 def is_expected_weekly_schedule(
     schedule: ScheduledTask,
     *,
@@ -51,9 +44,12 @@ async def ensure_weekly_leaderboard_schedule(
     *,
     source: ListRedisScheduleSource,
     spec: WeeklyLeaderboardScheduleSpec,
-    resolve_kicker: Callable[[], AsyncKicker[Any, Any]] = resolve_publish_weekly_leaderboard_kicker,
+    resolve_kicker: Callable[[], AsyncKicker[Any, Any]] | None = None,
 ) -> None:
     """Idempotently ensure one weekly leaderboard cron schedule in Redis source."""
+    if resolve_kicker is None:
+        raise RuntimeError("Weekly leaderboard kicker resolver is not configured.")
+
     existing_schedule = next(
         (item for item in await source.get_schedules() if item.schedule_id == spec.schedule_id), None
     )

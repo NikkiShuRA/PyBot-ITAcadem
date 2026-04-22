@@ -10,7 +10,7 @@ from aiogram import BaseMiddleware
 from aiogram.types import CallbackQuery, ChatMemberUpdated, InlineQuery, Message, TelegramObject
 
 from ...core import logger
-from ...core.config import settings
+from ...core.config import BotSettings
 
 MAX_LOGGED_CONTENT_LENGTH = 80
 
@@ -18,16 +18,18 @@ MAX_LOGGED_CONTENT_LENGTH = 80
 class LoggerMiddleware(BaseMiddleware):
     """Middleware для единообразного логирования жизненного цикла update."""
 
-    def __init__(self, enabled: bool = True, log_sensitive: bool = False) -> None:
+    def __init__(self, settings: BotSettings, *, enabled: bool = False, log_sensitive: bool = False) -> None:
         """Инициализировать middleware логирования.
 
         Args:
             enabled: Включить ли middleware явно.
             log_sensitive: Разрешить ли писать полное содержимое сообщений.
+            settings: Объект конфигурации бота.
         """
         super().__init__()
-        self.enabled = settings.enable_logging_middleware and enabled
         self.log_sensitive = log_sensitive
+        self.settings = settings
+        self.enabled = self.settings.enable_logging_middleware and enabled
 
     def _build_event_id(self, telegram_obj: TelegramObject, data: dict[str, Any]) -> str:
         """Собрать корреляционный ключ для логов одного update."""

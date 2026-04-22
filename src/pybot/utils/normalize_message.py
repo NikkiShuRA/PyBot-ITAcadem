@@ -1,10 +1,10 @@
 from functools import lru_cache
 
-from ..core import settings
 
-
-def normalize_message(message: str) -> str:
-    max_length_with_suffix = min(settings.broadcast_max_text_length + 3, 4096)
+def normalize_message(message: str, *, max_length: int) -> str:
+    if max_length < 1:
+        raise ValueError("max_length must be greater than 0")
+    max_length_with_suffix = min(max_length + 3, 4096)
     return _normalize_message_cached(message, max_length_with_suffix)
 
 

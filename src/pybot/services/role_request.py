@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..bot.texts import role_request_user_status
-from ..core.config import settings
+from ..core.config import BotSettings
 from ..core.constants import RequestStatus
 from ..db.models.role_module import RoleRequest
 from ..domain.exceptions import (
@@ -22,19 +22,21 @@ from ..services.ports import NotificationPort
 
 
 class RoleRequestService:
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         db: AsyncSession,
         role_repository: RoleRepository,
         user_repository: UserRepository,
         role_request_repository: RoleRequestRepository,
         notification_service: NotificationPort,
+        settings: BotSettings,
     ) -> None:
         self.db: AsyncSession = db
         self.role_repository: RoleRepository = role_repository
         self.user_repository: UserRepository = user_repository
         self.role_request_repository: RoleRequestRepository = role_request_repository
         self.notification_service: NotificationPort = notification_service
+        self._settings = settings
 
     def get_time_since_last_reject(self, request_time: datetime, last_reject: RoleRequest) -> timedelta:
         """Return elapsed time between request creation and the latest rejected role request."""
@@ -42,7 +44,7 @@ class RoleRequestService:
 
     def get_role_request_available_at(self, last_reject: RoleRequest) -> datetime:
         """Return the moment when a new role request becomes available."""
-        return last_reject.updated_at + timedelta(minutes=settings.role_request_reject_cooldown_minutes)
+        return last_reject.updated_at + timedelta(minutes=self._settings.role_request_reject_cooldown_minutes)
 
     async def check_requesting_user(self, user_id: int, user_role: str) -> bool:
         try:

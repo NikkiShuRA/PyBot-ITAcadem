@@ -12,7 +12,7 @@ from dishka import AsyncContainer
 from dishka.integrations.aiogram import setup_dishka
 
 from ..core import logger
-from ..core.config import settings
+from ..core.config import BotSettings, get_settings
 from ..di.containers import setup_container
 from ..services import SystemRuntimeAlertsService
 from .dialogs import user_router
@@ -32,7 +32,7 @@ from .middlewares import (
 )
 
 
-async def setup_dispatcher() -> Dispatcher:
+async def setup_dispatcher(settings: BotSettings) -> Dispatcher:
     """Create dispatcher with the configured FSM backend."""
     if settings.fsm_storage_backend == "redis":
         storage = RedisStorage.from_url(
@@ -46,10 +46,10 @@ async def setup_dispatcher() -> Dispatcher:
     return Dispatcher()
 
 
-async def setup_middlewares(dp: Dispatcher) -> None:
+async def setup_middlewares(dp: Dispatcher, settings: BotSettings) -> None:
     """Attach configured middleware stack to the dispatcher."""
     if settings.enable_logging_middleware:
-        logging_middleware = LoggerMiddleware(enabled=True)
+        logging_middleware = LoggerMiddleware(settings, enabled=True)
         dp.message.middleware(logging_middleware)
         dp.callback_query.middleware(logging_middleware)
         dp.inline_query.middleware(logging_middleware)
@@ -73,9 +73,9 @@ async def setup_middlewares(dp: Dispatcher) -> None:
         logger.info("event=middleware_setup middleware=RoleMiddleware status=disabled")
 
     if settings.enable_rate_limit:
-        dp.update.middleware(RateLimitMiddleware())
-        dp.message.middleware(RateLimitMiddleware())
-        dp.callback_query.middleware(RateLimitMiddleware())
+        dp.update.middleware(RateLimitMiddleware(settings=settings))
+        dp.message.middleware(RateLimitMiddleware(settings=settings))
+        dp.callback_query.middleware(RateLimitMiddleware(settings=settings))
         logger.info("event=middleware_setup middleware=RateLimitMiddleware status=enabled")
     else:
         logger.info("event=middleware_setup middleware=RateLimitMiddleware status=disabled")
@@ -136,11 +136,12 @@ async def tg_bot_main() -> None:
     runtime_alerts_service: SystemRuntimeAlertsService | None = None
     try:
         logger.info("event=bot_runtime_init status=started")
-        dp = await setup_dispatcher()
+        settings = get_settings()
+        dp = await setup_dispatcher(settings)
         container = await setup_di(dp)
         bot = await setup_bot(container)
         runtime_alerts_service = await setup_runtime_alerts_service(container)
-        await setup_middlewares(dp)
+        await setup_middlewares(dp, settings)
         setup_handlers(dp)
         await bot.delete_webhook(drop_pending_updates=True)
         logger.info("event=bot_runtime_init status=completed")

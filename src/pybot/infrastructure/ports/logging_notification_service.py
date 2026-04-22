@@ -1,7 +1,7 @@
 from collections import deque
 
 from ...core import logger
-from ...core.config import settings
+from ...core.config import BotSettings
 from ...dto import NotificationLogEvent, NotifyDTO
 from ...services.ports import NotificationPermanentError, NotificationPort
 from ...utils import telegram_user_link
@@ -10,9 +10,10 @@ from ...utils import telegram_user_link
 class LoggingNotificationService(NotificationPort):
     """Notification adapter that writes outbound events to loguru logger."""
 
-    def __init__(self, buffer_size: int = 1000) -> None:
+    def __init__(self, settings: BotSettings, buffer_size: int = 1000) -> None:
         if buffer_size <= 0:
             raise ValueError("buffer_size must be greater than 0")
+        self._settings = settings
         self._events: deque[NotificationLogEvent] = deque(maxlen=buffer_size)
 
     @property
@@ -22,7 +23,7 @@ class LoggingNotificationService(NotificationPort):
 
     async def send_role_request_to_admin(self, request_id: int, requester_user_id: int, role_name: str) -> None:
         """Log role request notification with payload and store event in ring buffer."""
-        admin_tg_id = settings.role_request_admin_tg_id
+        admin_tg_id = self._settings.role_request_admin_tg_id
 
         mention = telegram_user_link(requester_user_id)
         text = f"New role request\n\nRequest ID: {request_id}\nRole: {role_name}\nUser: {mention}"

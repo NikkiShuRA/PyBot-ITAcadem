@@ -10,21 +10,22 @@ from aiogram.types import Message, TelegramObject, User
 from aiolimiter import AsyncLimiter
 
 from ...core import logger
-from ...core.config import settings
+from ...core.config import BotSettings
 
 
 class RateLimitMiddleware(BaseMiddleware):
     """Класс для RateLimitMiddleware."""
 
-    def __init__(self) -> None:
+    def __init__(self, settings: BotSettings) -> None:
         """Инициализирует объект."""
         super().__init__()
-        self.enable_rate_limit = settings.enable_rate_limit
+        self.settings = settings
+        self.enable_rate_limit = self.settings.enable_rate_limit
         if self.enable_rate_limit:
             self.limits = {
-                "cheap": (settings.rate_limit_cheap, settings.time_limit_cheap),
-                "moderate": (settings.rate_limit_moderate, settings.time_limit_moderate),
-                "expensive": (settings.rate_limit_expensive, settings.time_limit_expensive),
+                "cheap": (self.settings.rate_limit_cheap, self.settings.time_limit_cheap),
+                "moderate": (self.settings.rate_limit_moderate, self.settings.time_limit_moderate),
+                "expensive": (self.settings.rate_limit_expensive, self.settings.time_limit_expensive),
             }
         self.cache: SimpleMemoryCache = SimpleMemoryCache()
 

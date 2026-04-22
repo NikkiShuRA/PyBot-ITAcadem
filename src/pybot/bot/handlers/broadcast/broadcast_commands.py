@@ -6,7 +6,6 @@ from aiogram.filters.command import Command
 from aiogram.types import Message
 from dishka import FromDishka
 
-from ....core.config import settings
 from ....core.constants import RoleEnum
 from ....domain.exceptions import BroadcastAlreadyRunningError, BroadcastMessageNotSpecifiedError, UsersNotFoundError
 from ....dto import BroadcastDTO, CompetenceBroadcastDTO, CompetenceReadDTO, RoleBroadcastDTO
@@ -78,7 +77,7 @@ async def _extract_message_for_broadcast(message: Message, target_token: str) ->
 
 @broadcast_command_private_router.message(
     Command("broadcast"),
-    flags={"role": settings.broadcast_allowed_roles, "rate_limit": "expensive"},
+    flags={"role_policy": "broadcast_allowed_roles", "rate_limit": "expensive"},
 )
 async def broadcast_command(
     message: Message,

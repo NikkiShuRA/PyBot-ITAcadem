@@ -11,7 +11,7 @@ import pytest
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from pybot.core.config import settings
+from pybot.core.config import BotSettings
 from pybot.db.models import User
 from pybot.dto import BroadcastDTO, CompetenceBroadcastDTO, NotifyDTO, RoleBroadcastDTO
 from pybot.infrastructure.user_repository import UserRepository
@@ -86,7 +86,7 @@ def _mk_user(telegram_id: int) -> User:
 
 
 def _configure_broadcast_settings(
-    monkeypatch: pytest.MonkeyPatch,
+    settings_obj: BotSettings,
     *,
     bulk_size: int = 20,
     max_concurrency: int = 5,
@@ -97,23 +97,26 @@ def _configure_broadcast_settings(
     retry_max_wait_s: int = 1,
     max_text_length: int = 4096,
 ) -> None:
-    monkeypatch.setattr(settings, "broadcast_bulk_size", bulk_size)
-    monkeypatch.setattr(settings, "broadcast_max_concurrency", max_concurrency)
-    monkeypatch.setattr(settings, "broadcast_batch_pause_ms", batch_pause_ms)
-    monkeypatch.setattr(settings, "broadcast_jitter_min_ms", jitter_min_ms)
-    monkeypatch.setattr(settings, "broadcast_jitter_max_ms", jitter_max_ms)
-    monkeypatch.setattr(settings, "broadcast_retry_attempts", retry_attempts)
-    monkeypatch.setattr(settings, "broadcast_retry_max_wait_s", retry_max_wait_s)
-    monkeypatch.setattr(settings, "broadcast_max_text_length", max_text_length)
+    settings_obj.broadcast_bulk_size = bulk_size
+    settings_obj.broadcast_max_concurrency = max_concurrency
+    settings_obj.broadcast_batch_pause_ms = batch_pause_ms
+    settings_obj.broadcast_jitter_min_ms = jitter_min_ms
+    settings_obj.broadcast_jitter_max_ms = jitter_max_ms
+    settings_obj.broadcast_retry_attempts = retry_attempts
+    settings_obj.broadcast_retry_max_wait_s = retry_max_wait_s
+    settings_obj.broadcast_max_text_length = max_text_length
 
 
 @pytest.mark.asyncio
-async def test_broadcast_for_all_happy_path(monkeypatch: pytest.MonkeyPatch) -> None:
-    _configure_broadcast_settings(monkeypatch, bulk_size=2, max_concurrency=2, jitter_min_ms=80, jitter_max_ms=80)
+async def test_broadcast_for_all_happy_path(
+    monkeypatch: pytest.MonkeyPatch,
+    settings_obj: BotSettings,
+) -> None:
+    _configure_broadcast_settings(settings_obj, bulk_size=2, max_concurrency=2, jitter_min_ms=80, jitter_max_ms=80)
     users = [_mk_user(1), _mk_user(2), _mk_user(3)]
     user_repository = FakeUserRepository(users=users, role_users={})
     notification_port = ScriptedNotificationPort()
-    service = BroadcastService(AsyncMock(spec=AsyncSession), user_repository, notification_port)
+    service = BroadcastService(AsyncMock(spec=AsyncSession), user_repository, notification_port, settings_obj)
 
     sleep_mock = AsyncMock()
     monkeypatch.setattr(asyncio, "sleep", sleep_mock)
@@ -129,8 +132,8 @@ async def test_broadcast_for_all_happy_path(monkeypatch: pytest.MonkeyPatch) -> 
 
 
 @pytest.mark.asyncio
-async def test_broadcast_for_all_handles_partial_permanent_failure(monkeypatch: pytest.MonkeyPatch) -> None:
-    _configure_broadcast_settings(monkeypatch, bulk_size=3, max_concurrency=3, retry_attempts=2)
+async def test_broadcast_for_all_handles_partial_permanent_failure(settings_obj: BotSettings) -> None:
+    _configure_broadcast_settings(settings_obj, bulk_size=3, max_concurrency=3, retry_attempts=2)
     users = [_mk_user(10), _mk_user(20), _mk_user(30)]
     user_repository = FakeUserRepository(users=users, role_users={})
     notification_port = ScriptedNotificationPort(
@@ -138,7 +141,7 @@ async def test_broadcast_for_all_handles_partial_permanent_failure(monkeypatch: 
             20: [DeliveryOutcome.PERMANENT],
         }
     )
-    service = BroadcastService(AsyncMock(spec=AsyncSession), user_repository, notification_port)
+    service = BroadcastService(AsyncMock(spec=AsyncSession), user_repository, notification_port, settings_obj)
 
     result = await service.broadcast_for_all(BroadcastDTO(broadcast_message="hello"))
 
@@ -149,8 +152,11 @@ async def test_broadcast_for_all_handles_partial_permanent_failure(monkeypatch: 
 
 
 @pytest.mark.asyncio
-async def test_broadcast_for_all_retries_temporary_then_succeeds(monkeypatch: pytest.MonkeyPatch) -> None:
-    _configure_broadcast_settings(monkeypatch, retry_attempts=3, retry_max_wait_s=1)
+async def test_broadcast_for_all_retries_temporary_then_succeeds(
+    monkeypatch: pytest.MonkeyPatch,
+    settings_obj: BotSettings,
+) -> None:
+    _configure_broadcast_settings(settings_obj, retry_attempts=3, retry_max_wait_s=1)
     users = [_mk_user(100)]
     user_repository = FakeUserRepository(users=users, role_users={})
     notification_port = ScriptedNotificationPort(
@@ -158,7 +164,7 @@ async def test_broadcast_for_all_retries_temporary_then_succeeds(monkeypatch: py
             100: [DeliveryOutcome.TEMPORARY, DeliveryOutcome.OK],
         }
     )
-    service = BroadcastService(AsyncMock(spec=AsyncSession), user_repository, notification_port)
+    service = BroadcastService(AsyncMock(spec=AsyncSession), user_repository, notification_port, settings_obj)
 
     sleep_mock = AsyncMock()
     monkeypatch.setattr(asyncio, "sleep", sleep_mock)
@@ -171,8 +177,8 @@ async def test_broadcast_for_all_retries_temporary_then_succeeds(monkeypatch: py
 
 
 @pytest.mark.asyncio
-async def test_broadcast_for_all_marks_temporary_failure_when_retry_exhausted(monkeypatch: pytest.MonkeyPatch) -> None:
-    _configure_broadcast_settings(monkeypatch, retry_attempts=2, retry_max_wait_s=1)
+async def test_broadcast_for_all_marks_temporary_failure_when_retry_exhausted(settings_obj: BotSettings) -> None:
+    _configure_broadcast_settings(settings_obj, retry_attempts=2, retry_max_wait_s=1)
     users = [_mk_user(200)]
     user_repository = FakeUserRepository(users=users, role_users={})
     notification_port = ScriptedNotificationPort(
@@ -180,7 +186,7 @@ async def test_broadcast_for_all_marks_temporary_failure_when_retry_exhausted(mo
             200: [DeliveryOutcome.TEMPORARY, DeliveryOutcome.TEMPORARY, DeliveryOutcome.OK],
         }
     )
-    service = BroadcastService(AsyncMock(spec=AsyncSession), user_repository, notification_port)
+    service = BroadcastService(AsyncMock(spec=AsyncSession), user_repository, notification_port, settings_obj)
 
     result = await service.broadcast_for_all(BroadcastDTO(broadcast_message="hello"))
 
@@ -191,14 +197,14 @@ async def test_broadcast_for_all_marks_temporary_failure_when_retry_exhausted(mo
 
 
 @pytest.mark.asyncio
-async def test_broadcast_for_all_raises_when_already_running(monkeypatch: pytest.MonkeyPatch) -> None:
-    _configure_broadcast_settings(monkeypatch, retry_attempts=1)
+async def test_broadcast_for_all_raises_when_already_running(settings_obj: BotSettings) -> None:
+    _configure_broadcast_settings(settings_obj, retry_attempts=1)
     users = [_mk_user(300)]
     user_repository = FakeUserRepository(users=users, role_users={})
     started_event = asyncio.Event()
     release_event = asyncio.Event()
     notification_port = ScriptedNotificationPort(started_event=started_event, release_event=release_event)
-    service = BroadcastService(AsyncMock(spec=AsyncSession), user_repository, notification_port)
+    service = BroadcastService(AsyncMock(spec=AsyncSession), user_repository, notification_port, settings_obj)
 
     first_task = asyncio.create_task(service.broadcast_for_all(BroadcastDTO(broadcast_message="hello")))
     await started_event.wait()
@@ -211,27 +217,27 @@ async def test_broadcast_for_all_raises_when_already_running(monkeypatch: pytest
 
 
 @pytest.mark.asyncio
-async def test_broadcast_validates_message(monkeypatch: pytest.MonkeyPatch) -> None:
-    _configure_broadcast_settings(monkeypatch)
+async def test_broadcast_validates_message(settings_obj: BotSettings) -> None:
+    _configure_broadcast_settings(settings_obj)
 
     with pytest.raises(ValidationError, match="message must not be empty"):
         BroadcastDTO(broadcast_message="   ")
 
 
-def test_broadcast_for_users_with_role_validates_role_name(monkeypatch: pytest.MonkeyPatch) -> None:
-    _configure_broadcast_settings(monkeypatch)
+def test_broadcast_for_users_with_role_validates_role_name(settings_obj: BotSettings) -> None:
+    _configure_broadcast_settings(settings_obj)
 
     with pytest.raises(ValidationError, match="role_name must not be empty"):
         RoleBroadcastDTO(role_name="  ", broadcast_message="hello")
 
 
 @pytest.mark.asyncio
-async def test_broadcast_for_users_with_role_uses_broadcast_message(monkeypatch: pytest.MonkeyPatch) -> None:
-    _configure_broadcast_settings(monkeypatch)
+async def test_broadcast_for_users_with_role_uses_broadcast_message(settings_obj: BotSettings) -> None:
+    _configure_broadcast_settings(settings_obj)
     users = [_mk_user(350)]
     user_repository = FakeUserRepository(users=[], role_users={"Admin": users})
     notification_port = ScriptedNotificationPort()
-    service = BroadcastService(AsyncMock(spec=AsyncSession), user_repository, notification_port)
+    service = BroadcastService(AsyncMock(spec=AsyncSession), user_repository, notification_port, settings_obj)
 
     result = await service.broadcast_for_users_with_role(
         RoleBroadcastDTO(role_name="Admin", broadcast_message="hello role")
@@ -242,12 +248,15 @@ async def test_broadcast_for_users_with_role_uses_broadcast_message(monkeypatch:
 
 
 @pytest.mark.asyncio
-async def test_broadcast_for_users_with_competence_happy_path(monkeypatch: pytest.MonkeyPatch) -> None:
-    _configure_broadcast_settings(monkeypatch, bulk_size=2, max_concurrency=2, jitter_min_ms=80, jitter_max_ms=80)
+async def test_broadcast_for_users_with_competence_happy_path(
+    monkeypatch: pytest.MonkeyPatch,
+    settings_obj: BotSettings,
+) -> None:
+    _configure_broadcast_settings(settings_obj, bulk_size=2, max_concurrency=2, jitter_min_ms=80, jitter_max_ms=80)
     users = [_mk_user(400), _mk_user(500), _mk_user(600)]
     user_repository = FakeUserRepository(users=[], competence_users={1: users})
     notification_port = ScriptedNotificationPort()
-    service = BroadcastService(AsyncMock(spec=AsyncSession), user_repository, notification_port)
+    service = BroadcastService(AsyncMock(spec=AsyncSession), user_repository, notification_port, settings_obj)
 
     sleep_mock = AsyncMock()
     monkeypatch.setattr(asyncio, "sleep", sleep_mock)
@@ -264,19 +273,19 @@ async def test_broadcast_for_users_with_competence_happy_path(monkeypatch: pytes
     sleep_mock.assert_awaited_once_with(1.28)
 
 
-def test_broadcast_for_users_with_competence_validates_competence_id(monkeypatch: pytest.MonkeyPatch) -> None:
-    _configure_broadcast_settings(monkeypatch)
+def test_broadcast_for_users_with_competence_validates_competence_id(settings_obj: BotSettings) -> None:
+    _configure_broadcast_settings(settings_obj)
 
     with pytest.raises(ValidationError, match="greater than or equal to 1"):
         CompetenceBroadcastDTO(competence_id=0, broadcast_message="hello")
 
 
 @pytest.mark.asyncio
-async def test_broadcast_crops_text_with_ellipsis_when_message_exceeds_limit(monkeypatch: pytest.MonkeyPatch) -> None:
-    _configure_broadcast_settings(monkeypatch, max_text_length=10)
+async def test_broadcast_crops_text_with_ellipsis_when_message_exceeds_limit(settings_obj: BotSettings) -> None:
+    _configure_broadcast_settings(settings_obj, max_text_length=10)
     user_repository = FakeUserRepository(users=[_mk_user(700)])
     notification_port = ScriptedNotificationPort()
-    service = BroadcastService(AsyncMock(spec=AsyncSession), user_repository, notification_port)
+    service = BroadcastService(AsyncMock(spec=AsyncSession), user_repository, notification_port, settings_obj)
 
     await service.broadcast_for_all(BroadcastDTO(broadcast_message="0123456789abcdef"))
 
@@ -284,11 +293,11 @@ async def test_broadcast_crops_text_with_ellipsis_when_message_exceeds_limit(mon
 
 
 @pytest.mark.asyncio
-async def test_broadcast_keeps_text_as_is_when_message_within_limit(monkeypatch: pytest.MonkeyPatch) -> None:
-    _configure_broadcast_settings(monkeypatch, max_text_length=10)
+async def test_broadcast_keeps_text_as_is_when_message_within_limit(settings_obj: BotSettings) -> None:
+    _configure_broadcast_settings(settings_obj, max_text_length=10)
     user_repository = FakeUserRepository(users=[_mk_user(701)])
     notification_port = ScriptedNotificationPort()
-    service = BroadcastService(AsyncMock(spec=AsyncSession), user_repository, notification_port)
+    service = BroadcastService(AsyncMock(spec=AsyncSession), user_repository, notification_port, settings_obj)
 
     await service.broadcast_for_all(BroadcastDTO(broadcast_message="0123456789"))
 

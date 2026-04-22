@@ -30,7 +30,7 @@ style: # Run formatting check and lint and type check
     just type-check
 
 arch-check: # Check architecture invariants with Tach
-    uv run tach check
+    uv run --frozen tach check
 
 test-coverage: # Run tests with coverage and show missing lines
     uv run pytest --cov=src/pybot --cov-report=term-missing --cov-report=xml

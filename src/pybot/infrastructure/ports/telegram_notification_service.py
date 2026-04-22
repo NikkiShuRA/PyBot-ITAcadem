@@ -15,7 +15,7 @@ from aiogram.exceptions import (
 from ...bot.keyboards.role_request_keyboard import get_admin_decision_kb
 from ...bot.texts import role_request_admin_notification
 from ...core import logger
-from ...core.config import settings
+from ...core.config import BotSettings
 from ...dto import NotifyDTO
 from ...services.ports import NotificationPermanentError, NotificationPort, NotificationTemporaryError
 from ...utils import telegram_user_link
@@ -29,11 +29,12 @@ class TelegramNotificationService(NotificationPort):
         ``telegram_id``/``chat_id``.
     """
 
-    def __init__(self, bot: Bot) -> None:
+    def __init__(self, bot: Bot, settings: BotSettings) -> None:
         self.bot = bot
+        self._settings = settings
 
     async def send_role_request_to_admin(self, request_id: int, requester_user_id: int, role_name: str) -> None:
-        admin_tg_id = settings.role_request_admin_tg_id
+        admin_tg_id = self._settings.role_request_admin_tg_id
         mention = telegram_user_link(requester_user_id)
         text = role_request_admin_notification(request_id=request_id, role_name=role_name, mention=mention)
 

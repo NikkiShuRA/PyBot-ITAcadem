@@ -1,17 +1,15 @@
 from __future__ import annotations
 
+from typing import Any
+
 from dishka.integrations.taskiq import FromDishka, inject
+from taskiq import AsyncBroker, AsyncTaskiqDecoratedTask
 
 from ....core import logger
 from ....dto import BroadcastDTO
 from ....services.broadcast import BroadcastService
-from ..taskiq_app import get_taskiq_broker
-
-broker = get_taskiq_broker()
 
 
-@broker.task(task_name="broadcast.send_for_all")
-@inject(patch_module=True)
 async def broadcast_for_all_task(
     message: str,
     service: FromDishka[BroadcastService],
@@ -32,3 +30,7 @@ async def broadcast_for_all_task(
     }
     logger.info("TaskIQ broadcast task finished with payload={payload}", payload=payload)
     return payload
+
+
+def register_tasks(*, broker: AsyncBroker) -> AsyncTaskiqDecoratedTask[..., Any]:
+    return broker.task(task_name="broadcast.send_for_all")(inject(patch_module=True)(broadcast_for_all_task))

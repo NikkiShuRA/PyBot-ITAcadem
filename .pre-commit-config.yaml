@@ -36,7 +36,7 @@ repos:
     hooks:
       - id: tach
         name: tach-architecture-check
-        entry: uv run tach check
+        entry: uv run --no-sync --frozen tach check
         language: system
         pass_filenames: false
         always_run: true

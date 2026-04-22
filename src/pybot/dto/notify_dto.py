@@ -36,7 +36,7 @@ class NotifyDTO(BaseDTO):
     @classmethod
     def validate_message(cls, message: str) -> str:
         """Normalize and validate notification message text."""
-        return normalize_message(message)
+        return normalize_message(message, max_length=4096)
 
     @field_validator("recipient_id")
     @classmethod
@@ -86,7 +86,7 @@ class NotifyUserDTO(BaseDTO):
     @classmethod
     def validate_message(cls, message: str) -> str:
         """Normalize and validate notification message text."""
-        return normalize_message(message)
+        return normalize_message(message, max_length=4096)
 
     @field_validator("recipient_id")
     @classmethod

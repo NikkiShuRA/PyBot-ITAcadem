@@ -6,7 +6,7 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from pybot.core.config import settings as service_settings
+from pybot.core.config import BotSettings
 from pybot.core.constants import RequestStatus
 from pybot.db.models import RoleRequest
 from pybot.domain.exceptions import (
@@ -128,6 +128,7 @@ async def test_create_role_request_raises_when_pending_request_already_exists(
 @pytest.mark.asyncio
 async def test_check_requesting_user_raises_cooldown_error_with_available_at(
     dishka_request_container,
+    settings_obj: BotSettings,
 ) -> None:
     # Given
     db = await dishka_request_container.get(AsyncSession)
@@ -150,9 +151,7 @@ async def test_check_requesting_user_raises_cooldown_error_with_available_at(
     with pytest.raises(RoleRequestCooldownError) as err:
         await service.check_requesting_user(user_id=user.id, user_role="Mentor")
 
-    assert err.value.available_at == rejected_at + timedelta(
-        minutes=service_settings.role_request_reject_cooldown_minutes
-    )
+    assert err.value.available_at == rejected_at + timedelta(minutes=settings_obj.role_request_reject_cooldown_minutes)
 
 
 @pytest.mark.asyncio

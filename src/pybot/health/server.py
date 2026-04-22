@@ -7,7 +7,7 @@ from multiprocessing.synchronize import Event as MpEvent
 import uvicorn
 
 from ..core import logger
-from ..core.config import settings
+from ..core.config import get_settings
 
 
 async def _watch_stop(server: uvicorn.Server, stop_event: MpEvent) -> None:
@@ -17,6 +17,7 @@ async def _watch_stop(server: uvicorn.Server, stop_event: MpEvent) -> None:
 
 
 def run_health_server(stop_event: MpEvent) -> None:
+    settings = get_settings()
     config = uvicorn.Config(
         "src.pybot.health.app:app",
         host=settings.health_api_host,

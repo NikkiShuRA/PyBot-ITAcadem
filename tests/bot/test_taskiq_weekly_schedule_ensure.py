@@ -9,6 +9,7 @@ import pytest
 from taskiq import AsyncBroker
 from taskiq_redis import ListRedisScheduleSource
 
+from pybot.core.config import BotSettings
 from pybot.infrastructure.taskiq import taskiq_app
 
 
@@ -42,25 +43,26 @@ class FakeKicker:
         return SimpleNamespace(schedule_id=self.schedule_id)
 
 
-def _patch_weekly_settings(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(taskiq_app.settings, "leaderboard_weekly_enabled", True)
-    monkeypatch.setattr(taskiq_app.settings, "leaderboard_weekly_recipient_id", -100_500_700)
-    monkeypatch.setattr(taskiq_app.settings, "leaderboard_weekly_cron", "0 9 * * 1")
-    monkeypatch.setattr(taskiq_app.settings, "leaderboard_weekly_timezone", "Asia/Yekaterinburg")
-    monkeypatch.setattr(taskiq_app.settings, "leaderboard_weekly_limit", 10)
+def _weekly_settings() -> SimpleNamespace:
+    return SimpleNamespace(
+        leaderboard_weekly_enabled=True,
+        leaderboard_weekly_recipient_id=-100_500_700,
+        leaderboard_weekly_cron="0 9 * * 1",
+        leaderboard_weekly_timezone="Asia/Yekaterinburg",
+        leaderboard_weekly_limit=10,
+    )
 
 
 @pytest.mark.asyncio
-async def test_ensure_weekly_leaderboard_schedule_skips_outside_scheduler_process(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    _patch_weekly_settings(monkeypatch)
+async def test_ensure_weekly_leaderboard_schedule_skips_outside_scheduler_process() -> None:
+    settings = _weekly_settings()
     broker = SimpleNamespace(is_scheduler_process=False)
     source = FakeScheduleSource()
 
     await taskiq_app.ensure_weekly_leaderboard_schedule(
         broker=cast(AsyncBroker, broker),
         schedule_source=cast(ListRedisScheduleSource, source),
+        settings=cast(BotSettings, settings),
     )
 
     source.get_schedules.assert_not_called()
@@ -71,7 +73,7 @@ async def test_ensure_weekly_leaderboard_schedule_skips_outside_scheduler_proces
 async def test_ensure_weekly_leaderboard_schedule_noops_when_existing_schedule_matches(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _patch_weekly_settings(monkeypatch)
+    settings = _weekly_settings()
     broker = SimpleNamespace(is_scheduler_process=True)
     kicker = FakeKicker()
     existing = SimpleNamespace(
@@ -87,6 +89,7 @@ async def test_ensure_weekly_leaderboard_schedule_noops_when_existing_schedule_m
     await taskiq_app.ensure_weekly_leaderboard_schedule(
         broker=cast(AsyncBroker, broker),
         schedule_source=cast(ListRedisScheduleSource, source),
+        settings=cast(BotSettings, settings),
     )
 
     source.get_schedules.assert_awaited_once()
@@ -98,7 +101,7 @@ async def test_ensure_weekly_leaderboard_schedule_noops_when_existing_schedule_m
 async def test_ensure_weekly_leaderboard_schedule_replaces_stale_schedule(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _patch_weekly_settings(monkeypatch)
+    settings = _weekly_settings()
     broker = SimpleNamespace(is_scheduler_process=True)
     kicker = FakeKicker()
     stale = SimpleNamespace(
@@ -114,6 +117,7 @@ async def test_ensure_weekly_leaderboard_schedule_replaces_stale_schedule(
     await taskiq_app.ensure_weekly_leaderboard_schedule(
         broker=cast(AsyncBroker, broker),
         schedule_source=cast(ListRedisScheduleSource, source),
+        settings=cast(BotSettings, settings),
     )
 
     source.delete_schedule.assert_awaited_once_with(taskiq_app.LEADERBOARD_WEEKLY_SCHEDULE_ID)

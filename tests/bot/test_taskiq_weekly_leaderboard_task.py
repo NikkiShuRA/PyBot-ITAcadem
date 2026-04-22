@@ -4,9 +4,10 @@ from collections.abc import Awaitable
 from typing import Protocol, cast
 
 import pytest
+from taskiq.brokers.inmemory_broker import InMemoryBroker
 
-from pybot.core import settings
-from pybot.infrastructure.taskiq.tasks.leaderboard import publish_weekly_leaderboard_task
+from pybot.core.config import BotSettings
+from pybot.infrastructure.taskiq.tasks.leaderboard import publish_weekly_leaderboard_task, register_tasks
 from pybot.services.weekly_leaderboard_publisher import WeeklyLeaderboardPublisherService
 
 
@@ -21,11 +22,11 @@ class WeeklyPublisherServiceSpy(WeeklyLeaderboardPublisherService):
 class DishkaContainer(Protocol):
     async def get(
         self,
-        dependency_type: type[WeeklyLeaderboardPublisherService],
+        dependency_type: type[object],
         *args: object,
         component: str | None = None,
         **kwargs: object,
-    ) -> WeeklyLeaderboardPublisherService: ...
+    ) -> object: ...
 
 
 class TaskCallable(Protocol):
@@ -39,17 +40,17 @@ class TaskCallable(Protocol):
 
 
 class DishkaContainerStub:
-    def __init__(self, service: WeeklyLeaderboardPublisherService) -> None:
+    def __init__(self, service: WeeklyLeaderboardPublisherService, settings_obj: BotSettings) -> None:
         self._service = service
+        self._settings = settings_obj
 
     async def get(
         self,
-        dependency_type: type[WeeklyLeaderboardPublisherService],
+        dependency_type: type[object],
         *args: object,
         component: str | None = None,
         **kwargs: object,
-    ) -> WeeklyLeaderboardPublisherService:
-        assert dependency_type is WeeklyLeaderboardPublisherService
+    ) -> object:
         resolved_component = component
         if args:
             resolved_component = args[0]
@@ -57,21 +58,24 @@ class DishkaContainerStub:
             resolved_component = kwargs["component"]
 
         assert resolved_component in ("", None)
-        return self._service
+        if dependency_type is WeeklyLeaderboardPublisherService:
+            return self._service
+        if dependency_type is BotSettings:
+            return self._settings
+        raise AssertionError(f"Unexpected dependency requested: {dependency_type}")
+
+
+def _build_registered_task(settings_obj: BotSettings) -> TaskCallable:
+    broker = InMemoryBroker()
+    task = register_tasks(broker=broker, settings=settings_obj)
+    return cast(TaskCallable, task)
 
 
 @pytest.mark.asyncio
-async def test_publish_weekly_leaderboard_task_uses_service_and_returns_payload(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+async def test_publish_weekly_leaderboard_task_uses_service_and_returns_payload(settings_obj: BotSettings) -> None:
     service = WeeklyPublisherServiceSpy()
-    dishka_container = DishkaContainerStub(service)
-    task = cast(TaskCallable, publish_weekly_leaderboard_task)
-
-    monkeypatch.setattr(
-        "pybot.infrastructure.taskiq.tasks.leaderboard.settings.leaderboard_weekly_timezone",
-        "Asia/Yekaterinburg",
-    )
+    task = _build_registered_task(settings_obj)
+    dishka_container = DishkaContainerStub(service, settings_obj)
 
     payload = await task(
         recipient_id=-100_200_300,
@@ -83,10 +87,14 @@ async def test_publish_weekly_leaderboard_task_uses_service_and_returns_payload(
         "recipient_id": -100_200_300,
         "limit": 12,
     }
-    assert service.calls == [(-100_200_300, 12, "Asia/Yekaterinburg")]
+    assert service.calls == [(-100_200_300, 12, str(settings_obj.leaderboard_weekly_timezone))]
 
 
-def test_publish_weekly_leaderboard_task_has_retry_labels() -> None:
-    assert publish_weekly_leaderboard_task.labels["retry_on_error"] == settings.leaderboard_weekly_retry_enabled
-    assert publish_weekly_leaderboard_task.labels["max_retries"] == settings.leaderboard_weekly_retry_max_retries
-    assert publish_weekly_leaderboard_task.labels["delay"] == settings.leaderboard_weekly_retry_delay_s
+def test_publish_weekly_leaderboard_task_has_retry_labels(settings_obj: BotSettings) -> None:
+    task = register_tasks(broker=InMemoryBroker(), settings=settings_obj)
+
+    assert task.task_name == "leaderboard.publish_weekly"
+    assert task.labels["retry_on_error"] == settings_obj.leaderboard_weekly_retry_enabled
+    assert task.labels["max_retries"] == settings_obj.leaderboard_weekly_retry_max_retries
+    assert task.labels["delay"] == settings_obj.leaderboard_weekly_retry_delay_s
+    assert callable(publish_weekly_leaderboard_task)

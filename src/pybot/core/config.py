@@ -334,6 +334,3 @@ class BotSettings(BaseSettings):
 def get_settings() -> BotSettings:
     """Return the application settings as a cached singleton."""
     return BotSettings()
-
-
-settings: BotSettings = get_settings()
