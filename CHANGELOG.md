@@ -2,6 +2,47 @@
 
 <!-- version list -->
 
+## v0.28.0 (2026-04-22)
+
+### Bug Fixes
+
+- Исправил битую первую строку
+  ([`da60bf4`](https://github.com/Cewerty/PyBot-ITAcadem/commit/da60bf4076fe037f0872203b6ce99e8083f7ee6b))
+
+### Chores
+
+- **test**: Добавил тесты для изменений в di-контейнерах и зависимостях в них
+  ([`ad642cc`](https://github.com/Cewerty/PyBot-ITAcadem/commit/ad642ccfe3d484be44a7ff2646cfc7625ba30e6e))
+
+### Features
+
+- Довершил ввод .env-конфигурируемой системы role policy без создания import-time side effect
+  ([`fab7634`](https://github.com/Cewerty/PyBot-ITAcadem/commit/fab7634c1baa16ce710055b766cd907367f391e8))
+
+### Refactoring
+
+- Внедрить BotSettings в сервисы и адаптеры
+  ([`7f6cbee`](https://github.com/Cewerty/PyBot-ITAcadem/commit/7f6cbeed982cc42f7427e27ca57bcc5f3b612911))
+
+- Изменил логику middelware, чтобы она поддерживала role policy без создания side-effect при
+  импортировании конфигурации
+  ([`d9037f1`](https://github.com/Cewerty/PyBot-ITAcadem/commit/d9037f1b5c56384a9a77ad38f58799c6f86c7ed9))
+
+- Передавать BotSettings в runtime бота и middleware
+  ([`3d2c7ab`](https://github.com/Cewerty/PyBot-ITAcadem/commit/3d2c7ab342395aeee430580524fd49c080092496))
+
+- Перенёс создание DB engine на конфигурацию из DI-контейнера
+  ([`b311799`](https://github.com/Cewerty/PyBot-ITAcadem/commit/b3117990a10a9954e3e71cd1e9bd0a2401728a43))
+
+- Сделать явную регистрацию TaskIQ задач
+  ([`3dc109e`](https://github.com/Cewerty/PyBot-ITAcadem/commit/3dc109e9c9e4ee1ec57ee70795678aa8232db1e5))
+
+### Testing
+
+- Migrate settings usage to isolated settings_obj fixture
+  ([`8c4ac9f`](https://github.com/Cewerty/PyBot-ITAcadem/commit/8c4ac9fa2d3149ceb63a81dfda9154c62d009165))
+
+
 ## v0.27.0 (2026-04-19)
 
 ### Bug Fixes
