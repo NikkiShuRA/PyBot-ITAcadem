@@ -27,7 +27,22 @@ services:
   bot:
     <<: *app-service
     container_name: pybot-bot
-    command: ["python", "run.py"]
+    command: ["sh", "-c", "HEALTH_API_ENABLED=false exec python run.py"]
+
+  health:
+    <<: *app-base
+    container_name: pybot-health
+    profiles: ["health"]
+    restart: unless-stopped
+    command:
+      [
+        "uvicorn",
+        "src.pybot.health.main:app",
+        "--host",
+        "${HEALTH_API_HOST:-0.0.0.0}",
+        "--port",
+        "${HEALTH_API_PORT:-8001}",
+      ]
 
   taskiq-worker:
     <<: *app-service

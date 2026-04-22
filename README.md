@@ -225,7 +225,7 @@ uv run run.py
 just run
 ```
 
-Если `HEALTH_API_ENABLED=true`, `run.py` дополнительно поднимет отдельный процесс health API.
+`run.py` запускает только bot process type. Health API запускается отдельным process type через Docker Compose (`health` profile).
 
 ## Запуск через Docker Compose
 
@@ -235,11 +235,18 @@ just run
 - `taskiq-worker`
 - `taskiq-scheduler`
 - `redis`
+- `health` (optional, `health` profile)
 
 Команда:
 
 ```bash
 docker compose up --build
+```
+
+To run dedicated health process type:
+
+```bash
+HEALTH_API_ENABLED=true COMPOSE_PROFILES=health docker compose up --build
 ```
 
 Особенности локального compose:

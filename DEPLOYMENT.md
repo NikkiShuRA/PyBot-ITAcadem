@@ -110,8 +110,9 @@ This separation is meant to reduce the risk of affecting unrelated projects host
 The deploy role performs a lightweight smoke-check after `docker compose up -d`:
 
 - verifies that `pybot-bot`, `pybot-taskiq-worker`, `pybot-taskiq-scheduler`, and `pybot-redis` are running;
+- if `HEALTH_API_ENABLED=true`, also verifies that `pybot-health` is running;
 - waits for Redis health to become `healthy` when a healthcheck exists;
-- if `HEALTH_API_ENABLED=true`, calls `GET /ready` from inside the bot container.
+- if `HEALTH_API_ENABLED=true`, calls `GET /ready` from inside the health container.
 
 This complements CI tests by validating the deployed runtime on the real server instead of rerunning the same test suite.
 
@@ -158,6 +159,7 @@ Important:
 
 - if you use SQLite in production, keep `DATABASE_URL` under `./data/...`
 - paths like `sqlite+aiosqlite:///./pybot_itacadem.db` will place the database outside the mounted volume and break one-shot migration/seed containers
+- when `HEALTH_API_ENABLED=true`, deploy orchestration enables the `health` Compose profile and starts a dedicated `pybot-health` service (`uvicorn src.pybot.health.main:app`)
 - weekly leaderboard retries are applied only for temporary delivery failures (`NotificationTemporaryError`)
 - retry policy for weekly publishing is controlled by `LEADERBOARD_WEEKLY_RETRY_*` env settings
 
