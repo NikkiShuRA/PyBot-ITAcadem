@@ -6,11 +6,7 @@ from multiprocessing.synchronize import Event as MpEvent
 from src.pybot.bot.tg_bot_run import tg_bot_main
 from src.pybot.core import logger
 from src.pybot.core.config import get_settings
-from src.pybot.di.containers import setup_health_container
 from src.pybot.health.server import run_health_server
-
-container = setup_health_container()
-
 
 if __name__ == "__main__":
     settings = get_settings()
