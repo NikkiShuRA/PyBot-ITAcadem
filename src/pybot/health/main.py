@@ -1,3 +1,9 @@
+"""Health API module.
+
+Provides FastAPI application creation and lifespan management
+for health-checking purposes.
+"""
+
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
@@ -11,6 +17,14 @@ from .routers import health, readiness
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    """Manage Health API lifespan context.
+
+    Args:
+        app (FastAPI): The FastAPI application instance.
+
+    Yields:
+        None
+    """
     logger.info("Health API started")
     try:
         yield
@@ -22,6 +36,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 
 def create_app() -> FastAPI:
+    """Create and configure Health API application.
+
+    Returns:
+        FastAPI: The configured FastAPI application instance.
+    """
     app = FastAPI(title="ITAcadem Health API", docs_url="/docs", redoc_url="/redocs", lifespan=lifespan)
     app.router.route_class = DishkaRoute
     app.include_router(readiness.router)

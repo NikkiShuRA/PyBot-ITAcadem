@@ -1,3 +1,9 @@
+"""Readiness probe router for Health API.
+
+This module provides the /ready endpoint to check if the application dependencies,
+such as the database, are available and ready to serve traffic.
+"""
+
 from dishka.integrations.fastapi import DishkaRoute, FromDishka
 from fastapi import APIRouter, Query
 from fastapi.responses import JSONResponse
@@ -35,8 +41,8 @@ async def ready(
     """Return readiness status based on database connectivity.
 
     Args:
-        health_service: Health application service resolved from Dishka container.
-        include_checks: If False, return status without checks list.
+        health_service (HealthService): Health application service resolved from Dishka container.
+        include_checks (bool): If False, return status without checks list. Defaults to True.
 
     Returns:
         HealthStatusDTO | JSONResponse: Readiness payload or 503 response on failure.

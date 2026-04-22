@@ -1,3 +1,9 @@
+"""Liveness probe router for Health API.
+
+This module provides the /health endpoint to check if the application process
+is alive.
+"""
+
 from dishka.integrations.fastapi import DishkaRoute, FromDishka
 from fastapi import APIRouter
 
@@ -24,7 +30,7 @@ async def health(health_service: FromDishka[HealthService]) -> HealthStatusDTO:
     """Return liveness status of the process.
 
     Args:
-        health_service: Health application service resolved from Dishka container.
+        health_service (HealthService): Health application service resolved from Dishka container.
 
     Returns:
         HealthStatusDTO: Liveness status payload.
