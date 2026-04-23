@@ -34,6 +34,9 @@ services:
     container_name: pybot-health
     profiles: ["health"]
     restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
     command:
       [
         "uvicorn",
@@ -49,11 +52,9 @@ services:
     container_name: pybot-taskiq-worker
     command:
       [
-        "taskiq",
-        "worker",
-        "src.pybot.infrastructure.taskiq.entrypoint:broker",
-        "--workers",
-        "1",
+        "sh",
+        "-c",
+        "TASKIQ_WORKERS='${TASKIQ_WORKERS:-1}'; if [ \"$TASKIQ_WORKERS\" != \"1\" ]; then echo \"TASKIQ_WORKERS=$TASKIQ_WORKERS is not supported yet; only TASKIQ_WORKERS=1 is allowed until the runtime is ready for multi-instance workers.\" >&2; exit 1; fi; exec taskiq worker src.pybot.infrastructure.taskiq.entrypoint:broker --workers \"$TASKIQ_WORKERS\"",
       ]
 
   taskiq-scheduler:

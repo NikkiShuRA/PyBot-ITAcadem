@@ -199,12 +199,16 @@ HEALTH_API_PORT=8001
 uv run alembic upgrade head
 ```
 
+Это локальный эквивалент one-shot process type `migrate`. Его запускают явно перед первым стартом или после изменений схемы. В Docker Compose этому соответствует `docker compose --profile migration run --rm migrate`.
+
 ### 5. При необходимости заполните БД тестовыми данными
 
 ```bash
 uv run python fill_point_db.py --help
 uv run python fill_point_db.py
 ```
+
+Это локальный эквивалент one-shot process type `seed`. Он не считается частью обычного runtime-старта и запускается только тогда, когда нужен initial/test seed. В Docker Compose этому соответствует `docker compose --profile seed run --rm seed`.
 
 Скрипт умеет отдельно включать и отключать:
 
@@ -243,16 +247,31 @@ just run
 docker compose up --build
 ```
 
+Эта команда поднимает только runtime-сервисы по умолчанию. `migrate` и `seed` в неё не входят и должны запускаться отдельно как one-shot process types.
+
 To run dedicated health process type:
 
 ```bash
 HEALTH_API_ENABLED=true COMPOSE_PROFILES=health docker compose up --build
 ```
 
+Тот же запуск без `COMPOSE_PROFILES`:
+
+```bash
+HEALTH_API_ENABLED=true docker compose --profile health up --build
+```
+
+Явный local flow для admin one-shot процессов:
+
+```bash
+docker compose --profile migration run --rm migrate
+docker compose --profile seed run --rm seed
+```
+
 Особенности локального compose:
 
-- контейнер бота при старте применяет миграции;
-- если `AUTO_SEED_DB=true`, контейнер также запускает `fill_point_db.py`;
+- `migrate` запускается отдельным one-shot сервисом и только явно через `docker compose --profile migration run --rm migrate`;
+- `seed` запускается отдельным one-shot сервисом и только явно через `docker compose --profile seed run --rm seed`;
 - по умолчанию в compose уже прокинуты `DATABASE_URL`, `TELEGRAM_PROXY_URL`, `FSM_STORAGE_BACKEND=redis` и `REDIS_URL`.
 
 ## Проверка качества
@@ -301,6 +320,14 @@ Production compose использует отдельные one-shot сервис
 
 - `migrate` - для `alembic upgrade head`;
 - `seed` - для управляемого initial seed.
+
+Runtime process types в production те же, что и локально: `bot`, `taskiq-worker`, `taskiq-scheduler`, optional `health`, `redis`.
+
+Кто и когда запускает one-shot процессы:
+
+- `migrate` на каждом production deploy запускает Ansible до `docker compose up -d`;
+- `seed` в production запускает Ansible только при `RUN_SEED_ON_DEPLOY=true`;
+- в local compose те же `migrate` и `seed` явно запускает сам разработчик или оператор.
 
 Подробнее:
 
