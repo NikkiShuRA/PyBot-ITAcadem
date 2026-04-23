@@ -5,6 +5,7 @@ from aiogram.client.session.aiohttp import AiohttpSession
 from dishka import AsyncContainer, Provider, Scope, make_async_container, provide
 from dishka.integrations.aiogram import AiogramProvider
 from dishka.integrations.taskiq import TaskiqProvider
+from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from ..core import logger
@@ -20,6 +21,7 @@ from ..infrastructure import (
     UserRepository,
     ValuationRepository,
 )
+from ..infrastructure.health import RedisPingProbe, SessionExecutor
 from ..infrastructure.ports import LoggingNotificationService, TelegramNotificationService
 from ..infrastructure.taskiq.taskiq_notification_dispatcher import TaskIQNotificationDispatcher
 from ..services import (
@@ -34,7 +36,7 @@ from ..services import (
 )
 from ..services.broadcast import BroadcastService
 from ..services.competence import CompetenceService
-from ..services.health import HealthService, SessionExecutor
+from ..services.health import HealthService
 from ..services.levels import LevelService
 from ..services.notification_facade import NotificationFacade
 from ..services.points import PointsService
@@ -228,8 +230,25 @@ class HealthProvider(Provider):
     """Health API services."""
 
     @provide(scope=Scope.REQUEST)
-    def health_service(self, db: AsyncSession) -> HealthService:
-        return HealthService(SessionExecutor(db))
+    def health_service(self, db: AsyncSession, redis_client: Redis) -> HealthService:
+        return HealthService(SessionExecutor(db), RedisPingProbe(redis_client))
+
+
+class RedisProvider(Provider):
+    """Provide Redis resources for runtimes that need a direct client."""
+
+    @provide(scope=Scope.APP)
+    async def redis_client(self, settings: BotSettings) -> AsyncGenerator[Redis, None]:
+        client = Redis.from_url(
+            settings.redis_url,
+            encoding="utf-8",
+            decode_responses=True,
+        )
+        try:
+            yield client
+        finally:
+            await client.aclose()
+            logger.info("Redis client disposed")
 
 
 class DomainServiceProvider(Provider):
@@ -317,6 +336,7 @@ def setup_health_container() -> AsyncContainer:
     return make_async_container(
         DatabaseProvider(),
         SessionProvider(),
+        RedisProvider(),
         HealthProvider(),
         ConfigProvider(),
     )
