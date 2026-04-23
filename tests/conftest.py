@@ -30,6 +30,7 @@ from pybot.di.containers import (
     ConfigProvider,
     DomainServiceProvider,
     HealthProvider,
+    RedisProvider,
     RepositoryProvider,
     ServiceProvider,
 )
@@ -167,6 +168,7 @@ async def dishka_test_container(
         RepositoryProvider(),
         ServiceProvider(),
         DomainServiceProvider(),
+        RedisProvider(),
         HealthProvider(),
         ConfigProvider(),
         TestOverridesProvider(),

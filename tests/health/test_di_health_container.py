@@ -1,4 +1,5 @@
 import pytest
+from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
 from pybot.di import containers as di_containers
@@ -13,11 +14,13 @@ async def test_setup_health_container_smoke_resolves_key_dependencies(
     container = di_containers.setup_health_container()
     try:
         engine = await container.get(AsyncEngine)
+        redis_client = await container.get(Redis)
         async with container() as request_container:
             session = await request_container.get(AsyncSession)
             health_service = await request_container.get(HealthService)
 
         assert engine is patched_public_di_engine
+        assert isinstance(redis_client, Redis)
         assert session is not None
         assert isinstance(health_service, HealthService)
     finally:
@@ -39,6 +42,10 @@ async def test_health_container_lifecycle_closes_session_and_disposes_engine(
         def __init__(self) -> None:
             self.close = mocker.AsyncMock()
 
+    class FakeRedis:
+        def __init__(self) -> None:
+            self.aclose = mocker.AsyncMock()
+
     class FakeSessionContext:
         def __init__(self, session: FakeSession) -> None:
             self._session = session
@@ -58,14 +65,23 @@ async def test_health_container_lifecycle_closes_session_and_disposes_engine(
 
     fake_engine = FakeEngine()
     fake_session = FakeSession()
+    fake_redis = FakeRedis()
 
     def fake_async_sessionmaker(*args, **kwargs) -> FakeSessionMaker:
         return FakeSessionMaker(fake_session)
 
+    @classmethod
+    def fake_from_url(cls, *args, **kwargs) -> FakeRedis:
+        _ = cls, args, kwargs
+        return fake_redis
+
     monkeypatch.setattr(di_containers, "global_engine", fake_engine)
     monkeypatch.setattr(di_containers, "async_sessionmaker", fake_async_sessionmaker)
+    monkeypatch.setattr(di_containers.Redis, "from_url", fake_from_url)
 
     container = di_containers.setup_health_container()
+    resolved_redis = await container.get(Redis)
+    assert resolved_redis is fake_redis
     async with container() as request_container:
         session = await request_container.get(AsyncSession)
         assert session is fake_session
@@ -74,3 +90,4 @@ async def test_health_container_lifecycle_closes_session_and_disposes_engine(
 
     await container.close()
     fake_engine.dispose.assert_awaited_once()
+    fake_redis.aclose.assert_awaited_once()

@@ -39,7 +39,13 @@ class StubHealthService(HealthService):
                         status=check_status,
                         details=details,
                         latency_ms=1,
-                    )
+                    ),
+                    HealthCheckDTO(
+                        name="redis",
+                        status=check_status,
+                        details=details if not self._is_ready else None,
+                        latency_ms=1,
+                    ),
                 ],
                 timestamp=datetime.now(UTC),
             ),
@@ -146,4 +152,4 @@ def test_create_app_ready_endpoint_smoke(
     assert response.status_code == expected_status_code
     payload = response.json()
     assert payload["status"] == expected_status
-    assert payload["checks"][0]["name"] == "database"
+    assert [check["name"] for check in payload["checks"]] == ["database", "redis"]
