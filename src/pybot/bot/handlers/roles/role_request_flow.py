@@ -21,11 +21,7 @@ from ....domain.exceptions import (
     UserNotFoundError,
 )
 from ....dto import NotifyDTO
-from ....services.ports import NotificationPort
-from ....services.role_request import RoleRequestService
-from ...filters import check_text_message_correction, create_chat_type_routers
-from ...keyboards.role_request_keyboard import RoleRequestCB
-from ...texts import (
+from ....presentation.texts import (
     ROLE_REQUEST_ADMIN_ALREADY_ASSIGNED,
     ROLE_REQUEST_ADMIN_ALREADY_PROCESSED,
     ROLE_REQUEST_ADMIN_APPROVED,
@@ -49,6 +45,10 @@ from ...texts import (
     role_request_cooldown_until,
     role_request_created,
 )
+from ....services.ports import NotificationPort
+from ....services.role_request import RoleRequestService
+from ...filters import check_text_message_correction, create_chat_type_routers
+from ...keyboards.role_request_keyboard import RoleRequestCB
 
 (role_request_private_router, _, _) = create_chat_type_routers("grand_points")
 

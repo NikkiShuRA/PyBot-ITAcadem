@@ -9,9 +9,7 @@ from dishka.integrations.aiogram import FromDishka
 from ....core import logger
 from ....core.constants import RoleEnum
 from ....domain.exceptions import InvalidRoleChangeError, RoleNotFoundError, UserNotFoundError
-from ....services.user_services import UserRolesService, UserService
-from ...filters import check_text_message_correction, create_chat_type_routers
-from ...texts import (
+from ....presentation.texts import (
     ROLE_COMMAND_INVALID_FORMAT,
     ROLE_REASON_QUOTES_REQUIRED,
     ROLE_UNEXPECTED_ERROR,
@@ -24,6 +22,8 @@ from ...texts import (
     target_selected_mention,
     target_selected_reply,
 )
+from ....services.user_services import UserRolesService, UserService
+from ...filters import check_text_message_correction, create_chat_type_routers
 
 (_, _, change_role_global_router) = create_chat_type_routers("grand_points")
 

@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from ..bot.texts import render_leaderboard_message
 from ..core.constants import PointsTypeEnum
 from ..dto import NotifyDTO
+from ..presentation.texts import render_leaderboard_message
 from .leaderboard import LeaderboardService
 from .ports import NotificationPort
 

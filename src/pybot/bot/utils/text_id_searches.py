@@ -6,9 +6,9 @@ from re import Match
 from aiogram.types import Message
 
 from ...dto import UserReadDTO
+from ...presentation.texts import TARGET_NOT_FOUND, TARGET_REQUIRED, target_selected_mention, target_selected_reply
 from ...services.user_services import UserService
 from ..filters.message_value_filters import check_text_message_correction
-from ..texts import TARGET_NOT_FOUND, TARGET_REQUIRED, target_selected_mention, target_selected_reply
 
 
 async def _get_target_user_id_from_reply(message: Message) -> int | None:

@@ -11,9 +11,9 @@ from dishka.integrations.aiogram import CONTAINER_NAME
 from ...core import logger
 from ...core.config import BotSettings
 from ...core.constants import RolePolicyKey
+from ...presentation.texts import ROLE_ACCESS_DENIED, ROLE_AUTH_ERROR
 from ...services import UserService
 from ...utils import has_any_role
-from ..texts import ROLE_ACCESS_DENIED, ROLE_AUTH_ERROR
 
 
 class RoleMiddleware(BaseMiddleware):

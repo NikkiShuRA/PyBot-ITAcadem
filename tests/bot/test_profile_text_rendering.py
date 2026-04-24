@@ -1,6 +1,6 @@
 from datetime import date
 
-from pybot.bot.texts import render_profile_message
+from pybot.presentation.texts import render_profile_message
 from pybot.core.constants import PointsTypeEnum
 from pybot.dto import CompetenceReadDTO, LevelReadDTO, ProfileViewDTO, UserLevelReadDTO, UserReadDTO
 from pybot.dto.value_objects import Points

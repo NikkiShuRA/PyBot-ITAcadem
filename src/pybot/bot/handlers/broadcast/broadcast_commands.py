@@ -9,10 +9,10 @@ from dishka import FromDishka
 from ....core.constants import RoleEnum
 from ....domain.exceptions import BroadcastAlreadyRunningError, BroadcastMessageNotSpecifiedError, UsersNotFoundError
 from ....dto import BroadcastDTO, CompetenceBroadcastDTO, CompetenceReadDTO, RoleBroadcastDTO
+from ....presentation.texts import BROADCAST_MESSAGE_REQUIRED, BROADCAST_USAGE, broadcast_unknown_target
 from ....services.broadcast import BroadcastService
 from ....services.competence import CompetenceService
 from ...filters import check_text_message_correction, create_chat_type_routers
-from ...texts import BROADCAST_MESSAGE_REQUIRED, BROADCAST_USAGE, broadcast_unknown_target
 
 (broadcast_command_private_router, _, _) = create_chat_type_routers("broadcast")
 TARGET_AND_MESSAGE_PARTS = 2

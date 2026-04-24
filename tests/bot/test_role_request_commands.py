@@ -7,7 +7,7 @@ import pytest
 from aiogram.types import Chat, Message, User
 
 from pybot.bot.handlers.roles.role_request_flow import cmd_role_request
-from pybot.bot.texts import ROLE_REQUEST_USAGE, role_request_cooldown_until
+from pybot.presentation.texts import ROLE_REQUEST_USAGE, role_request_cooldown_until
 from pybot.domain.exceptions import RoleRequestCooldownError
 
 

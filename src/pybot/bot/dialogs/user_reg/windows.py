@@ -8,7 +8,7 @@ from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.kbd import Back, Button, Cancel, Column, Multiselect, Row
 from aiogram_dialog.widgets.text import Const, Format
 
-from ...texts import (
+from ....presentation.texts import (
     BUTTON_CONTINUE,
     BUTTON_FINISH_REGISTRATION,
     REGISTRATION_COMPETENCE_STEP,

@@ -8,7 +8,7 @@ import pytest
 from aiogram.types import Chat, Message, User
 
 from pybot.bot.handlers.broadcast.broadcast_commands import _extract_message_for_broadcast, broadcast_command
-from pybot.bot.texts import BROADCAST_MESSAGE_REQUIRED, BROADCAST_USAGE
+from pybot.presentation.texts import BROADCAST_MESSAGE_REQUIRED, BROADCAST_USAGE
 from pybot.domain.exceptions import BroadcastMessageNotSpecifiedError
 from pybot.dto import BroadcastDTO, CompetenceBroadcastDTO, CompetenceReadDTO, RoleBroadcastDTO
 

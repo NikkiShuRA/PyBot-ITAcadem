@@ -6,11 +6,11 @@ import textwrap
 from collections.abc import Sequence
 from datetime import timedelta
 
-from ..core.constants import PointsTypeEnum, RequestStatus, RoleEnum
-from ..dto import CompetenceReadDTO, ProfileViewDTO, RoleReadDTO, WeeklyLeaderboardRowDTO
-from ..dto.leaderboard_dto import LeaderboardPeriod
-from ..dto.value_objects import Points
-from ..utils import telegram_user_link
+from ...core.constants import PointsTypeEnum, RequestStatus, RoleEnum
+from ...dto import CompetenceReadDTO, ProfileViewDTO, RoleReadDTO, WeeklyLeaderboardRowDTO
+from ...dto.leaderboard_dto import LeaderboardPeriod
+from ...dto.value_objects import Points
+from ...utils import telegram_user_link
 
 REPOSITORY_URL = "https://github.com/NikkiShuRA/PyBot-ITAcadem.git"
 AVAILABLE_ROLES = ", ".join(role.value for role in RoleEnum)

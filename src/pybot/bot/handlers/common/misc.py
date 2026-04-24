@@ -5,9 +5,9 @@ from aiogram.types import Message
 from dishka import FromDishka
 
 from ....domain.exceptions import UserNotFoundError
+from ....presentation.texts import PING_ANONYMOUS, ping_status
 from ....services.user_services import UserRolesService, UserService
 from ...filters import create_chat_type_routers
-from ...texts import PING_ANONYMOUS, ping_status
 
 _, _, misc_global_router = create_chat_type_routers("start")
 

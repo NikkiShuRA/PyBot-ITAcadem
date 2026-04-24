@@ -9,7 +9,7 @@ import pytest
 from aiogram.types import Chat, Message, User
 
 from pybot.bot.handlers.points import grand_points
-from pybot.bot.texts import (
+from pybot.presentation.texts import (
     POINTS_AMOUNT_REQUIRED,
     POINTS_COMMAND_INVALID_FORMAT,
     POINTS_OPERATION_FAILED,

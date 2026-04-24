@@ -10,7 +10,7 @@ from aiogram.types import Chat, Contact, Message, ReplyKeyboardRemove, User
 from aiogram_dialog import DialogManager
 
 from pybot.bot.dialogs.user_reg.handlers import _handle_contact_input
-from pybot.bot.texts import (
+from pybot.presentation.texts import (
     REGISTRATION_CONTACT_ACCEPTED,
     REGISTRATION_CONTACT_EMPTY,
     registration_existing_profile,

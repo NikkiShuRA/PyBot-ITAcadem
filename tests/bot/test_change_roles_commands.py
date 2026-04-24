@@ -10,7 +10,7 @@ import pytest
 from aiogram.types import Chat, Message, MessageEntity, User
 
 from pybot.bot.handlers.roles import change_roles
-from pybot.bot.texts import (
+from pybot.presentation.texts import (
     ROLE_COMMAND_INVALID_FORMAT,
     ROLE_REASON_QUOTES_REQUIRED,
     ROLE_UNEXPECTED_ERROR,

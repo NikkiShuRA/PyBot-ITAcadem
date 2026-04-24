@@ -12,10 +12,7 @@ from dishka.integrations.aiogram import FromDishka
 from ....core import logger
 from ....domain.exceptions import CommandTargetNotSpecifiedError, CompetenceNotFoundError, UserNotFoundError
 from ....dto import UserReadDTO
-from ....services import CompetenceService
-from ....services.user_services import UserCompetenceService, UserService
-from ...filters import check_text_message_correction, create_chat_type_routers
-from ...texts import (
+from ....presentation.texts import (
     COMPETENCE_UNEXPECTED_ERROR,
     TARGET_NOT_FOUND,
     competence_add_success,
@@ -28,6 +25,9 @@ from ...texts import (
     competence_target_required,
     competence_validation_error,
 )
+from ....services import CompetenceService
+from ....services.user_services import UserCompetenceService, UserService
+from ...filters import check_text_message_correction, create_chat_type_routers
 
 (_, _, change_competence_global_router) = create_chat_type_routers("grand_points")
 

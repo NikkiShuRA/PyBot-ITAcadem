@@ -12,11 +12,7 @@ from ....core.constants import PointsTypeEnum, TaskScheduleKind
 from ....domain.exceptions import DomainError, InvalidPointsValueError, UserNotFoundError, ZeroPointsAdjustmentError
 from ....dto import AdjustUserPointsDTO, UserReadDTO
 from ....dto.value_objects import Points
-from ....services.notification_facade import NotificationFacade, NotifyUserDTO
-from ....services.points import PointsService
-from ....services.user_services import UserService
-from ...filters import check_text_message_correction, create_chat_type_routers
-from ...texts import (
+from ....presentation.texts import (
     POINTS_AMOUNT_REQUIRED,
     POINTS_COMMAND_INVALID_FORMAT,
     POINTS_OPERATION_FAILED,
@@ -27,6 +23,10 @@ from ...texts import (
     points_invalid_value,
     points_notification,
 )
+from ....services.notification_facade import NotificationFacade, NotifyUserDTO
+from ....services.points import PointsService
+from ....services.user_services import UserService
+from ...filters import check_text_message_correction, create_chat_type_routers
 from ...utils import _get_target_user_id_from_mention, _get_target_user_id_from_reply, _get_target_user_id_from_text
 
 (_, _, grand_points_global_router) = create_chat_type_routers("grand_points")

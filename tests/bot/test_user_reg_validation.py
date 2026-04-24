@@ -24,7 +24,7 @@ from pybot.bot.dialogs.user_reg.handlers import (
     request_contact_prompt,
 )
 from pybot.bot.keyboards.auth import request_contact_kb
-from pybot.bot.texts import (
+from pybot.presentation.texts import (
     REGISTRATION_CONTACT_PROMPT,
     REGISTRATION_INTERNAL_ERROR,
     REGISTRATION_NAME_INVALID_SYMBOLS,

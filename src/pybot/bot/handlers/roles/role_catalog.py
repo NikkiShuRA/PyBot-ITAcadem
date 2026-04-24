@@ -5,9 +5,9 @@ from aiogram.types import Message
 from dishka.integrations.aiogram import FromDishka
 
 from ....core import logger
+from ....presentation.texts import ROLE_UNEXPECTED_ERROR, roles_catalog
 from ....services.user_services import UserRolesService
 from ...filters import create_chat_type_routers
-from ...texts import ROLE_UNEXPECTED_ERROR, roles_catalog
 
 (_, _, role_catalog_global_router) = create_chat_type_routers("role_catalog")
 

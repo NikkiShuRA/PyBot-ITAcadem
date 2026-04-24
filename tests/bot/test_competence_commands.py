@@ -10,7 +10,7 @@ import pytest
 from aiogram.types import Chat, Message, MessageEntity, User
 
 from pybot.bot.handlers.roles import change_competences
-from pybot.bot.texts import (
+from pybot.presentation.texts import (
     COMPETENCE_UNEXPECTED_ERROR,
     TARGET_NOT_FOUND,
     competence_list_required,

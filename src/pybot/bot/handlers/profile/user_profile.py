@@ -6,10 +6,10 @@ from aiogram_dialog import DialogManager
 from aiogram_dialog.api.entities.modes import StartMode
 from dishka.integrations.aiogram import FromDishka
 
+from ....presentation.texts import render_profile_message
 from ....services.user_services import UserProfileService, UserService
 from ...dialogs.user_reg.states import CreateProfileSG
 from ...filters import create_chat_type_routers
-from ...texts import render_profile_message
 
 user_profile_private_router, user_profile_group_router, user_profile_global_router = create_chat_type_routers(
     "user_profile"

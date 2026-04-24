@@ -2,7 +2,6 @@ from datetime import datetime, timedelta
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..bot.texts import role_request_user_status
 from ..core.config import BotSettings
 from ..core.constants import RequestStatus
 from ..db.models.role_module import RoleRequest
@@ -18,6 +17,7 @@ from ..domain.exceptions import (
 from ..dto import NotifyDTO
 from ..dto.role_dto import CreateRoleRequestDTO
 from ..infrastructure import RoleRepository, RoleRequestRepository, UserRepository
+from ..presentation.texts import role_request_user_status
 from ..services.ports import NotificationPort
 
 

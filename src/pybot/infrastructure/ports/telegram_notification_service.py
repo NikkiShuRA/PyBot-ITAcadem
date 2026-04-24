@@ -13,10 +13,10 @@ from aiogram.exceptions import (
 )
 
 from ...bot.keyboards.role_request_keyboard import get_admin_decision_kb
-from ...bot.texts import role_request_admin_notification
 from ...core import logger
 from ...core.config import BotSettings
 from ...dto import NotifyDTO
+from ...presentation.texts import role_request_admin_notification
 from ...services.ports import NotificationPermanentError, NotificationPort, NotificationTemporaryError
 from ...utils import telegram_user_link
 

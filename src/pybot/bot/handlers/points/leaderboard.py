@@ -6,9 +6,9 @@ from dishka.integrations.aiogram import FromDishka
 
 from ....core import logger
 from ....core.constants import PointsTypeEnum
+from ....presentation.texts import LEADERBOARD_UNEXPECTED_ERROR, render_leaderboard_message
 from ....services import LeaderboardService
 from ...filters import create_chat_type_routers
-from ...texts import LEADERBOARD_UNEXPECTED_ERROR, render_leaderboard_message
 
 (_, _, leaderboard_global_router) = create_chat_type_routers("leaderboard")
 

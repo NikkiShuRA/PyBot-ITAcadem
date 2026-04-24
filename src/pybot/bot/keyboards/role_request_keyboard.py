@@ -6,7 +6,7 @@ from aiogram.filters.callback_data import CallbackData
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 from ...core.constants import RequestStatus
-from ..texts import BUTTON_APPROVE, BUTTON_REJECT
+from ...presentation.texts import BUTTON_APPROVE, BUTTON_REJECT
 
 
 class RoleRequestCB(CallbackData, prefix="role_req"):

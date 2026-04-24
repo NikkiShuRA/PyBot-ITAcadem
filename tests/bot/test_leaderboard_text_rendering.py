@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 
-from pybot.bot.texts import LEADERBOARD_EMPTY, render_leaderboard_message
+from pybot.presentation.texts import LEADERBOARD_EMPTY, render_leaderboard_message
 from pybot.core.constants import PointsTypeEnum
 from pybot.dto import WeeklyLeaderboardRowDTO
 from pybot.dto.leaderboard_dto import LeaderboardPeriod

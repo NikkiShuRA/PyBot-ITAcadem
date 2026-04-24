@@ -8,10 +8,7 @@ from aiogram_dialog.api.entities.modes import StartMode
 from dishka.integrations.aiogram import FromDishka
 
 from ....bot.dialogs.user_reg.states import CreateProfileSG
-from ....services.user_services import UserProfileService, UserRolesService, UserService
-from ....utils import has_any_role
-from ...filters import create_chat_type_routers
-from ...texts import (
+from ....presentation.texts import (
     HELP_GROUP,
     HELP_PRIVATE,
     HELP_PRIVATE_PUBLIC,
@@ -20,6 +17,9 @@ from ...texts import (
     START_USER_ERROR,
     render_profile_message,
 )
+from ....services.user_services import UserProfileService, UserRolesService, UserService
+from ....utils import has_any_role
+from ...filters import create_chat_type_routers
 
 start_private_router, start_group_router, start_global_router = create_chat_type_routers("start")
 

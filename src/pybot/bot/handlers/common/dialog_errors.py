@@ -6,7 +6,7 @@ from aiogram.types import CallbackQuery, ErrorEvent
 from aiogram_dialog.api.exceptions import UnknownIntent
 
 from ....core import logger
-from ...texts import STALE_DIALOG_MESSAGE
+from ....presentation.texts import STALE_DIALOG_MESSAGE
 
 
 async def handle_unknown_intent(event: ErrorEvent) -> bool:

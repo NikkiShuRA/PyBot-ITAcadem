@@ -17,7 +17,7 @@ from pybot.bot.dialogs.user_reg.states import CreateProfileSG
 from pybot.bot.handlers.common.start import cmd_start_private
 from pybot.bot.handlers.profile.user_profile import cmd_profile_private
 from pybot.bot.keyboards.auth import request_contact_kb
-from pybot.bot.texts import REGISTRATION_CONTACT_PROMPT
+from pybot.presentation.texts import REGISTRATION_CONTACT_PROMPT
 from pybot.core.constants import PointsTypeEnum
 from pybot.dto import UserReadDTO
 from pybot.dto.value_objects import Points

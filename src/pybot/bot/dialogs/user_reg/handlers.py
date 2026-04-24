@@ -14,10 +14,7 @@ from ....domain.exceptions import NameInputValidationError
 from ....dto import UserCreateDTO, UserReadDTO
 from ....dto.competence_dto import CompetenceReadDTO
 from ....mappers.user_mappers import map_dialog_data_to_user_registration_dto
-from ....services import CompetenceService, UserRegistrationService
-from ....services.user_services import UserProfileService, UserService
-from ...keyboards.auth import request_contact_kb
-from ...texts import (
+from ....presentation.texts import (
     REGISTRATION_CONTACT_ACCEPTED,
     REGISTRATION_CONTACT_EMPTY,
     REGISTRATION_CONTACT_PROMPT,
@@ -31,6 +28,9 @@ from ...texts import (
     registration_profile_created,
     render_profile_message,
 )
+from ....services import CompetenceService, UserRegistrationService
+from ....services.user_services import UserProfileService, UserService
+from ...keyboards.auth import request_contact_kb
 
 
 async def on_other_messages(message: Message, message_input: MessageInput, manager: DialogManager) -> None:

@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from pybot.bot.handlers.roles.role_request_flow import accept_role_request, reject_role_request
 from pybot.bot.keyboards.role_request_keyboard import RoleRequestCB
-from pybot.bot.texts import (
+from pybot.presentation.texts import (
     ROLE_REQUEST_ADMIN_ALREADY_PROCESSED,
     ROLE_REQUEST_ADMIN_APPROVED,
     ROLE_REQUEST_ADMIN_REJECTED,

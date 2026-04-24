@@ -11,9 +11,9 @@ from dishka.integrations.aiogram import FromDishka
 from ....core import logger
 from ....domain.exceptions import UserNotFoundError
 from ....dto import UserReadDTO
+from ....presentation.texts import ROLE_UNEXPECTED_ERROR, TARGET_NOT_FOUND, user_role_list, user_role_none
 from ....services.user_services import UserRolesService, UserService
 from ...filters import check_text_message_correction, create_chat_type_routers
-from ...texts import ROLE_UNEXPECTED_ERROR, TARGET_NOT_FOUND, user_role_list, user_role_none
 
 (_, _, show_roles_global_router) = create_chat_type_routers("show_roles")
 
