@@ -23,12 +23,12 @@ depends_on = ["pybot.domain", "pybot.core", "pybot.utils"]
 # ── pybot.db — ORM-модели и конфигурация БД ─────────────────────────────────────
 [[modules]]
 path = "pybot.db"
-depends_on = ["pybot.domain", "pybot.core", "pybot.utils", "pybot.dto"]
+depends_on = ["pybot.domain", "pybot.core", "pybot.dto"]
 
 # ── pybot.mappers — маппинг между слоями ────────────────────────────────────────
 [[modules]]
 path = "pybot.mappers"
-depends_on = ["pybot.domain", "pybot.dto", "pybot.db", "pybot.core"]
+depends_on = [ "pybot.dto", "pybot.db", "pybot.core"]
 
 # ── pybot.infrastructure — репозитории и адаптеры ───────────────────────────────
 # Порт нотификаций (telegram_notification_service) осознанно использует
@@ -41,7 +41,6 @@ depends_on = [
     "pybot.dto",
     "pybot.db",
     "pybot.utils",
-    "pybot.mappers",
     "pybot.core",
     "pybot.services",   # ports (NotificationPort и пр.) объявлены в services
     "pybot.bot",        # telegram_notification_service использует bot.texts и keyboards
@@ -62,8 +61,7 @@ depends_on = [
     "pybot.utils",
     "pybot.mappers",
     "pybot.core",
-    "pybot.db",  # Rich ORM Models: сервисы вызывают методы моделей напрямую
-    "pybot.bot", # bot.texts для форматирования рассылок и лидербордов
+    "pybot.db", # bot.texts для форматирования рассылок и лидербордов
 ]
 
 # ── pybot.di — контейнеры зависимостей (Dishka) ─────────────────────────────────
@@ -71,11 +69,8 @@ depends_on = [
 path = "pybot.di"
 depends_on = [
     "pybot.domain",
-    "pybot.dto",
     "pybot.infrastructure",
     "pybot.services",
-    "pybot.bot",
-    "pybot.utils",
     "pybot.db",
     "pybot.core",
 ]
@@ -98,7 +93,7 @@ depends_on = [
 # ── pybot.utils — общие утилиты ──────────────────────────────────────────────────
 [[modules]]
 path = "pybot.utils"
-depends_on = ["pybot.core"]
+depends_on = []
 
 # ── pybot.health — health-check API ─────────────────────────────────────────────
 [[modules]]
@@ -111,13 +106,4 @@ depends_on = ["pybot.services", "pybot.core", "pybot.di", "pybot.dto"]
 [[modules]]
 path = "pybot.cli"
 depends_on = [
-    "pybot.core",
-    "pybot.dto",
-    "pybot.db",
-    "pybot.domain",
-    "pybot.infrastructure",
-    "pybot.services",
-    "pybot.di",
-    "pybot.utils",
-    "pybot.mappers",
 ]
