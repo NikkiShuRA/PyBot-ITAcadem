@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from contextlib import suppress
 
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.base import BaseStorage, DefaultKeyBuilder
@@ -129,11 +130,26 @@ async def notify_shutdown_alert(runtime_alerts_service: SystemRuntimeAlertsServi
         logger.exception("event=runtime_alert phase=shutdown status=failed")
 
 
+async def wait_for_startup_alert(task: asyncio.Task[None] | None, timeout_s: float = 5.0) -> None:
+    """Wait for startup alert task completion without blocking shutdown forever."""
+    if task is None:
+        return
+
+    try:
+        await asyncio.wait_for(task, timeout=timeout_s)
+    except TimeoutError:
+        task.cancel()
+        with suppress(asyncio.CancelledError):
+            await task
+        logger.warning("event=runtime_alert phase=startup status=timeout_cancelled")
+
+
 async def tg_bot_main() -> None:
     """Run the bot with a graceful shutdown path."""
     container: AsyncContainer | None = None
     dp: Dispatcher | None = None
     runtime_alerts_service: SystemRuntimeAlertsService | None = None
+    startup_alert_task: asyncio.Task[None] | None = None
     try:
         logger.info("event=bot_runtime_init status=started")
         settings = get_settings()
@@ -143,10 +159,13 @@ async def tg_bot_main() -> None:
         runtime_alerts_service = await setup_runtime_alerts_service(container)
         await setup_middlewares(dp, settings)
         setup_handlers(dp)
-        await bot.delete_webhook(drop_pending_updates=True)
+        if settings.bot_mode == "prod":
+            await bot.delete_webhook(drop_pending_updates=False)
+        else:
+            await bot.delete_webhook(drop_pending_updates=True)
         logger.info("event=bot_runtime_init status=completed")
-        await notify_startup_alert(runtime_alerts_service)
         logger.info("event=polling status=started")
+        startup_alert_task = asyncio.create_task(notify_startup_alert(runtime_alerts_service))
         await dp.start_polling(bot)
     except asyncio.CancelledError:
         logger.info("event=bot_runtime_shutdown reason=cancelled")
@@ -156,6 +175,8 @@ async def tg_bot_main() -> None:
         raise
     finally:
         logger.info("event=graceful_shutdown status=started")
+
+        await wait_for_startup_alert(startup_alert_task)
 
         if runtime_alerts_service is not None:
             await notify_shutdown_alert(runtime_alerts_service)
