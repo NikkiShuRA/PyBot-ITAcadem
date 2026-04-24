@@ -14,8 +14,6 @@ from src.pybot.db.base_class import Base
 # Импортируем модели, чтобы Base.metadata собрался
 from src.pybot.db.models import *  # noqa: F403  # только для Alembic!
 
-settings = get_settings()
-
 # ====================== НАСТРОЙКИ ПРОЕКТА ======================
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if project_root not in sys.path:
@@ -28,11 +26,15 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Подключаем DATABASE_URL из твоих настроек
-if settings.database_url:
-    config.set_main_option("sqlalchemy.url", settings.database_url)
-
 target_metadata = Base.metadata
+
+
+def _configure_database_url() -> str:
+    """Resolve DATABASE_URL from runtime settings and write it into Alembic config."""
+    database_url = get_settings().database_url
+    if database_url:
+        config.set_main_option("sqlalchemy.url", database_url)
+    return database_url
 
 
 def do_run_migrations(connection: Connection) -> None:
@@ -51,7 +53,7 @@ def do_run_migrations(connection: Connection) -> None:
 
 async def run_migrations_online() -> None:
     """Асинхронный запуск миграций (online mode)."""
-    url = config.get_main_option("sqlalchemy.url")
+    url = _configure_database_url() or config.get_main_option("sqlalchemy.url")
     if not url:
         raise ValueError("DATABASE_URL не настроен в alembic.ini / settings")
 
@@ -71,7 +73,7 @@ async def run_migrations_online() -> None:
 
 def run_migrations_offline() -> None:
     """Offline mode (редко используется)."""
-    url = config.get_main_option("sqlalchemy.url")
+    url = _configure_database_url() or config.get_main_option("sqlalchemy.url")
     if not url:
         raise ValueError("DATABASE_URL не настроен")
 
