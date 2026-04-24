@@ -30,6 +30,7 @@ dependencies = [
     "pendulum>=3.2.0",
     "pydantic-extra-types[cron,pendulum]>=2.11.0",
     "tyro>=1.0.10",
+    "asyncpg>=0.31.0",
 ]
 
 [project.scripts]
