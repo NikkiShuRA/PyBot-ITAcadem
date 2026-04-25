@@ -8,8 +8,7 @@ import pytest
 from fastapi.responses import JSONResponse
 
 from pybot.dto.health_dto import HealthStatusDTO
-from pybot.health.routers.health import health as health_endpoint
-from pybot.health.routers.readiness import ready
+from pybot.presentation.web import health_endpoint, ready_endpoint
 from pybot.services.health import HealthService
 from pybot.services.ports.health_probe import SupportsExecute, SupportsPing
 
@@ -95,7 +94,7 @@ async def test_health_service_ready_fail_is_descriptive_for_redis() -> None:
 async def test_ready_endpoint_returns_200_on_ok() -> None:
     """Friendly test: /ready should return DTO directly when ready."""
     service = HealthService(_FakeSession(should_fail=False), _FakeRedisProbe(should_fail=False))
-    response = await ready(service)
+    response = await ready_endpoint(service)
 
     assert isinstance(response, HealthStatusDTO), "Expected DTO response when service is ready."
     assert response.status == "ok", "DTO should carry ok status."
@@ -108,7 +107,7 @@ async def test_ready_endpoint_returns_503_on_fail() -> None:
         _FakeSession(should_fail=False),
         _FakeRedisProbe(should_fail=True, error=RuntimeError("redis down")),
     )
-    response = await ready(service)
+    response = await ready_endpoint(service)
 
     assert isinstance(response, JSONResponse), "Expected JSONResponse when service is not ready."
     assert response.status_code == 503, "HTTP status must be 503 for readiness failure."
@@ -135,7 +134,7 @@ async def test_ready_endpoint_can_hide_checks_when_requested() -> None:
     """Ensure include_checks=False removes checks from readiness response payload."""
     service = HealthService(_FakeSession(should_fail=False), _FakeRedisProbe(should_fail=False))
 
-    response = await ready(service, include_checks=False)
+    response = await ready_endpoint(service, include_checks=False)
 
     assert isinstance(response, HealthStatusDTO), "Expected DTO response when service is ready."
     assert response.status == "ok", "Readiness status should stay ok."

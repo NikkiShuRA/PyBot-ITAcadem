@@ -7,8 +7,8 @@ is alive.
 from dishka.integrations.fastapi import DishkaRoute, FromDishka
 from fastapi import APIRouter
 
-from ...dto.health_dto import HealthStatusDTO
-from ...services.health import HealthService
+from .....dto.health_dto import HealthStatusDTO
+from .....services.health import HealthService
 
 router = APIRouter(route_class=DishkaRoute)
 

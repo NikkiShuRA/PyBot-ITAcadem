@@ -9,7 +9,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from pybot.dto.health_dto import HealthCheckDTO, HealthStatusDTO
-from pybot.health import main as health_main
+from pybot.presentation import web as web_presentation
 from pybot.services.health import HealthService
 
 
@@ -71,8 +71,8 @@ def create_test_app(
 ) -> FastAPI:
     """Build FastAPI app with patched health container for integration-like tests."""
     container = make_async_container(StubHealthProvider(service))
-    monkeypatch.setattr(health_main, "setup_health_container", lambda: container)
-    return health_main.create_app()
+    monkeypatch.setattr(web_presentation.main, "setup_health_container", lambda: container)
+    return web_presentation.create_app()
 
 
 @pytest.mark.asyncio
@@ -85,9 +85,9 @@ async def test_lifespan_logs_start_stop_and_closes_dishka_container(
     close_spy = mocker.AsyncMock()
     app = FastAPI()
     app.state.dishka_container = SimpleNamespace(close=close_spy)
-    monkeypatch.setattr(health_main.logger, "info", info_spy)
+    monkeypatch.setattr(web_presentation.main.logger, "info", info_spy)
 
-    async with health_main.lifespan(app):
+    async with web_presentation.lifespan(app):
         pass
 
     close_spy.assert_awaited_once()
@@ -105,9 +105,9 @@ async def test_lifespan_does_not_fail_when_dishka_container_is_missing(
     """Ensure shutdown path is resilient when app state has no dishka container."""
     info_spy = mocker.Mock()
     app = FastAPI()
-    monkeypatch.setattr(health_main.logger, "info", info_spy)
+    monkeypatch.setattr(web_presentation.main.logger, "info", info_spy)
 
-    async with health_main.lifespan(app):
+    async with web_presentation.lifespan(app):
         pass
 
     assert info_spy.call_args_list == [

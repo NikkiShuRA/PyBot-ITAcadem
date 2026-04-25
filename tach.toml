@@ -84,15 +84,20 @@ depends_on = [
     "pybot.presentation.texts",
 ]
 
+# pybot.presentation.web - stable public web presentation API.
+[[modules]]
+path = "pybot.presentation.web"
+depends_on = ["pybot.presentation.web.health"]
+
+# pybot.presentation.web.health - internal health web package.
+[[modules]]
+path = "pybot.presentation.web.health"
+depends_on = ["pybot.services", "pybot.core", "pybot.di", "pybot.dto"]
+
 # pybot.utils - shared utilities.
 [[modules]]
 path = "pybot.utils"
 depends_on = []
-
-# pybot.health - health-check API.
-[[modules]]
-path = "pybot.health"
-depends_on = ["pybot.services", "pybot.core", "pybot.di", "pybot.dto"]
 
 # pybot.cli - CLI entrypoints (seed, admin tools).
 [[modules]]

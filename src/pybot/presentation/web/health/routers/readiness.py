@@ -8,8 +8,8 @@ from dishka.integrations.fastapi import DishkaRoute, FromDishka
 from fastapi import APIRouter, Query
 from fastapi.responses import JSONResponse
 
-from ...dto.health_dto import HealthStatusDTO
-from ...services.health import HealthService
+from .....dto.health_dto import HealthStatusDTO
+from .....services.health import HealthService
 
 router = APIRouter(route_class=DishkaRoute)
 
@@ -35,7 +35,7 @@ async def ready(
     health_service: FromDishka[HealthService],
     include_checks: bool = Query(
         default=True,
-        description="Включать список проверок в ответ.",
+        description="Include dependency checks in the response.",
     ),
 ) -> JSONResponse | HealthStatusDTO:
     """Return readiness status based on database connectivity.

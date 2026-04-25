@@ -10,8 +10,8 @@ from contextlib import asynccontextmanager
 from dishka.integrations.fastapi import DishkaRoute, setup_dishka
 from fastapi import FastAPI
 
-from ..core import logger
-from ..di.containers import setup_health_container
+from ....core import logger
+from ....di.containers import setup_health_container
 from .routers import health, readiness
 
 
