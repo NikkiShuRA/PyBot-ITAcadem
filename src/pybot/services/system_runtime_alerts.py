@@ -10,7 +10,7 @@ from .runtime_alert_texts import runtime_shutdown_notification, runtime_startup_
 
 
 class SystemRuntimeAlertsService:
-    """Dispatch opt-in runtime alerts for the bot lifecycle."""
+    """Сервис для отправки системных уведомлений о жизненном цикле приложения (startup/shutdown)."""
 
     def __init__(
         self,
@@ -18,6 +18,13 @@ class SystemRuntimeAlertsService:
         notification_port: NotificationPort,
         settings: BotSettings,
     ) -> None:
+        """Инициализирует сервис системных уведомлений.
+
+        Args:
+            notification_facade: Фасад уведомлений.
+            notification_port: Порт для прямой отправки уведомлений.
+            settings: Настройки приложения.
+        """
         self._notification_facade = notification_facade
         self._notification_port = notification_port
         self._settings = settings
@@ -28,6 +35,7 @@ class SystemRuntimeAlertsService:
         return self._settings.runtime_alerts_chat_id
 
     async def notify_startup(self) -> None:
+        """Отправляет уведомление о запуске бота в настроенный чат системных алертов."""
         chat_id = self._runtime_alerts_chat_id()
         if chat_id is None:
             logger.debug("Runtime startup alert skipped because runtime alerts are disabled")
@@ -46,6 +54,7 @@ class SystemRuntimeAlertsService:
         )
 
     async def notify_shutdown(self) -> None:
+        """Отправляет уведомление об остановке бота в настроенный чат системных алертов."""
         chat_id = self._runtime_alerts_chat_id()
         if chat_id is None:
             logger.debug("Runtime shutdown alert skipped because runtime alerts are disabled")

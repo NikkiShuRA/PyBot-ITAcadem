@@ -4,7 +4,7 @@ from ...dto.value_objects import TaskSchedule
 
 
 class NotificationDispatchPort(ABC):
-    """Contract for dispatching notifications via background runtime."""
+    """Контракт для диспетчеризации уведомлений через фоновый процесс."""
 
     @abstractmethod
     async def dispatch_message(
@@ -14,16 +14,16 @@ class NotificationDispatchPort(ABC):
         schedule: TaskSchedule,
         parse_mode: str | None = None,
     ) -> str:
-        """Dispatch a notification according to the provided schedule.
+        """Отправляет уведомление в соответствии с предоставленным расписанием.
 
         Args:
-            recipient_id: Recipient identifier in transport semantics.
-            message_text: Notification text.
-            schedule: Scheduling settings for delivery.
-            parse_mode: Optional transport parse mode. When ``None``, adapters
-                must omit it in transport calls.
+            recipient_id: Идентификатор получателя (семантика зависит от транспорта).
+            message_text: Текст уведомления.
+            schedule: Настройки расписания для доставки.
+            parse_mode: Опциональный режим парсинга (например, HTML/Markdown). Если None,
+                адаптеры не должны его использовать при вызове транспортного слоя.
 
         Returns:
-            Task identifier for the queued/scheduled notification.
+            str: Идентификатор задачи для поставленного в очередь/запланированного уведомления.
         """
         pass

@@ -15,6 +15,13 @@ from ...mappers.user_mappers import map_orm_user_to_user_read_dto
 
 
 class UserRegistrationService:
+    """Сервис регистрации пользователей.
+
+    Отвечает за регистрацию новых студентов, назначение им начальных уровней,
+    базовых ролей (в т.ч. автоматической выдачи прав администратора) и
+    начальных компетенций.
+    """
+
     def __init__(  # noqa: PLR0913
         self,
         db: AsyncSession,
@@ -24,6 +31,16 @@ class UserRegistrationService:
         competence_repository: CompetenceRepository,
         settings: BotSettings,
     ) -> None:
+        """Инициализирует сервис регистрации пользователей.
+
+        Args:
+            db: Асинхронная сессия базы данных.
+            user_repository: Репозиторий пользователей.
+            level_repository: Репозиторий уровней.
+            role_repository: Репозиторий ролей.
+            competence_repository: Репозиторий компетенций.
+            settings: Настройки бота.
+        """
         self.db: AsyncSession = db
         self.user_repository: UserRepository = user_repository
         self.level_repository: LevelRepository = level_repository
@@ -32,6 +49,22 @@ class UserRegistrationService:
         self._settings = settings
 
     async def register_student(self, dto: UserRegistrationDTO) -> UserReadDTO:
+        """Регистрирует нового пользователя как студента.
+
+        Назначает начальные уровни, обязательную роль "Student" и добавляет компетенции.
+        Если Telegram ID находится в списке auto_admin_telegram_ids,
+        также выдается роль "Admin".
+
+        Args:
+            dto: DTO с данными для регистрации пользователя.
+
+        Raises:
+            InitialLevelsNotFoundError: Если в БД нет начальных уровней.
+            RoleNotFoundError: Если системные роли не найдены в БД.
+
+        Returns:
+            UserReadDTO: DTO зарегистрированного пользователя.
+        """
         initial_levels = await self.level_repository.find_initial_levels(self.db)
 
         if not initial_levels:

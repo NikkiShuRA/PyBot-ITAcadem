@@ -18,6 +18,13 @@ from .ports import NotificationPermanentError, NotificationPort, NotificationTem
 
 
 class BroadcastService:
+    """Сервис для массовой рассылки уведомлений.
+
+    Обеспечивает бизнес-логику для рассылки сообщений различным группам пользователей
+    (всем, по ролям, по компетенциям) с поддержкой повторных попыток и контроля
+    параллелизма.
+    """
+
     _broadcast_lock: asyncio.Lock | None = None
     _broadcast_lock_loop: asyncio.AbstractEventLoop | None = None
 
@@ -28,6 +35,14 @@ class BroadcastService:
         notification_service: NotificationPort,
         settings: BotSettings,
     ) -> None:
+        """Инициализирует сервис рассылок.
+
+        Args:
+            db: Асинхронная сессия базы данных.
+            user_repository: Репозиторий для работы с пользователями.
+            notification_service: Порт для отправки уведомлений.
+            settings: Настройки бота, содержащие параметры рассылки.
+        """
         self.db = db
         self.user_repository = user_repository
         self.notification_service = notification_service
@@ -149,6 +164,14 @@ class BroadcastService:
             return result
 
     async def broadcast_for_all(self, broadcast_data: BroadcastDTO) -> BroadcastResult:
+        """Выполняет рассылку всем зарегистрированным пользователям.
+
+        Args:
+            broadcast_data: DTO с данными для рассылки (сообщение).
+
+        Returns:
+            BroadcastResult: Результат выполнения рассылки со статистикой.
+        """
         users = await self.user_repository.get_all_users(self.db)
         return await self._run_broadcast(
             users,
@@ -162,6 +185,14 @@ class BroadcastService:
         )
 
     async def broadcast_for_users_with_role(self, broadcast_data: RoleBroadcastDTO) -> BroadcastResult:
+        """Выполняет рассылку пользователям с определенной ролью.
+
+        Args:
+            broadcast_data: DTO с данными для рассылки (сообщение, целевая роль).
+
+        Returns:
+            BroadcastResult: Результат выполнения рассылки со статистикой.
+        """
         users = await self.user_repository.get_all_users_with_role(self.db, broadcast_data.role_name)
         return await self._run_broadcast(
             users,
@@ -175,6 +206,14 @@ class BroadcastService:
         )
 
     async def broadcast_for_users_with_competence(self, broadcast_data: CompetenceBroadcastDTO) -> BroadcastResult:
+        """Выполняет рассылку пользователям с определенной компетенцией.
+
+        Args:
+            broadcast_data: DTO с данными для рассылки (сообщение, ID целевой компетенции).
+
+        Returns:
+            BroadcastResult: Результат выполнения рассылки со статистикой.
+        """
         users = await self.user_repository.get_all_users_with_competence_id(self.db, broadcast_data.competence_id)
         return await self._run_broadcast(
             users,

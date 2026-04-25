@@ -22,6 +22,11 @@ from ..services.ports import NotificationPort
 
 
 class RoleRequestService:
+    """Сервис управления запросами на получение ролей.
+
+    Обеспечивает создание запросов, проверку кулдаунов и изменение статусов запросов.
+    """
+
     def __init__(  # noqa: PLR0913
         self,
         db: AsyncSession,
@@ -31,6 +36,16 @@ class RoleRequestService:
         notification_service: NotificationPort,
         settings: BotSettings,
     ) -> None:
+        """Инициализирует сервис запросов ролей.
+
+        Args:
+            db: Асинхронная сессия базы данных.
+            role_repository: Репозиторий для работы с ролями.
+            user_repository: Репозиторий для работы с пользователями.
+            role_request_repository: Репозиторий для работы с запросами ролей.
+            notification_service: Сервис уведомлений.
+            settings: Настройки бота.
+        """
         self.db: AsyncSession = db
         self.role_repository: RoleRepository = role_repository
         self.user_repository: UserRepository = user_repository
@@ -39,14 +54,45 @@ class RoleRequestService:
         self._settings = settings
 
     def get_time_since_last_reject(self, request_time: datetime, last_reject: RoleRequest) -> timedelta:
-        """Return elapsed time between request creation and the latest rejected role request."""
+        """Возвращает время, прошедшее между созданием запроса и последним отклоненным запросом.
+
+        Args:
+            request_time: Время текущего запроса.
+            last_reject: Последний отклоненный запрос.
+
+        Returns:
+            timedelta: Прошедшее время.
+        """
         return request_time - last_reject.updated_at
 
     def get_role_request_available_at(self, last_reject: RoleRequest) -> datetime:
-        """Return the moment when a new role request becomes available."""
+        """Возвращает момент времени, когда будет доступен новый запрос роли.
+
+        Args:
+            last_reject: Последний отклоненный запрос роли.
+
+        Returns:
+            datetime: Время, после которого можно создать новый запрос.
+        """
         return last_reject.updated_at + timedelta(minutes=self._settings.role_request_reject_cooldown_minutes)
 
     async def check_requesting_user(self, user_id: int, user_role: str) -> bool:
+        """Проверяет возможность пользователя запросить указанную роль.
+
+        Args:
+            user_id: Идентификатор пользователя.
+            user_role: Название запрашиваемой роли.
+
+        Raises:
+            UserNotFoundError: Если пользователь не найден.
+            RoleNotFoundError: Если роль не найдена.
+            RoleAlreadyAssignedError: Если роль уже назначена пользователю.
+            RoleRequestAlreadyExistsError: Если у пользователя уже есть активный запрос на эту роль.
+            RoleRequestCooldownError: Если не истек кулдаун после предыдущего отклонения.
+
+        Returns:
+            bool: True, если пользователь может запросить роль.
+        """
         try:
             user = await self.user_repository.get_by_id(self.db, user_id)
         except UserNotFoundError as err:
@@ -74,6 +120,19 @@ class RoleRequestService:
         return True
 
     async def create_role_request(self, user_id: int, role: str) -> CreateRoleRequestDTO:
+        """Создает новый запрос на получение роли.
+
+        Args:
+            user_id: Идентификатор пользователя.
+            role: Название запрашиваемой роли.
+
+        Raises:
+            RoleNotFoundError: Если роль не найдена.
+            UserNotFoundError: Если пользователь не найден.
+
+        Returns:
+            CreateRoleRequestDTO: DTO с данными созданного запроса.
+        """
         await self.check_requesting_user(user_id, role)
 
         role_object = await self.role_repository.find_role_by_name(self.db, role)
@@ -93,6 +152,18 @@ class RoleRequestService:
         return CreateRoleRequestDTO.model_validate(request)
 
     async def change_request_status(self, request_id: int, new_status: RequestStatus) -> None:
+        """Изменяет статус запроса на роль.
+
+        Args:
+            request_id: Идентификатор запроса.
+            new_status: Новый статус запроса (RequestStatus).
+
+        Raises:
+            RoleRequestNotFoundError: Если запрос не найден.
+            RoleRequestAlreadyProcessedError: Если запрос уже был обработан.
+            UserNotFoundError: Если пользователь, сделавший запрос, не найден.
+            RoleAlreadyAssignedError: Если роль уже назначена пользователю (при попытке одобрить).
+        """
         request = await self.role_request_repository.find_request_by_id(self.db, request_id)
         if request is None:
             raise RoleRequestNotFoundError()

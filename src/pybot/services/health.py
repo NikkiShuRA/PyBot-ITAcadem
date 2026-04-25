@@ -11,11 +11,27 @@ from .ports.health_probe import SupportsExecute, SupportsPing
 
 
 class HealthService:
+    """Сервис для проверки состояния системы (health probes).
+
+    Предоставляет методы для проверки работоспособности БД и Redis.
+    """
+
     def __init__(self, db: SupportsExecute, redis_probe: SupportsPing) -> None:
+        """Инициализирует сервис проверки состояния.
+
+        Args:
+            db: Адаптер для проверки соединения с базой данных.
+            redis_probe: Адаптер для проверки соединения с Redis.
+        """
         self._db = db
         self._redis_probe = redis_probe
 
     async def health(self) -> HealthStatusDTO:
+        """Возвращает базовый статус работоспособности системы (liveness).
+
+        Returns:
+            HealthStatusDTO: DTO со статусом и текущим временем.
+        """
         return HealthStatusDTO(
             status="ok",
             checks=[],
@@ -65,6 +81,13 @@ class HealthService:
         )
 
     async def ready(self) -> tuple[HealthStatusDTO, bool]:
+        """Возвращает расширенный статус готовности системы (readiness).
+
+        Проверяет доступность базы данных и Redis.
+
+        Returns:
+            tuple[HealthStatusDTO, bool]: DTO со статусами проверок и общий флаг готовности.
+        """
         checks = [
             await self._check_database(),
             await self._check_redis(),

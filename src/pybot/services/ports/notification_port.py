@@ -4,11 +4,11 @@ from ...dto import NotifyDTO
 
 
 class NotificationPort(ABC):
-    """Outbound notifications contract for application services.
+    """Контракт исходящих уведомлений для сервисов приложения.
 
     Notes:
-        ``recipient_id`` semantics are transport-specific. In Telegram adapters
-        this maps to ``telegram_id``/``chat_id``.
+        Семантика `recipient_id` зависит от транспорта. В адаптерах Telegram
+        это соответствует `telegram_id` / `chat_id`.
     """
 
     @abstractmethod
@@ -18,30 +18,28 @@ class NotificationPort(ABC):
         requester_user_id: int,
         role_name: str,
     ) -> None:
-        """Send a role request notification to the administrator.
+        """Отправляет уведомление администратору о запросе роли.
 
         Args:
-            request_id: Unique role-request identifier.
-            requester_user_id: Requester identifier in current notification
-                transport semantics.
-            role_name: Requested role name.
+            request_id: Уникальный идентификатор запроса роли.
+            requester_user_id: Идентификатор запрашивающего пользователя.
+            role_name: Запрошенная роль.
 
         Raises:
-            NotificationTemporaryError: Transient delivery error, retry is allowed.
-            NotificationPermanentError: Non-retryable delivery error.
+            NotificationTemporaryError: Временная ошибка доставки, возможен повтор.
+            NotificationPermanentError: Неустранимая ошибка доставки.
         """
         pass
 
     @abstractmethod
     async def send_message(self, message_data: NotifyDTO) -> None:
-        """Send a direct message to a single recipient.
+        """Отправляет прямое сообщение одному получателю.
 
         Args:
-            message_data: Validated notification payload with recipient id and
-                optional parse mode.
+            message_data: Валидированный DTO с данными сообщения и получателем.
 
         Raises:
-            NotificationTemporaryError: Transient delivery error, retry is allowed.
-            NotificationPermanentError: Non-retryable delivery error.
+            NotificationTemporaryError: Временная ошибка доставки, возможен повтор.
+            NotificationPermanentError: Неустранимая ошибка доставки.
         """
         pass
