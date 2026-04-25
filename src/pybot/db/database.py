@@ -8,11 +8,28 @@ from sqlalchemy.pool import ConnectionPoolEntry
 
 
 def _is_sqlite_url(database_url: str) -> bool:
+    """Проверяет, является ли URL базы данных адресом SQLite.
+
+    Args:
+        database_url: Строка подключения к базе данных.
+
+    Returns:
+        bool: True, если бэкенд — sqlite, иначе False.
+    """
     url: URL = make_url(database_url)
     return url.get_backend_name() == "sqlite"
 
 
 def _attach_sqlite_foreign_keys_pragma(engine: AsyncEngine) -> None:
+    """Прикрепляет обработчик события для включения внешних ключей в SQLite.
+
+    SQLite по умолчанию не проверяет ограничения внешних ключей. Этот метод
+    настраивает движок на выполнение 'PRAGMA foreign_keys=ON' при каждом подключении.
+
+    Args:
+        engine: Асинхронный движок SQLAlchemy.
+    """
+
     @event.listens_for(engine.sync_engine, "connect")
     def set_sqlite_pragma(
         dbapi_connection: AsyncAdapt_aiosqlite_connection,
@@ -24,6 +41,19 @@ def _attach_sqlite_foreign_keys_pragma(engine: AsyncEngine) -> None:
 
 
 def create_database_engine(database_url: str) -> AsyncEngine:
+    """Создает и настраивает асинхронный движок базы данных.
+
+    Если используется SQLite, автоматически включает поддержку внешних ключей.
+
+    Args:
+        database_url: Строка подключения к базе данных.
+
+    Returns:
+        AsyncEngine: Сконфигурированный асинхронный движок SQLAlchemy.
+
+    Raises:
+        ValueError: Если URL базы данных не настроен.
+    """
     if not database_url:
         raise ValueError("Database URL is not configured.")
 
