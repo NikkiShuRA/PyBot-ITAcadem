@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import functools
 from typing import Annotated, Literal, Self
 
 from pydantic import Field, field_validator, model_validator
+from pydantic_extra_types.cron import CronStr
+from pydantic_extra_types.timezone_name import TimeZoneName
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 from .constants import RoleEnum
@@ -52,6 +55,8 @@ class BotSettings(BaseSettings):
         alias="REDIS_URL",
         description="Redis URL used for FSM storage when FSM_STORAGE_BACKEND=redis",
     )
+    # TODO костыль до поддержки multi-instance
+    taskiq_workers: int = Field(1, alias="TASKIQ_WORKERS", description="Taskiq worker concurrency")
     role_request_admin_tg_id: int = Field(
         ...,
         alias="ROLE_REQUEST_ADMIN_TG_ID",
@@ -76,6 +81,16 @@ class BotSettings(BaseSettings):
 
     # General settings
     log_level: str = Field("INFO", alias="LOG_LEVEL", description="Logging level")
+    log_format: Literal["text", "json"] = Field(
+        "text",
+        alias="LOG_FORMAT",
+        description=(
+            "Log output format. If LOG_FORMAT is not set explicitly, runtime defaults are applied: "
+            "'text' for local/dev (`BOT_MODE=test`) and 'json' for production (`BOT_MODE=prod`). "
+            "Use 'json' for structured machine-readable output with log collectors such as Loki, "
+            "CloudWatch, or ELK."
+        ),
+    )
     debug: bool = Field(False, alias="DEBUG", description="Debug mode")
 
     # Rate limit settings
@@ -96,6 +111,65 @@ class BotSettings(BaseSettings):
     broadcast_jitter_max_ms: int = Field(160, alias="BROADCAST_JITTER_MAX_MS", ge=50, le=2000)
     broadcast_retry_attempts: int = Field(5, alias="BROADCAST_RETRY_ATTEMPTS", ge=1, le=10)
     broadcast_retry_max_wait_s: int = Field(30, alias="BROADCAST_RETRY_MAX_WAIT_S", ge=1, le=120)
+    leaderboard_weekly_enabled: bool = Field(
+        False,
+        alias="LEADERBOARD_WEEKLY_ENABLED",
+        description="Enable weekly leaderboard publication via TaskIQ scheduler",
+    )
+    leaderboard_weekly_recipient_id: int | None = Field(
+        None,
+        alias="LEADERBOARD_WEEKLY_RECIPIENT_ID",
+        description="Transport recipient id for weekly leaderboard publication",
+    )
+    leaderboard_weekly_cron: CronStr = Field(
+        default_factory=lambda: CronStr("0 9 * * 1"),
+        alias="LEADERBOARD_WEEKLY_CRON",
+        description="Cron expression for weekly leaderboard publication",
+    )
+    leaderboard_weekly_timezone: TimeZoneName = Field(
+        default_factory=lambda: TimeZoneName("Asia/Yekaterinburg"),
+        alias="LEADERBOARD_WEEKLY_TIMEZONE",
+        description="Timezone used for weekly leaderboard cron scheduling",
+    )
+    leaderboard_weekly_limit: int = Field(
+        10,
+        alias="LEADERBOARD_WEEKLY_LIMIT",
+        description="Max rows per leaderboard section in weekly publication",
+        ge=1,
+    )
+    leaderboard_weekly_retry_enabled: bool = Field(
+        True,
+        alias="LEADERBOARD_WEEKLY_RETRY_ENABLED",
+        description="Enable retry labels for weekly leaderboard task execution",
+    )
+    leaderboard_weekly_retry_max_retries: int = Field(
+        3,
+        alias="LEADERBOARD_WEEKLY_RETRY_MAX_RETRIES",
+        description="Maximum retry attempts for weekly leaderboard task",
+        ge=1,
+    )
+    leaderboard_weekly_retry_delay_s: int = Field(
+        30,
+        alias="LEADERBOARD_WEEKLY_RETRY_DELAY_S",
+        description="Base retry delay in seconds for weekly leaderboard task",
+        ge=1,
+    )
+    leaderboard_weekly_retry_use_jitter: bool = Field(
+        True,
+        alias="LEADERBOARD_WEEKLY_RETRY_USE_JITTER",
+        description="Use jitter for weekly leaderboard retry delays",
+    )
+    leaderboard_weekly_retry_use_exponential_backoff: bool = Field(
+        True,
+        alias="LEADERBOARD_WEEKLY_RETRY_USE_EXPONENTIAL_BACKOFF",
+        description="Use exponential backoff for weekly leaderboard retry delays",
+    )
+    leaderboard_weekly_retry_max_delay_s: int = Field(
+        300,
+        alias="LEADERBOARD_WEEKLY_RETRY_MAX_DELAY_S",
+        description="Maximum retry delay in seconds for weekly leaderboard task",
+        ge=1,
+    )
 
     # Middleware toggles
     enable_logging_middleware: bool = Field(
@@ -169,6 +243,13 @@ class BotSettings(BaseSettings):
 
         raise ValueError("DEBUG must be a boolean-like value (e.g. true/false/debug/release)")
 
+    @field_validator("taskiq_workers")
+    @classmethod
+    def validate_taskiq_workers(cls, value: int) -> int:
+        if value != 1:
+            raise ValueError("TASKIQ_WORKERS=1 is required until multi-instance runtime is supported")
+        return value
+
     @field_validator("telegram_proxy_url", mode="before")
     @classmethod
     def parse_telegram_proxy_url(cls, value: str | None) -> str | None:
@@ -179,6 +260,25 @@ class BotSettings(BaseSettings):
         if not normalized:
             return None
         return normalized
+
+    @field_validator("leaderboard_weekly_recipient_id", mode="before")
+    @classmethod
+    def parse_weekly_recipient_id(cls, value: int | str | None) -> int | None:
+        if value is None:
+            return None
+        if isinstance(value, str):
+            normalized = value.strip()
+            if not normalized:
+                return None
+            return int(normalized)
+        return value
+
+    @field_validator("leaderboard_weekly_recipient_id")
+    @classmethod
+    def validate_weekly_recipient_id(cls, value: int | None) -> int | None:
+        if value == 0:
+            raise ValueError("LEADERBOARD_WEEKLY_RECIPIENT_ID must not be equal to 0")
+        return value
 
     @field_validator("broadcast_allowed_roles", mode="before")
     @classmethod
@@ -214,6 +314,14 @@ class BotSettings(BaseSettings):
         return roles
 
     @model_validator(mode="after")
+    def apply_runtime_log_format_default(self: Self) -> Self:
+        if "log_format" in self.model_fields_set:
+            return self
+
+        self.log_format = "json" if self.bot_mode == "prod" else "text"
+        return self
+
+    @model_validator(mode="after")
     def validate_broadcast_jitter_range(self: Self) -> Self:
         if self.broadcast_jitter_max_ms < self.broadcast_jitter_min_ms:
             raise ValueError("BROADCAST_JITTER_MAX_MS must be greater than or equal to BROADCAST_JITTER_MIN_MS")
@@ -225,5 +333,22 @@ class BotSettings(BaseSettings):
             raise ValueError("RUNTIME_ALERTS_CHAT_ID must be set when RUNTIME_ALERTS_ENABLED=true")
         return self
 
+    @model_validator(mode="after")
+    def validate_weekly_leaderboard_config(self: Self) -> Self:
+        if self.leaderboard_weekly_enabled and self.leaderboard_weekly_recipient_id is None:
+            raise ValueError("LEADERBOARD_WEEKLY_RECIPIENT_ID must be set when LEADERBOARD_WEEKLY_ENABLED=true")
+        return self
 
-settings: BotSettings = BotSettings()
+    @model_validator(mode="after")
+    def validate_weekly_leaderboard_retry_config(self: Self) -> Self:
+        if self.leaderboard_weekly_retry_max_delay_s < self.leaderboard_weekly_retry_delay_s:
+            raise ValueError(
+                "LEADERBOARD_WEEKLY_RETRY_MAX_DELAY_S must be greater than or equal to LEADERBOARD_WEEKLY_RETRY_DELAY_S"
+            )
+        return self
+
+
+@functools.lru_cache(maxsize=1)
+def get_settings() -> BotSettings:
+    """Return the application settings as a cached singleton."""
+    return BotSettings()

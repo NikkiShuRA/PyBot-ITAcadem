@@ -3,7 +3,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from pybot.bot import tg_bot_run
+from pybot.presentation.bot import tg_bot_run
 
 
 @pytest.mark.asyncio

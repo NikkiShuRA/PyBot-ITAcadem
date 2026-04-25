@@ -30,8 +30,9 @@ class FakeNotificationPort(NotificationPort):
     async def send_message(self, message_data: NotifyDTO) -> None:
         self.direct_messages.append(
             DirectMessageNotificationRecord(
-                user_id=message_data.user_id,
+                recipient_id=message_data.recipient_id,
                 message_text=message_data.message,
+                parse_mode=message_data.parse_mode,
             )
         )
 
@@ -45,8 +46,9 @@ class RoleRequestNotificationRecord:
 
 @dataclass(frozen=True, slots=True)
 class DirectMessageNotificationRecord:
-    user_id: int
+    recipient_id: int
     message_text: str
+    parse_mode: str | None
 
 
 @dataclass(frozen=True, slots=True)

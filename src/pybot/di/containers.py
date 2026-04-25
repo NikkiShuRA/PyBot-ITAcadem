@@ -5,11 +5,12 @@ from aiogram.client.session.aiohttp import AiohttpSession
 from dishka import AsyncContainer, Provider, Scope, make_async_container, provide
 from dishka.integrations.aiogram import AiogramProvider
 from dishka.integrations.taskiq import TaskiqProvider
+from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from ..core import logger
-from ..core.config import settings
-from ..db.database import engine as global_engine
+from ..core.config import BotSettings, get_settings
+from ..db.database import create_database_engine
 from ..domain.services.level_calculator import LevelCalculator
 from ..infrastructure import (
     CompetenceRepository,
@@ -20,6 +21,7 @@ from ..infrastructure import (
     UserRepository,
     ValuationRepository,
 )
+from ..infrastructure.health import RedisPingProbe, SessionExecutor
 from ..infrastructure.ports import LoggingNotificationService, TelegramNotificationService
 from ..infrastructure.taskiq.taskiq_notification_dispatcher import TaskIQNotificationDispatcher
 from ..services import (
@@ -30,24 +32,27 @@ from ..services import (
     UserRegistrationService,
     UserRolesService,
     UserService,
+    WeeklyLeaderboardPublisherService,
 )
 from ..services.broadcast import BroadcastService
 from ..services.competence import CompetenceService
-from ..services.health import HealthService, SessionExecutor
+from ..services.health import HealthService
 from ..services.levels import LevelService
 from ..services.notification_facade import NotificationFacade
 from ..services.points import PointsService
 from ..services.ports import NotificationDispatchPort, NotificationPort
 from ..services.role_request import RoleRequestService
 
+global_engine: AsyncEngine | None = None
+
 
 class DatabaseProvider(Provider):
     """Providers for database resources."""
 
     @provide(scope=Scope.APP)
-    async def engine(self) -> AsyncGenerator[AsyncEngine, None]:
+    async def engine(self, settings: BotSettings) -> AsyncGenerator[AsyncEngine, None]:
         """Provide one SQLAlchemy engine for the whole app lifecycle."""
-        engine = global_engine
+        engine = create_database_engine(settings.database_url) if global_engine is None else global_engine
         try:
             yield engine
         finally:
@@ -112,8 +117,9 @@ class ServiceProvider(Provider):
         user_repository: UserRepository,
         level_repository: LevelRepository,
         role_repository: RoleRepository,
+        settings: BotSettings,
     ) -> UserService:
-        return UserService(db, user_repository, level_repository, role_repository)
+        return UserService(db, user_repository, level_repository, role_repository, settings)
 
     @provide(scope=Scope.REQUEST)
     def user_roles_service(
@@ -153,15 +159,26 @@ class ServiceProvider(Provider):
         return LeaderboardService(db, points_transaction_repository)
 
     @provide(scope=Scope.REQUEST)
-    def role_request_service(
+    def weekly_leaderboard_publisher_service(
+        self,
+        leaderboard_service: LeaderboardService,
+        notification_service: NotificationPort,
+    ) -> WeeklyLeaderboardPublisherService:
+        return WeeklyLeaderboardPublisherService(leaderboard_service, notification_service)
+
+    @provide(scope=Scope.REQUEST)
+    def role_request_service(  # noqa: PLR0913
         self,
         db: AsyncSession,
         role_repository: RoleRepository,
         user_repository: UserRepository,
         role_request_repository: RoleRequestRepository,
         notification_service: NotificationPort,
+        settings: BotSettings,
     ) -> RoleRequestService:
-        return RoleRequestService(db, role_repository, user_repository, role_request_repository, notification_service)
+        return RoleRequestService(
+            db, role_repository, user_repository, role_request_repository, notification_service, settings
+        )
 
     @provide(scope=Scope.REQUEST)
     def broadcast_service(
@@ -169,8 +186,9 @@ class ServiceProvider(Provider):
         db: AsyncSession,
         user_repository: UserRepository,
         notification_service: NotificationPort,
+        settings: BotSettings,
     ) -> BroadcastService:
-        return BroadcastService(db, user_repository, notification_service)
+        return BroadcastService(db, user_repository, notification_service, settings)
 
     @provide(scope=Scope.REQUEST)
     def competence_service(
@@ -194,23 +212,43 @@ class ServiceProvider(Provider):
         return UserProfileService(level_service, user_competence_service, user_roles_service)
 
     @provide(scope=Scope.REQUEST)
-    def user_registration_service(
+    def user_registration_service(  # noqa: PLR0913
         self,
         db: AsyncSession,
         user_repository: UserRepository,
         level_repository: LevelRepository,
         role_repository: RoleRepository,
         competence_repository: CompetenceRepository,
+        settings: BotSettings,
     ) -> UserRegistrationService:
-        return UserRegistrationService(db, user_repository, level_repository, role_repository, competence_repository)
+        return UserRegistrationService(
+            db, user_repository, level_repository, role_repository, competence_repository, settings
+        )
 
 
 class HealthProvider(Provider):
     """Health API services."""
 
     @provide(scope=Scope.REQUEST)
-    def health_service(self, db: AsyncSession) -> HealthService:
-        return HealthService(SessionExecutor(db))
+    def health_service(self, db: AsyncSession, redis_client: Redis) -> HealthService:
+        return HealthService(SessionExecutor(db), RedisPingProbe(redis_client))
+
+
+class RedisProvider(Provider):
+    """Provide Redis resources for runtimes that need a direct client."""
+
+    @provide(scope=Scope.APP)
+    async def redis_client(self, settings: BotSettings) -> AsyncGenerator[Redis, None]:
+        client = Redis.from_url(
+            settings.redis_url,
+            encoding="utf-8",
+            decode_responses=True,
+        )
+        try:
+            yield client
+        finally:
+            await client.aclose()
+            logger.info("Redis client disposed")
 
 
 class DomainServiceProvider(Provider):
@@ -221,11 +259,19 @@ class DomainServiceProvider(Provider):
         return LevelCalculator()
 
 
+class ConfigProvider(Provider):
+    """Configuration object."""
+
+    @provide(scope=Scope.APP)
+    def config(self) -> BotSettings:
+        return get_settings()
+
+
 class BotProvider(Provider):
     """Telegram Bot provider with APP scope."""
 
     @provide(scope=Scope.APP)
-    async def bot(self) -> AsyncGenerator[Bot, None]:
+    async def bot(self, settings: BotSettings) -> AsyncGenerator[Bot, None]:
         if settings.telegram_proxy_url is not None:
             bot = Bot(
                 settings.active_bot_token,
@@ -242,11 +288,11 @@ class BotProvider(Provider):
 
 class PortsProvider(Provider):
     @provide(scope=Scope.APP)
-    async def notification_port(self, bot: Bot) -> NotificationPort:
+    async def notification_port(self, settings: BotSettings, bot: Bot) -> NotificationPort:
         if settings.notification_backend == "telegram":
-            return TelegramNotificationService(bot)
+            return TelegramNotificationService(bot, settings)
         if settings.notification_backend == "logging":
-            return LoggingNotificationService()
+            return LoggingNotificationService(settings)
         raise ValueError(f"Unsupported NOTIFICATION_BACKEND value: {settings.notification_backend}")
 
     @provide(scope=Scope.APP)
@@ -264,8 +310,9 @@ class FacadeProvider(Provider):
         self,
         notification_facade: NotificationFacade,
         notification_service: NotificationPort,
+        settings: BotSettings,
     ) -> SystemRuntimeAlertsService:
-        return SystemRuntimeAlertsService(notification_facade, notification_service)
+        return SystemRuntimeAlertsService(notification_facade, notification_service, settings)
 
 
 async def setup_container() -> AsyncContainer:
@@ -280,6 +327,7 @@ async def setup_container() -> AsyncContainer:
         BotProvider(),
         PortsProvider(),
         FacadeProvider(),
+        ConfigProvider(),
     )
 
 
@@ -288,7 +336,9 @@ def setup_health_container() -> AsyncContainer:
     return make_async_container(
         DatabaseProvider(),
         SessionProvider(),
+        RedisProvider(),
         HealthProvider(),
+        ConfigProvider(),
     )
 
 
@@ -303,4 +353,5 @@ def setup_taskiq_container() -> AsyncContainer:
         BotProvider(),
         PortsProvider(),
         TaskiqProvider(),
+        ConfigProvider(),
     )

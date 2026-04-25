@@ -1,28 +1,31 @@
 from __future__ import annotations
 
+from typing import Any
+
 from dishka.integrations.taskiq import FromDishka, inject
+from taskiq import AsyncBroker, AsyncTaskiqDecoratedTask
 
 from ....core import logger
 from ....dto import BroadcastDTO
 from ....services.broadcast import BroadcastService
-from ..taskiq_app import get_taskiq_broker
-
-broker = get_taskiq_broker()
 
 
-@broker.task(task_name="broadcast.send_for_all")
-@inject(patch_module=True)
 async def broadcast_for_all_task(
     message: str,
     service: FromDishka[BroadcastService],
 ) -> dict[str, int]:
-    """
-    Отложенная массовая рассылка для всех пользователей.
+    """Отложенная массовая рассылка для всех пользователей.
 
     Задача выполняется в worker-процессе и использует тот же сервисный слой,
     что и aiogram-хендлеры, но через отдельный request-scope DI-контейнера.
-    """
 
+    Args:
+        message: Текст сообщения для рассылки.
+        service: Сервис рассылки (инжектируется из Dishka).
+
+    Returns:
+        dict[str, int]: Результаты рассылки (кол-во попыток, отправленных, ошибок).
+    """
     result = await service.broadcast_for_all(BroadcastDTO(broadcast_message=message))
 
     payload = {
@@ -34,3 +37,15 @@ async def broadcast_for_all_task(
     }
     logger.info("TaskIQ broadcast task finished with payload={payload}", payload=payload)
     return payload
+
+
+def register_tasks(*, broker: AsyncBroker) -> AsyncTaskiqDecoratedTask[..., Any]:
+    """Регистрирует задачу рассылки в брокере.
+
+    Args:
+        broker: Брокер TaskIQ.
+
+    Returns:
+        AsyncTaskiqDecoratedTask: Декорированная задача.
+    """
+    return broker.task(task_name="broadcast.send_for_all")(inject(patch_module=True)(broadcast_for_all_task))

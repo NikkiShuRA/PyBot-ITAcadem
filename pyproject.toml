@@ -1,6 +1,6 @@
 [project]
 name = "pybot-itacadem"
-version = "0.23.0"
+version = "0.28.0"
 description = "PyBot — an asynchronous Telegram bot written in Python"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -19,10 +19,10 @@ dependencies = [
     "aiocache>=0.12.3",
     "dishka>=1.7.2",
     "fastapi>=0.115.0",
+    "httpx>=0.28.1",
     "uvicorn>=0.30.0",
     "tenacity>=9.0.0",
     "alembic>=1.17.2",
-    "faker>=38.2.0",
     "redis>=6.4.0",
     "starlette-dishka>=1.0.1",
     "taskiq>=0.12.1",
@@ -30,7 +30,11 @@ dependencies = [
     "pendulum>=3.2.0",
     "pydantic-extra-types[cron,pendulum]>=2.11.0",
     "tyro>=1.0.10",
+    "asyncpg>=0.31.0",
 ]
+
+[project.scripts]
+pybot-seed = "pybot.cli.seed:main"
 
 [project.optional-dependencies]
 docs = [
@@ -57,7 +61,12 @@ dev = [
     "polyfactory>=3.2.0",
     "httpie>=3.2.4",
     "pytest-aiogram>=0.1.0",
+    "tach>=0.34.1",
+    "faker>=38.2.0",
 ]
+
+[tool.uv]
+package = true
 
 [tool.ruff]
 exclude = [
@@ -112,11 +121,34 @@ select = [
     "ANN",
     "S",
     "N",
+    "D",
 ]
 fixable = ["ALL"]
 unfixable = []
-ignore = ["PLR6301", "TRY003", "D212", "D211", "RUF002", "D203", "PLC0414", "ANN401", "RUF029", "RUF001", "RUF003"]
+ignore = [
+    "PLR6301",
+    "TRY003",
+    "RUF002",
+    "PLC0414",
+    "ANN401",
+    "RUF029",
+    "RUF001",
+    "RUF003",
+    # D1xx — не требовать обязательное наличие docstrings
+    "D100",  # Missing docstring in public module
+    "D101",  # Missing docstring in public class
+    "D102",  # Missing docstring in public method
+    "D103",  # Missing docstring in public function
+    "D104",  # Missing docstring in public package
+    "D105",  # Missing docstring in magic method
+    "D106",  # Missing docstring in public nested class
+    "D107",  # Missing docstring in __init__
+    "D212",  # Multi-line summary first line (конфликтует с Google convention)
+]
 exclude = ['test_*', '__init__.py']
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
 
@@ -178,3 +210,16 @@ prerelease = false
 pythonpath = ["src", "."]
 testpaths = ["tests"]
 addopts = "-q --strict-markers"
+
+# ── uv build settings ────────────────────────────────────────────────────────────
+# Required so that uv installs [project.scripts] entry points (pybot-seed).
+# Without package = true, uv skips script installation for non-packaged projects.
+
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+# The pybot package lives under src/, tell hatchling where to find it.
+packages = ["src/pybot"]

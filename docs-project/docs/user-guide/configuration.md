@@ -2,6 +2,8 @@
 
 Настройки приложения определены в [`pybot.core.config.BotSettings`](../api-reference/core.md). Источником значений служит `.env`.
 
+Отдельно от `BotSettings` есть orchestration-переменные уровня Compose/runtime. Сейчас это `TASKIQ_WORKERS`: она управляет числом worker-процессов TaskIQ в `docker-compose.yml` и `docker-compose.prod.yml`, а не бизнес-конфигом Python-приложения.
+
 ## Обязательные переменные
 
 | Переменная | Назначение |
@@ -25,6 +27,24 @@
 | `RUNTIME_ALERTS_ENABLED` | включает runtime alerts для bot startup/shutdown |
 | `RUNTIME_ALERTS_CHAT_ID` | chat id для runtime alerts |
 | `HEALTH_API_ENABLED` | отдельный health API |
+| `TASKIQ_WORKERS` | concurrency `taskiq-worker` в Compose; сейчас поддерживается только `1` |
+
+## Orchestration-переменные
+
+`TASKIQ_WORKERS` управляет worker concurrency на уровне Compose:
+
+- по умолчанию используется `${TASKIQ_WORKERS:-1}`;
+- текущее поддерживаемое значение только `1`;
+- синтаксис для будущего масштабирования уже заложен, но значения больше `1` пока намеренно отклоняются fail-fast guard-ом.
+
+Примеры:
+
+```bash
+TASKIQ_WORKERS=1 docker compose up --build
+TASKIQ_WORKERS=1 docker compose -f docker-compose.prod.yml up -d
+```
+
+Синтаксис вида `TASKIQ_WORKERS=2 ...` зарезервирован на будущее, но в текущей системе не поддерживается.
 
 ## Broadcast-настройки
 

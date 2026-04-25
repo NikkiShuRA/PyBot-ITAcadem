@@ -12,12 +12,16 @@ from aiogram_dialog import DialogManager
 from aiogram_dialog.api.entities.modes import StartMode
 from aiogram_dialog.widgets.kbd import Button
 
-from pybot.bot.dialogs.user_reg.handlers import request_contact_prompt
-from pybot.bot.dialogs.user_reg.states import CreateProfileSG
-from pybot.bot.handlers.common.start import cmd_start_private
-from pybot.bot.handlers.profile.user_profile import cmd_profile_private
-from pybot.bot.keyboards.auth import request_contact_kb
-from pybot.bot.texts import REGISTRATION_CONTACT_PROMPT
+from pybot.presentation.bot import (
+    CreateProfileSG,
+    cmd_profile_private,
+    cmd_start_private,
+    profile_handlers_module,
+    request_contact_kb,
+    request_contact_prompt,
+    start_handlers_module,
+)
+from pybot.presentation.texts import REGISTRATION_CONTACT_PROMPT
 from pybot.core.constants import PointsTypeEnum
 from pybot.dto import UserReadDTO
 from pybot.dto.value_objects import Points
@@ -87,7 +91,7 @@ async def test_cmd_start_private_shows_profile_when_user_exists(monkeypatch: pyt
     answer_mock = AsyncMock()
     render_mock = Mock(return_value="profile text")
     monkeypatch.setattr(Message, "answer", answer_mock)
-    monkeypatch.setattr("pybot.bot.handlers.common.start.render_profile_message", render_mock)
+    monkeypatch.setattr(start_handlers_module, "render_profile_message", render_mock)
 
     await cmd_start_private(
         message=message,
@@ -137,7 +141,7 @@ async def test_cmd_profile_private_shows_profile_when_user_exists(monkeypatch: p
     answer_mock = AsyncMock()
     render_mock = Mock(return_value="profile text")
     monkeypatch.setattr(Message, "answer", answer_mock)
-    monkeypatch.setattr("pybot.bot.handlers.profile.user_profile.render_profile_message", render_mock)
+    monkeypatch.setattr(profile_handlers_module, "render_profile_message", render_mock)
 
     await cmd_profile_private(
         message=message,

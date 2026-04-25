@@ -9,8 +9,8 @@ from ..dto.value_objects import Points
 
 
 async def map_orm_user_to_user_read_dto(orm_user: User) -> UserReadDTO:
-    """
-    Маппит ORM User объект в UserReadDTO.
+    """Маппит ORM User объект в UserReadDTO.
+
     Конвертирует int-баллы в объекты Points.
     """
     return UserReadDTO(
@@ -26,8 +26,8 @@ async def map_orm_user_to_user_read_dto(orm_user: User) -> UserReadDTO:
 
 
 async def map_dialog_data_to_user_create_dto(manager: DialogManager) -> UserCreateDTO | None:
-    """
-    Маппинг данных из dialog_data в UserCreateDTO.
+    """Маппинг данных из dialog_data в UserCreateDTO.
+
     Возвращает DTO или None, если данные неполные или невалидны.
     """
     phone = manager.dialog_data.get("phone_number")
@@ -60,8 +60,8 @@ async def map_dialog_data_to_user_create_dto(manager: DialogManager) -> UserCrea
 
 
 async def map_dialog_data_to_user_registration_dto(manager: DialogManager) -> UserRegistrationDTO | None:
-    """
-    Маппинг данных из dialog_data в UserRegistrationDTO.
+    """Маппинг данных из dialog_data в UserRegistrationDTO.
+
     Возвращает DTO или None, если пользовательские данные неполные или невалидны.
     """
     user_data = await map_dialog_data_to_user_create_dto(manager)

@@ -9,10 +9,29 @@ from .ports import NotificationDispatchPort
 
 
 class NotificationFacade:
+    """Фасад для отправки уведомлений.
+
+    Обеспечивает высокоуровневый интерфейс для планирования и диспетчеризации
+    уведомлений пользователям.
+    """
+
     def __init__(self, dispatch_port: NotificationDispatchPort) -> None:
+        """Инициализирует фасад уведомлений.
+
+        Args:
+            dispatch_port: Порт диспетчера уведомлений.
+        """
         self._dispatch_port = dispatch_port
 
     async def notify_user(self, data: NotifyUserDTO) -> None:
+        """Планирует отправку уведомления пользователю.
+
+        Args:
+            data: DTO с данными уведомления и параметрами планирования.
+
+        Raises:
+            TaskScheduleError: Если параметры расписания недействительны или возникла ошибка валидации.
+        """
         try:
             schedule = TaskSchedule(
                 kind=data.kind,
@@ -24,4 +43,9 @@ class NotificationFacade:
         except (ValidationError, TaskScheduleError) as err:
             raise TaskScheduleError(f"Invalid notification schedule: {err}") from err
 
-        await self._dispatch_port.dispatch_message(user_id=data.user_id, message_text=data.message, schedule=schedule)
+        await self._dispatch_port.dispatch_message(
+            recipient_id=data.recipient_id,
+            message_text=data.message,
+            schedule=schedule,
+            parse_mode=data.parse_mode,
+        )

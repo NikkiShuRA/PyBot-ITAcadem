@@ -1,0 +1,105 @@
+source_roots = ["src"]
+
+# pybot.core - base module: logger, constants, settings, config.
+[[modules]]
+path = "pybot.core"
+depends_on = []
+
+# pybot.domain - domain rules and exceptions (Pragmatic DDD).
+[[modules]]
+path = "pybot.domain"
+depends_on = ["pybot.core", "pybot.db"]
+
+# pybot.dto - cross-layer DTOs and value objects.
+[[modules]]
+path = "pybot.dto"
+depends_on = ["pybot.domain", "pybot.core", "pybot.utils"]
+
+# pybot.db - ORM models and database configuration.
+[[modules]]
+path = "pybot.db"
+depends_on = ["pybot.domain", "pybot.core", "pybot.dto"]
+
+# pybot.mappers - mapping helpers between layers.
+[[modules]]
+path = "pybot.mappers"
+depends_on = ["pybot.dto", "pybot.db", "pybot.core"]
+
+# pybot.presentation.texts - shared user-facing text rendering and formatting.
+[[modules]]
+path = "pybot.presentation.texts"
+depends_on = ["pybot.core", "pybot.dto", "pybot.utils"]
+
+# pybot.infrastructure - repositories, adapters, taskiq runtime, external ports.
+[[modules]]
+path = "pybot.infrastructure"
+depends_on = [
+    "pybot.domain",
+    "pybot.dto",
+    "pybot.db",
+    "pybot.utils",
+    "pybot.core",
+    "pybot.services",
+    "pybot.presentation.texts",
+    "pybot.presentation.bot",
+    "pybot.di",
+]
+
+# pybot.services - business logic and orchestration.
+[[modules]]
+path = "pybot.services"
+depends_on = [
+    "pybot.domain",
+    "pybot.dto",
+    "pybot.infrastructure",
+    "pybot.utils",
+    "pybot.mappers",
+    "pybot.core",
+    "pybot.presentation.texts",
+    "pybot.db",
+]
+
+# pybot.di - Dishka dependency containers.
+[[modules]]
+path = "pybot.di"
+depends_on = [
+    "pybot.domain",
+    "pybot.infrastructure",
+    "pybot.services",
+    "pybot.db",
+    "pybot.core",
+]
+
+# pybot.presentation.bot - canonical presentation-layer package (Telegram / aiogram).
+[[modules]]
+path = "pybot.presentation.bot"
+depends_on = [
+    "pybot.domain",
+    "pybot.dto",
+    "pybot.services",
+    "pybot.utils",
+    "pybot.core",
+    "pybot.di",
+    "pybot.mappers",
+    "pybot.presentation.texts",
+]
+
+# pybot.presentation.web - stable public web presentation API.
+[[modules]]
+path = "pybot.presentation.web"
+depends_on = ["pybot.presentation.web.health"]
+
+# pybot.presentation.web.health - internal health web package.
+[[modules]]
+path = "pybot.presentation.web.health"
+depends_on = ["pybot.services", "pybot.core", "pybot.di", "pybot.dto"]
+
+# pybot.utils - shared utilities.
+[[modules]]
+path = "pybot.utils"
+depends_on = []
+
+# pybot.cli - CLI entrypoints (seed, admin tools).
+[[modules]]
+path = "pybot.cli"
+depends_on = []

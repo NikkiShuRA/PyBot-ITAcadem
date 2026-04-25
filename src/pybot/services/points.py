@@ -12,6 +12,12 @@ from ..mappers.user_mappers import map_orm_user_to_user_read_dto
 
 
 class PointsService:
+    """Сервис для начисления и списания очков пользователей.
+
+    Обеспечивает бизнес-логику для изменения баланса очков пользователей,
+    пересчета уровней и записи транзакций.
+    """
+
     def __init__(
         self,
         db: AsyncSession,
@@ -20,6 +26,15 @@ class PointsService:
         level_repository: LevelRepository,
         points_transaction_repository: PointsTransactionRepository,
     ) -> None:
+        """Инициализирует сервис очков.
+
+        Args:
+            db: Асинхронная сессия базы данных.
+            level_calculator: Сервис для вычисления уровней пользователя.
+            user_repository: Репозиторий для работы с пользователями.
+            level_repository: Репозиторий для работы с уровнями.
+            points_transaction_repository: Репозиторий для работы с транзакциями очков.
+        """
         self.db: AsyncSession = db
         self.level_calculator: LevelCalculator = level_calculator
         self.user_repository: UserRepository = user_repository
@@ -27,6 +42,20 @@ class PointsService:
         self.points_transaction_repository: PointsTransactionRepository = points_transaction_repository
 
     async def change_points(self, dto: AdjustUserPointsDTO) -> UserReadDTO:
+        """Изменяет количество очков пользователя.
+
+        Начисляет или списывает очки, пересчитывает уровень и создает
+        соответствующие записи о транзакции и оценке (Valuation).
+
+        Args:
+            dto: DTO с данными для изменения очков (кто, кому, сколько, причина).
+
+        Raises:
+            UserNotFoundError: Если пользователь, получающий очки, или тот, кто их выдает, не найдены.
+
+        Returns:
+            UserReadDTO: DTO с обновленными данными пользователя-получателя.
+        """
         try:
             user = await self.user_repository.get_by_id(self.db, dto.recipient_id)
         except UserNotFoundError as err:

@@ -139,9 +139,7 @@ class User(Base):
         self.roles.append(new_link)
 
     def remove_role(self, role: Role) -> None:
-        """
-        Доменная логика: Пользователь теряет роль.
-        """
+        """Доменная логика: Пользователь теряет роль."""
         self.roles = [ur for ur in self.roles if ur.role_id != role.id]
 
     def add_competence(self, competence: Competence) -> None:
@@ -188,13 +186,13 @@ class User(Base):
             self.remove_competence(competence)
 
     def change_last_user_active(self) -> None:
-        """Обновить дату последней активности пользователя"""
+        """Обновить дату последней активности пользователя."""
         self.last_active_at = datetime.now(UTC)
 
     def change_user_points(self, points: int, point_type: PointsTypeEnum) -> tuple[int, int]:
-        """
-        Изменяет очки пользователя указанного типа.
-        Возвращает кортеж (int)Изменение, (int)Новое значение
+        """Изменяет очки пользователя указанного типа.
+
+        Возвращает кортеж (int)Изменение, (int)Новое значение.
         """
         if points == 0:
             raise ZeroPointsAdjustmentError()
@@ -229,7 +227,7 @@ class User(Base):
 
     @hybrid_property
     def academic_points_vo(self) -> Points:
-        """Python-side: возвращает Value Object"""
+        """Python-side: возвращает Value Object."""
         return Points(
             value=self.academic_points,
             point_type=PointsTypeEnum.ACADEMIC,
@@ -237,12 +235,12 @@ class User(Base):
 
     @academic_points_vo.expression  # ty:ignore[invalid-argument-type]
     def academic_points_vo(cls) -> int:  # noqa: N805
-        """SQL-side: для использования в запросах"""
+        """SQL-side: для использования в запросах."""
         return cls.academic_points  # возвращаем базовое поле
 
     @academic_points_vo.setter
     def academic_points_vo(self, value: Points | int) -> None:
-        """Setter: позволяет присваивать Points или int"""
+        """Setter: позволяет присваивать Points или int."""
         if isinstance(value, Points):
             self.academic_points = value.value
         elif isinstance(value, int):

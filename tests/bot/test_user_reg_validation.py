@@ -13,7 +13,7 @@ from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.kbd import Button, ManagedMultiselect
 from pytest_mock import MockerFixture
 
-from pybot.bot.dialogs.user_reg.handlers import (
+from pybot.presentation.bot import (
     _on_competence_skip_impl,
     _on_competence_submit_impl,
     _on_patronymic_input_impl,
@@ -21,10 +21,11 @@ from pybot.bot.dialogs.user_reg.handlers import (
     on_competence_selection_changed,
     on_first_name_input,
     on_last_name_input,
+    registration_handlers_module,
     request_contact_prompt,
+    request_contact_kb,
 )
-from pybot.bot.keyboards.auth import request_contact_kb
-from pybot.bot.texts import (
+from pybot.presentation.texts import (
     REGISTRATION_CONTACT_PROMPT,
     REGISTRATION_INTERNAL_ERROR,
     REGISTRATION_NAME_INVALID_SYMBOLS,
@@ -281,12 +282,14 @@ async def test_competence_submit_registers_user_and_shows_profile_on_success(moc
     user_dto = SimpleNamespace()
     created_user = SimpleNamespace(first_name="Иван")
     answer_mock = mocker.patch.object(Message, "answer", new=mocker.AsyncMock())
-    render_mock = mocker.patch(
-        "pybot.bot.dialogs.user_reg.handlers.render_profile_message",
+    render_mock = mocker.patch.object(
+        registration_handlers_module,
+        "render_profile_message",
         new=Mock(return_value="profile text"),
     )
-    mocker.patch(
-        "pybot.bot.dialogs.user_reg.handlers.map_dialog_data_to_user_registration_dto",
+    mocker.patch.object(
+        registration_handlers_module,
+        "map_dialog_data_to_user_registration_dto",
         new=mocker.AsyncMock(return_value=user_dto),
     )
     user_registration_service_state.register_student_mock.return_value = created_user
@@ -327,12 +330,14 @@ async def test_competence_skip_clears_selection_and_registers_user(mocker: Mocke
     user_dto = SimpleNamespace()
     created_user = SimpleNamespace(first_name="Иван")
     answer_mock = mocker.patch.object(Message, "answer", new=mocker.AsyncMock())
-    render_mock = mocker.patch(
-        "pybot.bot.dialogs.user_reg.handlers.render_profile_message",
+    render_mock = mocker.patch.object(
+        registration_handlers_module,
+        "render_profile_message",
         new=Mock(return_value="profile text"),
     )
-    mocker.patch(
-        "pybot.bot.dialogs.user_reg.handlers.map_dialog_data_to_user_registration_dto",
+    mocker.patch.object(
+        registration_handlers_module,
+        "map_dialog_data_to_user_registration_dto",
         new=mocker.AsyncMock(return_value=user_dto),
     )
     user_registration_service_state.register_student_mock.return_value = created_user
@@ -363,8 +368,9 @@ async def test_competence_submit_reports_internal_error_with_message_and_finishe
     user_registration_service_state = _build_user_registration_service(mocker)
     user_profile_service_state = _build_user_profile_service(mocker)
     answer_mock = mocker.patch.object(Message, "answer", new=mocker.AsyncMock())
-    mocker.patch(
-        "pybot.bot.dialogs.user_reg.handlers.map_dialog_data_to_user_registration_dto",
+    mocker.patch.object(
+        registration_handlers_module,
+        "map_dialog_data_to_user_registration_dto",
         new=mocker.AsyncMock(return_value=None),
     )
 

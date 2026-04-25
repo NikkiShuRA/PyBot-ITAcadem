@@ -9,9 +9,7 @@ from ..db.models import Valuation
 
 
 class ValuationRepository:
-    """
-    Отвечает за доступ к операциям с баллами (Valuation).
-    """
+    """Репозиторий для управления операциями начисления баллов (Valuation)."""
 
     async def find_history_by_recipient(
         self,
@@ -20,8 +18,16 @@ class ValuationRepository:
         points_type: PointsTypeEnum,
         limit: int = 10,
     ) -> Sequence[Valuation]:
-        """
-        Возвращает последние N записей о начислении баллов для конкретного студента.
+        """Возвращает историю начислений баллов для указанного получателя.
+
+        Args:
+            db: Асинхронная сессия базы данных.
+            recipient_id: ID пользователя-получателя.
+            points_type: Тип баллов.
+            limit: Максимальное количество записей.
+
+        Returns:
+            Sequence[Valuation]: Список записей истории начислений.
         """
         stmt = (
             select(Valuation)

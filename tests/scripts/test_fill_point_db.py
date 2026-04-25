@@ -11,7 +11,7 @@ from unittest.mock import AsyncMock, Mock
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-import fill_point_db
+from pybot.cli import seed as fill_point_db
 from src.pybot.core.constants import PointsTypeEnum
 from src.pybot.dto import AdjustUserPointsDTO, CompetenceCreateDTO, CompetenceReadDTO, UserCreateDTO, UserReadDTO
 from src.pybot.dto.value_objects import Points
@@ -245,7 +245,6 @@ def test_main_uses_tyro_cli_and_asyncio_run(monkeypatch: pytest.MonkeyPatch) -> 
     )
     expected_runtime_config = fill_point_db.build_seed_config(cli_config)
     tyro_cli_mock = Mock(return_value=cli_config)
-    ensure_project_root_mock = Mock()
     observed: dict[str, object] = {}
     original_asyncio_run = asyncio.run
 
@@ -258,14 +257,12 @@ def test_main_uses_tyro_cli_and_asyncio_run(monkeypatch: pytest.MonkeyPatch) -> 
         return original_asyncio_run(coro)
 
     monkeypatch.setattr(fill_point_db.tyro, "cli", tyro_cli_mock)
-    monkeypatch.setattr(fill_point_db, "_ensure_project_root_on_path", ensure_project_root_mock)
     monkeypatch.setattr(fill_point_db, "fill_database", fake_fill_database)
     monkeypatch.setattr(fill_point_db.asyncio, "run", fake_asyncio_run)
 
     fill_point_db.main()
 
     tyro_cli_mock.assert_called_once_with(fill_point_db.FillDatabaseCLIConfig, args=None)
-    ensure_project_root_mock.assert_called_once_with()
     assert observed["is_coroutine"] is True
     assert observed["runtime_config"] == expected_runtime_config
 
@@ -281,6 +278,33 @@ def test_fill_point_db_help_does_not_require_runtime_env(tmp_path: Path) -> None
 
     result = subprocess.run(  # noqa: S603
         [sys.executable, str(script_path), "--help"],  # noqa: S607
+        capture_output=True,
+        check=False,
+        cwd=tmp_path,
+        env=runtime_env,
+        text=True,
+    )
+
+    assert result.returncode == 0
+    assert "Public CLI configuration for database seed generation." in result.stdout
+    assert "BOT_TOKEN" not in result.stderr
+
+
+def test_fill_point_db_module_help_does_not_require_runtime_env(tmp_path: Path) -> None:
+    runtime_env = os.environ.copy()
+    project_root = Path(__file__).resolve().parents[2]
+    runtime_env["PYTHONPATH"] = os.pathsep.join(
+        [
+            str(project_root / "src"),
+            str(project_root),
+            runtime_env.get("PYTHONPATH", ""),
+        ]
+    )
+    for key in ("BOT_TOKEN", "BOT_TOKEN_TEST", "ROLE_REQUEST_ADMIN_TG_ID", "DATABASE_URL"):
+        runtime_env.pop(key, None)
+
+    result = subprocess.run(  # noqa: S603
+        [sys.executable, "-m", "pybot.cli.seed", "--help"],  # noqa: S607
         capture_output=True,
         check=False,
         cwd=tmp_path,

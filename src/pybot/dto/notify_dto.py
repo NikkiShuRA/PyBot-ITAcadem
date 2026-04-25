@@ -1,3 +1,5 @@
+"""DTOs for outbound notifications and notification scheduling."""
+
 from dataclasses import dataclass
 from datetime import timedelta
 from typing import Literal
@@ -16,51 +18,50 @@ NotificationStatus = Literal["sent", "failed_temporary", "failed_permanent"]
 
 @dataclass(slots=True)
 class NotificationTaskPayload:
+    """Internal payload returned by the TaskIQ notification task."""
+
     status: NotificationStatus
-    user_id: int
+    recipient_id: int
     message: str
 
 
 class NotifyDTO(BaseDTO):
-    """
-    DTO для отправки уведомления пользователю.
-
-    Поля:
-        message (str): текст уведомления.
-        user_id (int): идентификатор пользователя.
-
-    """
+    """DTO for sending one outbound notification."""
 
     message: str
-    user_id: int = Field(..., alias="user_id", ge=1)
+    recipient_id: int = Field(..., alias="recipient_id")
+    parse_mode: str | None = None
 
     @field_validator("message")
     @classmethod
     def validate_message(cls, message: str) -> str:
-        """
-        Валидатор параметра message.
+        """Normalize and validate notification message text."""
+        return normalize_message(message, max_length=4096)
 
-        Проверяет, что сообщение не пустое и его длина не превышает
-        максимально допустимой длины.
+    @field_validator("recipient_id")
+    @classmethod
+    def validate_recipient_id(cls, recipient_id: int) -> int:
+        """Reject zero recipient id because Telegram does not use it."""
+        if recipient_id == 0:
+            raise ValueError("recipient_id must not be equal to 0")
+        return recipient_id
 
-        Args:
-            value (str): значение параметра message.
-
-        Returns:
-            str: отформатированное значение параметра message.
-
-        Raises:
-            ValueError: если сообщение пустое или его длина превышает
-                максимально допустимой длины.
-        """
-        message = normalize_message(message)
-        return message
+    @field_validator("parse_mode", mode="before")
+    @classmethod
+    def validate_parse_mode(cls, parse_mode: str | None) -> str | None:
+        """Normalize parse mode and treat empty values as ``None``."""
+        if parse_mode is None:
+            return None
+        normalized = parse_mode.strip()
+        return normalized or None
 
 
 @dataclass(frozen=True, slots=True)
 class NotificationLogEvent:
+    """Structured log event for outbound notifications."""
+
     event_type: Literal["role_request_to_admin", "direct_message"]
-    recipient_user_id: int
+    recipient_id: int
     message_text: str
     request_id: int | None = None
     requester_user_id: int | None = None
@@ -68,10 +69,13 @@ class NotificationLogEvent:
 
 
 class NotifyUserDTO(BaseDTO):
+    """DTO for scheduled notification dispatch through TaskIQ."""
+
     model_config = ConfigDict(from_attributes=True, extra="forbid", frozen=True, arbitrary_types_allowed=True)
 
-    user_id: int = Field(..., alias="user_id", ge=1)
+    recipient_id: int = Field(..., alias="recipient_id")
     message: str
+    parse_mode: str | None = None
     kind: TaskScheduleKind
     run_at: pendulum.DateTime | None = None
     interval: timedelta | None = None
@@ -81,21 +85,22 @@ class NotifyUserDTO(BaseDTO):
     @field_validator("message")
     @classmethod
     def validate_message(cls, message: str) -> str:
-        """
-        Валидатор параметра message.
+        """Normalize and validate notification message text."""
+        return normalize_message(message, max_length=4096)
 
-        Проверяет, что сообщение не пустое и его длина не превышает
-        максимально допустимой длины.
+    @field_validator("recipient_id")
+    @classmethod
+    def validate_recipient_id(cls, recipient_id: int) -> int:
+        """Reject zero recipient id because Telegram does not use it."""
+        if recipient_id == 0:
+            raise ValueError("recipient_id must not be equal to 0")
+        return recipient_id
 
-        Args:
-            value (str): значение параметра message.
-
-        Returns:
-            str: отформатированное значение параметра message.
-
-        Raises:
-            ValueError: если сообщение пустое или его длина превышает
-                максимально допустимой длины.
-        """
-        message = normalize_message(message)
-        return message
+    @field_validator("parse_mode", mode="before")
+    @classmethod
+    def validate_parse_mode(cls, parse_mode: str | None) -> str | None:
+        """Normalize parse mode and treat empty values as ``None``."""
+        if parse_mode is None:
+            return None
+        normalized = parse_mode.strip()
+        return normalized or None

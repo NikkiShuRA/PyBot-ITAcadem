@@ -1,3 +1,5 @@
+"""DTO для работы с профилями пользователей, уровнями и достижениями."""
+
 import re
 from collections.abc import Sequence
 from datetime import date
@@ -15,10 +17,9 @@ from .level_dto import LevelReadDTO
 
 
 class AdjustUserPointsDTO(BaseDTO):
-    """Data transfer object for adjusting a user's points.
+    """DTO для корректировки баллов пользователя (начисления или списания).
 
-    This bundles the parameters previously passed as many separate
-    arguments into a single validated object.
+    Объединяет параметры изменения баллов в единый валидируемый объект.
     """
 
     recipient_id: int
@@ -42,15 +43,16 @@ class UserCreateDTO(BaseDTO):
     @field_validator("first_name", "last_name", "patronymic")
     @classmethod
     def clean_string(cls, v: str | None) -> str | None:
-        """Clean a string by stripping whitespace.
+        """Очищает строку от нежелательных символов и пробелов.
 
-        This is a helper function for validating UserCreateDTO fields.
-        It is used as a field validator to clean strings passed in the
-        UserCreateDTO. If the string is None, it is returned unchanged.
-        Otherwise, it is stripped of leading and trailing whitespace.
+        Данная функция удаляет все символы, не являющиеся русскими буквами
+        или пробелами. Убирает лишние пробелы в начале и в конце строки.
 
-        :param v: The string to clean.
-        :return: The cleaned string, or None if the string was None.
+        Args:
+            v (str | None): Строка для очистки.
+
+        Returns:
+            str | None: Очищенная строка или None, если на вход передан None.
         """
         if v is not None:
             v = re.sub(r"[^а-яА-Я\s]", "", v)
@@ -65,7 +67,7 @@ class UserCreateDTO(BaseDTO):
         *,
         allow_empty: bool = False,
     ) -> str | None:
-        """Validate dialog input using the same contract as DTO name fields."""
+        """Валидирует пользовательский ввод имени с использованием контрактов DTO."""
         text = raw_text.strip()
         if not text:
             if allow_empty:
@@ -87,6 +89,7 @@ class UserCreateDTO(BaseDTO):
     @field_validator("phone")
     @classmethod
     def normalize_phone(cls, v: str) -> str:
+        """Нормализует формат номера телефона."""
         try:
             return normalize_phone(v)
         except ValueError as e:
@@ -94,8 +97,7 @@ class UserCreateDTO(BaseDTO):
 
 
 class UserReadDTO(BaseDTO):
-    """
-    DTO для отображения данных пользователя.
+    """DTO для отображения данных пользователя.
 
     Атрибуты:
         id (int): Идентификатор пользователя.
@@ -119,10 +121,10 @@ class UserReadDTO(BaseDTO):
 
 
 class UpdateUserLevelDTO(BaseDTO):
-    """DTO for updating a user's level.
+    """DTO для обновления уровня пользователя.
 
-    This bundles the parameters previously passed as many separate
-    arguments to `update_user_level` into a single validated object.
+    Объединяет параметры, необходимые для расчета и применения нового
+    академического уровня, в единый валидируемый объект.
     """
 
     user: UserReadDTO
@@ -131,18 +133,14 @@ class UpdateUserLevelDTO(BaseDTO):
 
 
 class UserLevelReadDTO(BaseDTO):
-    """
-    DTO для отображения прогресса уровня пользователя.
-    """
+    """DTO для отображения прогресса уровня пользователя."""
 
     current_level: LevelReadDTO
     next_level: LevelReadDTO
 
 
 class UserProfileReadDTO(BaseDTO):
-    """
-    DTO для отображения расширенного списка данных пользователя.
-    """
+    """DTO для отображения расширенного списка данных пользователя."""
 
     user: UserReadDTO
     competences: Sequence[CompetenceReadDTO]
@@ -151,11 +149,15 @@ class UserProfileReadDTO(BaseDTO):
 
 
 class UserRegistrationDTO(BaseDTO):
+    """DTO со входными данными для процесса регистрации студента."""
+
     user: UserCreateDTO
     competence_ids: Sequence[int] = Field(default_factory=tuple)
 
 
 class ProfileViewDTO(BaseDTO):
+    """DTO для подготовки данных профиля пользователя перед отображением."""
+
     user: UserReadDTO
 
     academic_progress: Points
@@ -175,9 +177,11 @@ class ProfileViewDTO(BaseDTO):
     @computed_field
     @property
     def academic_progress_bar(self) -> str:
+        """Генерирует строку индикатора прогресса (прогресс-бар) для академических баллов."""
         return progress_bar(self.academic_current_points.value, self.academic_next_points.value)
 
     @computed_field
     @property
     def reputation_progress_bar(self) -> str:
+        """Генерирует строку индикатора прогресса (прогресс-бар) для баллов репутации."""
         return progress_bar(self.reputation_current_points.value, self.reputation_next_points.value)

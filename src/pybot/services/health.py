@@ -1,88 +1,101 @@
 from __future__ import annotations
 
 import time
-from collections.abc import Mapping
 from datetime import UTC, datetime
-from typing import Protocol
 
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.sql.base import Executable
 
 from ..core import logger
 from ..dto.health_dto import HealthCheckDTO, HealthStatusDTO
-
-
-class SupportsExecute(Protocol):
-    async def execute(
-        self,
-        statement: Executable,
-        params: Mapping[str, object] | None = None,
-        *,
-        execution_options: Mapping[str, object] | None = None,
-        bind_arguments: Mapping[str, object] | None = None,
-        **kwargs: object,
-    ) -> object: ...
-
-
-class SessionExecutor(SupportsExecute):
-    def __init__(self, session: AsyncSession) -> None:
-        self._session = session
-
-    async def execute(
-        self,
-        statement: Executable,
-        params: Mapping[str, object] | None = None,
-        *,
-        execution_options: Mapping[str, object] | None = None,
-        bind_arguments: Mapping[str, object] | None = None,
-        **kwargs: object,
-    ) -> object:
-        # Health checks only need a minimal "SELECT 1"; extra options are ignored.
-        _ = execution_options, bind_arguments, kwargs
-        return await self._session.execute(statement, params=params)
+from .ports.health_probe import SupportsExecute, SupportsPing
 
 
 class HealthService:
-    def __init__(self, db: SupportsExecute) -> None:
+    """Сервис для проверки состояния системы (health probes).
+
+    Предоставляет методы для проверки работоспособности БД и Redis.
+    """
+
+    def __init__(self, db: SupportsExecute, redis_probe: SupportsPing) -> None:
+        """Инициализирует сервис проверки состояния.
+
+        Args:
+            db: Адаптер для проверки соединения с базой данных.
+            redis_probe: Адаптер для проверки соединения с Redis.
+        """
         self._db = db
+        self._redis_probe = redis_probe
 
     async def health(self) -> HealthStatusDTO:
+        """Возвращает базовый статус работоспособности системы (liveness).
+
+        Returns:
+            HealthStatusDTO: DTO со статусом и текущим временем.
+        """
         return HealthStatusDTO(
             status="ok",
             checks=[],
             timestamp=datetime.now(UTC),
         )
 
-    async def ready(self) -> tuple[HealthStatusDTO, bool]:
+    async def _check_database(self) -> HealthCheckDTO:
         start = time.perf_counter()
         try:
             await self._db.execute(text("SELECT 1"))
-            latency_ms = int((time.perf_counter() - start) * 1000)
-            check = HealthCheckDTO(
-                name="database",
-                status="ok",
-                latency_ms=latency_ms,
-            )
-            status = HealthStatusDTO(
-                status="ok",
-                checks=[check],
-                timestamp=datetime.now(UTC),
-            )
         except Exception as err:
             latency_ms = int((time.perf_counter() - start) * 1000)
             logger.exception("Database readiness check failed")
-            check = HealthCheckDTO(
+            return HealthCheckDTO(
                 name="database",
                 status="fail",
                 details=str(err),
                 latency_ms=latency_ms,
             )
-            status = HealthStatusDTO(
+
+        latency_ms = int((time.perf_counter() - start) * 1000)
+        return HealthCheckDTO(
+            name="database",
+            status="ok",
+            latency_ms=latency_ms,
+        )
+
+    async def _check_redis(self) -> HealthCheckDTO:
+        start = time.perf_counter()
+        try:
+            await self._redis_probe.ping()
+        except Exception as err:
+            latency_ms = int((time.perf_counter() - start) * 1000)
+            logger.exception("Redis readiness check failed")
+            return HealthCheckDTO(
+                name="redis",
                 status="fail",
-                checks=[check],
-                timestamp=datetime.now(UTC),
+                details=str(err),
+                latency_ms=latency_ms,
             )
-            return status, False
-        else:
-            return status, True
+
+        latency_ms = int((time.perf_counter() - start) * 1000)
+        return HealthCheckDTO(
+            name="redis",
+            status="ok",
+            latency_ms=latency_ms,
+        )
+
+    async def ready(self) -> tuple[HealthStatusDTO, bool]:
+        """Возвращает расширенный статус готовности системы (readiness).
+
+        Проверяет доступность базы данных и Redis.
+
+        Returns:
+            tuple[HealthStatusDTO, bool]: DTO со статусами проверок и общий флаг готовности.
+        """
+        checks = [
+            await self._check_database(),
+            await self._check_redis(),
+        ]
+        is_ready = all(check.status == "ok" for check in checks)
+        status = HealthStatusDTO(
+            status="ok" if is_ready else "fail",
+            checks=checks,
+            timestamp=datetime.now(UTC),
+        )
+        return status, is_ready

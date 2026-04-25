@@ -69,11 +69,11 @@ jobs:
       - name: Install dependencies (including dev-group)
         run: uv sync --dev
 
-      - name: Smoke-check fill_point_db CLI help
-        run: uv run python fill_point_db.py --help
+      - name: Smoke-check pybot-seed CLI help
+        run: uv run pybot-seed --help
 
   quality-checks:
-    name: Lint, Format Check & Type Check
+    name: Lint, Format Check, Type Check, Architecture Check & Tests
     runs-on: ubuntu-latest
 
     steps:
@@ -96,43 +96,8 @@ jobs:
       - name: Install dependencies (including dev-group)
         run: just install-dev
 
-      - name: Run quality-gate (format check + lint + type check)
+      - name: Run quality-gate (format check + lint + type check + arch check + tests)
         run: just quality-gate
-
-  tests-and-coverage:
-    name: Tests & Coverage
-    runs-on: ubuntu-latest
-    env:
-      BOT_TOKEN: "123456:CI_TEST_BOT_TOKEN"
-      BOT_TOKEN_TEST: "123456:CI_TEST_BOT_TOKEN"
-      BOT_MODE: "test"
-      DATABASE_URL: "sqlite+aiosqlite:///./ci_runtime.db"
-      ROLE_REQUEST_ADMIN_TG_ID: "1"
-      LOG_LEVEL: "INFO"
-      DEBUG: "0"
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v3
-        with:
-          enable-cache: true
-
-      - name: Install just
-        uses: taiki-e/install-action@just
-
-      - name: Install dependencies (including dev-group)
-        run: just install-dev
-
-      - name: Run tests with coverage
-        run: just test-coverage
 
       - name: Upload coverage.xml artifact
         uses: actions/upload-artifact@v4

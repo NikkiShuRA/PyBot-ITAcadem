@@ -2,6 +2,236 @@
 
 <!-- version list -->
 
+## v0.28.0 (2026-04-22)
+
+### Bug Fixes
+
+- Исправил битую первую строку
+  ([`da60bf4`](https://github.com/Cewerty/PyBot-ITAcadem/commit/da60bf4076fe037f0872203b6ce99e8083f7ee6b))
+
+### Chores
+
+- **test**: Добавил тесты для изменений в di-контейнерах и зависимостях в них
+  ([`ad642cc`](https://github.com/Cewerty/PyBot-ITAcadem/commit/ad642ccfe3d484be44a7ff2646cfc7625ba30e6e))
+
+### Features
+
+- Довершил ввод .env-конфигурируемой системы role policy без создания import-time side effect
+  ([`fab7634`](https://github.com/Cewerty/PyBot-ITAcadem/commit/fab7634c1baa16ce710055b766cd907367f391e8))
+
+### Refactoring
+
+- Внедрить BotSettings в сервисы и адаптеры
+  ([`7f6cbee`](https://github.com/Cewerty/PyBot-ITAcadem/commit/7f6cbeed982cc42f7427e27ca57bcc5f3b612911))
+
+- Изменил логику middelware, чтобы она поддерживала role policy без создания side-effect при
+  импортировании конфигурации
+  ([`d9037f1`](https://github.com/Cewerty/PyBot-ITAcadem/commit/d9037f1b5c56384a9a77ad38f58799c6f86c7ed9))
+
+- Передавать BotSettings в runtime бота и middleware
+  ([`3d2c7ab`](https://github.com/Cewerty/PyBot-ITAcadem/commit/3d2c7ab342395aeee430580524fd49c080092496))
+
+- Перенёс создание DB engine на конфигурацию из DI-контейнера
+  ([`b311799`](https://github.com/Cewerty/PyBot-ITAcadem/commit/b3117990a10a9954e3e71cd1e9bd0a2401728a43))
+
+- Сделать явную регистрацию TaskIQ задач
+  ([`3dc109e`](https://github.com/Cewerty/PyBot-ITAcadem/commit/3dc109e9c9e4ee1ec57ee70795678aa8232db1e5))
+
+### Testing
+
+- Migrate settings usage to isolated settings_obj fixture
+  ([`8c4ac9f`](https://github.com/Cewerty/PyBot-ITAcadem/commit/8c4ac9fa2d3149ceb63a81dfda9154c62d009165))
+
+
+## v0.27.0 (2026-04-19)
+
+### Bug Fixes
+
+- Resolve Ruff E402 and F821 typing issues in config.py
+  ([`b3dc264`](https://github.com/Cewerty/PyBot-ITAcadem/commit/b3dc26403453674be26c08fd36efc2de394fdcc1))
+
+- Исправил автоматическую подгрузку .env в скрипте заполнения БД
+  ([`ea5d2a2`](https://github.com/Cewerty/PyBot-ITAcadem/commit/ea5d2a2a858743c133e0c6cd7c5767bada33d704))
+
+- Исправил конфигурацию тестов, для того чтобы тесты не читали объект конфигурации до запуска
+  фикстур
+  ([`7cceb66`](https://github.com/Cewerty/PyBot-ITAcadem/commit/7cceb66b75d095f4e74f728df1fdd82da652a2fb))
+
+- Исправил ошибки в текста и убрал лишний github action
+  ([`76996c0`](https://github.com/Cewerty/PyBot-ITAcadem/commit/76996c0481c51b8af167a6491a6c5a4f24bbb8ab))
+
+- Исправил ошибку с обработкой .env при pybot-seed
+  ([`f5cdb72`](https://github.com/Cewerty/PyBot-ITAcadem/commit/f5cdb724bd6c1003bc5e820420f664fc5b242ddd))
+
+- Исправил создание экземпляра движка БД
+  ([`9a2ad1f`](https://github.com/Cewerty/PyBot-ITAcadem/commit/9a2ad1f35ee640f33d5af29a1a5318349fbb6136))
+
+- **test**: Support monkeypatching config properties on SettingsProxy
+  ([`ac9fc9c`](https://github.com/Cewerty/PyBot-ITAcadem/commit/ac9fc9c0c409294233a1e13102acaaf8efea6344))
+
+### Build System
+
+- Move faker to dev dependencies and enable hatchling packaging
+  ([`646eb4f`](https://github.com/Cewerty/PyBot-ITAcadem/commit/646eb4faa72471c1e20c16212493a012e9528d72))
+
+### Continuous Integration
+
+- **docker**: Align local docker-compose with production and extract migrate service
+  ([`ad7508f`](https://github.com/Cewerty/PyBot-ITAcadem/commit/ad7508f4e00380bc81c11b348ed8b49194c5ddad))
+
+- **docker**: Handle graceful shutdown in entrypoint and apply explicit project installation
+  ([`6f6eab3`](https://github.com/Cewerty/PyBot-ITAcadem/commit/6f6eab31747b8ef50f44e514501139938875bb24))
+
+### Documentation
+
+- **architecture**: Document SQLite bottlenecks, rate limit design, and health API ADR
+  ([`beede99`](https://github.com/Cewerty/PyBot-ITAcadem/commit/beede997b33fe6a13df70f494e1faa02b4babd56))
+
+### Features
+
+- **config**: Wrap settings instantiation in lru_cache for testability
+  ([`3bcabd0`](https://github.com/Cewerty/PyBot-ITAcadem/commit/3bcabd06e83fd6953770fb23847d9f45b55054fc))
+
+- **logging**: Support structured JSON log format and tracing
+  ([`c7e920c`](https://github.com/Cewerty/PyBot-ITAcadem/commit/c7e920cc0024a0131614299956b060189a56944b))
+
+### Refactoring
+
+- Убрал лишний прокси класс вокруг кэшированной функции-фабрики объекта конфигурации
+  ([`7bec899`](https://github.com/Cewerty/PyBot-ITAcadem/commit/7bec899b8364d6d21e30166ad2f72c07117f04ae))
+
+- **cli**: Move seed script to cli module and configure entrypoint
+  ([`2fcd049`](https://github.com/Cewerty/PyBot-ITAcadem/commit/2fcd049fdb2381605bb1eb0103ddeef16db1c750))
+
+
+## v0.26.1 (2026-04-19)
+
+### Bug Fixes
+
+- Исправил логику с инвертированной тернарной логикой внутри application service, проверки None в
+  Middelware проверки ролей и обновил тесты под новые use case в UserService.
+  ([`6418ed2`](https://github.com/Cewerty/PyBot-ITAcadem/commit/6418ed2d924e5d0198782abd30d4b8522d896d0f))
+
+### Build System
+
+- Configure tach architecture linter
+  ([`d944e62`](https://github.com/Cewerty/PyBot-ITAcadem/commit/d944e6260dbb0933d9c8f8668a3fd1ce805578bd))
+
+- **deps**: Install tach linter dependency
+  ([`714ca02`](https://github.com/Cewerty/PyBot-ITAcadem/commit/714ca020d1dbcb86e6c0d1246ca48515751a2b96))
+
+### Refactoring
+
+- **arch**: Resolve architectural violations for tach
+  ([`8e138cb`](https://github.com/Cewerty/PyBot-ITAcadem/commit/8e138cbe2544e68c33d0a6fa057eddaa8086dc44))
+
+
+## v0.26.0 (2026-04-18)
+
+### Bug Fixes
+
+- **leaderboard**: Show week period when sections are empty
+  ([`c369399`](https://github.com/Cewerty/PyBot-ITAcadem/commit/c36939940ee1f72c5b60833432961c41475ff4a8))
+
+### Chores
+
+- **lockfile**: Bump workspace package version to 0.25.0
+  ([`5aed622`](https://github.com/Cewerty/PyBot-ITAcadem/commit/5aed622b15f2d620178d6fdef16e9900f8467967))
+
+### Features
+
+- **taskiq**: Configure weekly leaderboard retry policy
+  ([`ce78b0c`](https://github.com/Cewerty/PyBot-ITAcadem/commit/ce78b0c4f5350cf38ec6875067a9a27af0cc51e7))
+
+
+## v0.25.0 (2026-04-18)
+
+### Bug Fixes
+
+- Исправил бизнес-логику лидерборда на учитывание только повышения очков, а не изменения очков в
+  целом
+  ([`0047f7a`](https://github.com/Cewerty/PyBot-ITAcadem/commit/0047f7a037bb94e98368a8922488c63a356b9b64))
+
+- **leaderboard**: Apply net weekly delta and tz-aware period
+  ([`4166a58`](https://github.com/Cewerty/PyBot-ITAcadem/commit/4166a58c557cad8451ad33a840418f86d78807a0))
+
+### Features
+
+- Weekly leaderboard publishing via taskiq
+  ([`62227cf`](https://github.com/Cewerty/PyBot-ITAcadem/commit/62227cf3c771d62b46c12c7f7438ac639b9e8ab9))
+
+- Добавил команду для получения id чата для удобного получения id для еженедельной рассылки и прочих
+  рассылок по времени в определённый чат
+  ([`87b6347`](https://github.com/Cewerty/PyBot-ITAcadem/commit/87b6347b9064599779bd0500110dc28bc7cd6fcc))
+
+### Refactoring
+
+- **taskiq**: Extract weekly leaderboard schedule wiring
+  ([`2df7e12`](https://github.com/Cewerty/PyBot-ITAcadem/commit/2df7e12989c88ceb406f73a68067d864fd8da088))
+
+
+## v0.24.0 (2026-04-11)
+
+### Bug Fixes
+
+- Включил html-рендеринг профиля и ошибку регистрации
+  ([#90](https://github.com/Cewerty/PyBot-ITAcadem/pull/90),
+  [`b4fb5f7`](https://github.com/Cewerty/PyBot-ITAcadem/commit/b4fb5f7d328f83a2c11c903edeeebe71539765b4))
+
+- Включил sqlite foreign keys в runtime ([#90](https://github.com/Cewerty/PyBot-ITAcadem/pull/90),
+  [`b4fb5f7`](https://github.com/Cewerty/PyBot-ITAcadem/commit/b4fb5f7d328f83a2c11c903edeeebe71539765b4))
+
+- Исправил выборку пользователей по роли ([#90](https://github.com/Cewerty/PyBot-ITAcadem/pull/90),
+  [`b4fb5f7`](https://github.com/Cewerty/PyBot-ITAcadem/commit/b4fb5f7d328f83a2c11c903edeeebe71539765b4))
+
+- Исправил реггрессию в тестах с healthAPI
+  ([#90](https://github.com/Cewerty/PyBot-ITAcadem/pull/90),
+  [`b4fb5f7`](https://github.com/Cewerty/PyBot-ITAcadem/commit/b4fb5f7d328f83a2c11c903edeeebe71539765b4))
+
+- Исправлеине реггрессий в валидации ([#90](https://github.com/Cewerty/PyBot-ITAcadem/pull/90),
+  [`b4fb5f7`](https://github.com/Cewerty/PyBot-ITAcadem/commit/b4fb5f7d328f83a2c11c903edeeebe71539765b4))
+
+- Обработал ожидаемые ошибки рассылки ([#90](https://github.com/Cewerty/PyBot-ITAcadem/pull/90),
+  [`b4fb5f7`](https://github.com/Cewerty/PyBot-ITAcadem/commit/b4fb5f7d328f83a2c11c903edeeebe71539765b4))
+
+- Скрываю детали readiness ошибки базы ([#90](https://github.com/Cewerty/PyBot-ITAcadem/pull/90),
+  [`b4fb5f7`](https://github.com/Cewerty/PyBot-ITAcadem/commit/b4fb5f7d328f83a2c11c903edeeebe71539765b4))
+
+- Убрал текст из callback role request ([#90](https://github.com/Cewerty/PyBot-ITAcadem/pull/90),
+  [`b4fb5f7`](https://github.com/Cewerty/PyBot-ITAcadem/commit/b4fb5f7d328f83a2c11c903edeeebe71539765b4))
+
+- **ci/cd**: Добавил параметр для перехода к современному node.js для устранения warning при запуске
+  Github actions ([#90](https://github.com/Cewerty/PyBot-ITAcadem/pull/90),
+  [`b4fb5f7`](https://github.com/Cewerty/PyBot-ITAcadem/commit/b4fb5f7d328f83a2c11c903edeeebe71539765b4))
+
+- **docs**: Добавил .gitkeep для overrides
+  ([#90](https://github.com/Cewerty/PyBot-ITAcadem/pull/90),
+  [`b4fb5f7`](https://github.com/Cewerty/PyBot-ITAcadem/commit/b4fb5f7d328f83a2c11c903edeeebe71539765b4))
+
+### Chores
+
+- **docs**: Изменение в настройках MK Doc Material и небольшие правки в тесте
+  ([#90](https://github.com/Cewerty/PyBot-ITAcadem/pull/90),
+  [`b4fb5f7`](https://github.com/Cewerty/PyBot-ITAcadem/commit/b4fb5f7d328f83a2c11c903edeeebe71539765b4))
+
+### Features
+
+- Добавил журнал транзакций баллов ([#90](https://github.com/Cewerty/PyBot-ITAcadem/pull/90),
+  [`b4fb5f7`](https://github.com/Cewerty/PyBot-ITAcadem/commit/b4fb5f7d328f83a2c11c903edeeebe71539765b4))
+
+- Добавил команду leaderboard ([#90](https://github.com/Cewerty/PyBot-ITAcadem/pull/90),
+  [`b4fb5f7`](https://github.com/Cewerty/PyBot-ITAcadem/commit/b4fb5f7d328f83a2c11c903edeeebe71539765b4))
+
+- Добавил просмотр каталога и ролей пользователя
+  ([#90](https://github.com/Cewerty/PyBot-ITAcadem/pull/90),
+  [`b4fb5f7`](https://github.com/Cewerty/PyBot-ITAcadem/commit/b4fb5f7d328f83a2c11c903edeeebe71539765b4))
+
+### Refactoring
+
+- Упростил async-конфиг alembic ([#90](https://github.com/Cewerty/PyBot-ITAcadem/pull/90),
+  [`b4fb5f7`](https://github.com/Cewerty/PyBot-ITAcadem/commit/b4fb5f7d328f83a2c11c903edeeebe71539765b4))
+
+
 ## v0.23.0 (2026-04-11)
 
 ### Bug Fixes
