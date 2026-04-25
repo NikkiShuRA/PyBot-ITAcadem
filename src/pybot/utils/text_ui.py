@@ -2,6 +2,16 @@ import textwrap
 
 
 def progress_bar(current: int, max_: int, width: int = 10) -> str:
+    """Генерирует текстовый индикатор прогресса (progress bar).
+
+    Args:
+        current: Текущее значение.
+        max_: Максимальное значение.
+        width: Ширина полосы в символах.
+
+    Returns:
+        str: Многострочная строка с индикатором прогресса и процентами.
+    """
     filled = 0
     pct = "???"
     if max_ == 0:
