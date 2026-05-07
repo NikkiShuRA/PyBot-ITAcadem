@@ -17,8 +17,8 @@ The CI workflow also validates the Docker build, both Compose manifests, and the
 3. `CD - Build and Deploy` starts either from `workflow_run` or `workflow_dispatch`.
 4. GitHub Actions builds a Docker image and pushes it to GHCR.
 5. GitHub Actions runs Ansible against the target server.
-6. Ansible copies `docker-compose.prod.yml` and `.env` into the deploy user's workspace, runs a one-shot migration container, optionally runs a one-shot seed container, and then starts the runtime services.
-7. Ansible runs a post-deploy smoke-check: it verifies the core containers are running and, when enabled, probes the health API readiness endpoint from inside the bot container.
+6. Ansible copies `docker-compose.prod.yml` and `.env` into the deploy user's workspace, runs the one-shot `migrate` process, optionally runs the one-shot `seed` process, and only then starts the runtime services.
+7. Ansible runs a post-deploy smoke-check: it verifies the core containers are running and, when enabled, probes the health API readiness endpoint from inside the health container.
 
 ## Manual redeploy
 
@@ -40,7 +40,24 @@ This is useful for recovery, token rotation, or controlled re-runs after infrast
 - the server does not need the git repository checked out;
 - the deployment uses an immutable image tag;
 - the deploy host only needs Docker, Compose, `.env`, and persistent volumes.
-- database migrations run as a separate one-shot service instead of piggybacking on bot startup.
+- both local and production Compose files keep the same process model while differing only in build source (`build` vs `image`).
+
+## Shared Compose process model
+
+Both `docker-compose.yml` and `docker-compose.prod.yml` describe the same operational shape:
+
+- default runtime process types: `bot`, `taskiq-worker`, `taskiq-scheduler`, `redis`
+- optional runtime process type: `health` behind the `health` profile
+- admin one-shot process type: `migrate` behind the `migration` profile
+- admin one-shot process type: `seed` behind the `seed` profile
+
+That alignment is deliberate:
+
+- Factor X Dev/Prod parity: local and production use the same process model
+- Factor V Build/Release/Run: runtime processes stay separate from admin one-shot steps
+- Factor VI Processes: each process type has an explicit entrypoint instead of hidden startup side effects
+
+Worker concurrency follows the same env-driven mechanism in dev and prod: `taskiq-worker` reads `${TASKIQ_WORKERS:-1}` from Compose. This is a 12-factor uplift step, but the current runtime still intentionally supports only `TASKIQ_WORKERS=1`; larger values fail fast until multi-instance readiness work is completed.
 
 ## Required GitHub secrets
 
@@ -110,27 +127,38 @@ This separation is meant to reduce the risk of affecting unrelated projects host
 The deploy role performs a lightweight smoke-check after `docker compose up -d`:
 
 - verifies that `pybot-bot`, `pybot-taskiq-worker`, `pybot-taskiq-scheduler`, and `pybot-redis` are running;
+- if `HEALTH_API_ENABLED=true`, also verifies that `pybot-health` is running;
 - waits for Redis health to become `healthy` when a healthcheck exists;
-- if `HEALTH_API_ENABLED=true`, calls `GET /ready` from inside the bot container.
+- if `HEALTH_API_ENABLED=true`, calls `GET /ready` from inside the health container.
 
 This complements CI tests by validating the deployed runtime on the real server instead of rerunning the same test suite.
 
+## Health profile
+
+The `health` process type is profile-gated in both Compose files.
+
+- local/manual Compose can enable it with `COMPOSE_PROFILES=health` or `docker compose --profile health ...`
+- production deploy enables `--profile health` only when `HEALTH_API_ENABLED=true` is present in the deployed `.env`
+- when the profile is disabled, plain `docker compose up -d` does not start `pybot-health`
+- when the profile is enabled, the process entrypoint is `uvicorn src.pybot.presentation.web:app`
+
 ## Migrations
 
-Production migrations are executed by the dedicated `migrate` service in `docker-compose.prod.yml`.
+Migrations are executed by the dedicated `migrate` service, not by `bot` startup.
 
 That service is attached to the `migration` profile, so:
 
-- it is run explicitly by Ansible during deploy;
-- it is not started by a plain `docker compose up -d` against the production compose file;
-- local development remains unchanged because the regular `docker-compose.yml` still uses the original startup flow.
+- local/manual Compose runs it explicitly with `docker compose --profile migration run --rm migrate`;
+- production deploy runs it explicitly via Ansible before `docker compose up -d`;
+- a plain `docker compose up -d` or `docker compose up --build` does not start it.
 
 ## Seed
 
-Production seed data is handled by the dedicated `seed` service in `docker-compose.prod.yml`.
+Seed data is handled by the dedicated `seed` service, not by `bot` startup.
 
 - it is disabled by default;
-- it runs only when `RUN_SEED_ON_DEPLOY=true` is passed from GitHub Secrets into the deploy workflow;
+- local/manual Compose runs it explicitly with `docker compose --profile seed run --rm seed`;
+- production deploy runs it only when `RUN_SEED_ON_DEPLOY=true` is passed from GitHub Secrets into the deploy workflow;
 - it is intended for first deploys or controlled reinitialization, not for every rollout.
 
 ## Recommended production `.env` baseline
@@ -147,11 +175,23 @@ At minimum, set:
 - `AUTO_SEED_DB=false`
 - `LOG_LEVEL=INFO`
 - `HEALTH_API_ENABLED=false`
+- `TASKIQ_WORKERS=1`
+- `LEADERBOARD_WEEKLY_RETRY_ENABLED=true`
+- `LEADERBOARD_WEEKLY_RETRY_MAX_RETRIES=3`
+- `LEADERBOARD_WEEKLY_RETRY_DELAY_S=30`
+- `LEADERBOARD_WEEKLY_RETRY_USE_JITTER=true`
+- `LEADERBOARD_WEEKLY_RETRY_USE_EXPONENTIAL_BACKOFF=true`
+- `LEADERBOARD_WEEKLY_RETRY_MAX_DELAY_S=300`
 
 Important:
 
 - if you use SQLite in production, keep `DATABASE_URL` under `./data/...`
 - paths like `sqlite+aiosqlite:///./pybot_itacadem.db` will place the database outside the mounted volume and break one-shot migration/seed containers
+- when `HEALTH_API_ENABLED=true`, deploy orchestration enables the `health` Compose profile and starts a dedicated `pybot-health` service (`uvicorn src.pybot.presentation.web:app`)
+- production uses the same concurrency knob as local Compose: `TASKIQ_WORKERS=1 docker compose up -d`
+- syntax for future worker scaling is already reserved via `TASKIQ_WORKERS`, but values greater than `1` are intentionally rejected for now
+- weekly leaderboard retries are applied only for temporary delivery failures (`NotificationTemporaryError`)
+- retry policy for weekly publishing is controlled by `LEADERBOARD_WEEKLY_RETRY_*` env settings
 
 ## Next hardening steps
 

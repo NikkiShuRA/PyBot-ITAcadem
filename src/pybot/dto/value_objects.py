@@ -1,3 +1,5 @@
+"""Value Objects (Объекты-значения) и базовые модели данных."""
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta
@@ -21,12 +23,16 @@ from ..domain.exceptions import (
 
 
 class BaseValueModel(BaseModel):
+    """Базовый класс для Value Objects.
+
+    Запрещает использование незадекларированных полей и делает объект неизменяемым (frozen).
+    """
+
     model_config = ConfigDict(extra="forbid", frozen=True)
 
 
 class Points(BaseValueModel):
-    """
-    Класс для представления количества очков.
+    """Класс для представления количества очков.
 
     Attributes:
         value (int): Количество очков.
@@ -44,8 +50,7 @@ class Points(BaseValueModel):
     point_type: PointsTypeEnum
 
     def adjust(self, delta: int) -> Points:
-        """
-        Меняет количество очков на заданное значение.
+        """Меняет количество очков на заданное значение.
 
         Args:
             delta (int): Заданное изменение количества очков.
@@ -54,7 +59,6 @@ class Points(BaseValueModel):
             Points: Новый объект Points с измененным количеством очков.
 
         """
-
         new_value = self.value + delta
         return Points(value=new_value, point_type=self.point_type)
 
@@ -125,6 +129,8 @@ class Points(BaseValueModel):
 
 
 class TaskSchedule(BaseValueModel):
+    """Value Object для представления расписания выполнения задачи."""
+
     model_config = ConfigDict(extra="forbid", frozen=True, arbitrary_types_allowed=True)
 
     kind: TaskScheduleKind
@@ -135,23 +141,28 @@ class TaskSchedule(BaseValueModel):
 
     @classmethod
     def immediate(cls) -> TaskSchedule:
+        """Создает расписание для немедленного выполнения задачи."""
         return cls(kind=TaskScheduleKind.IMMEDIATE)
 
     @classmethod
     def at(cls, run_at: datetime | pendulum.DateTime) -> TaskSchedule:
+        """Создает расписание для единоразового выполнения в заданное время."""
         return cls.model_validate({"kind": TaskScheduleKind.AT, "run_at": run_at})
 
     @classmethod
     def every(cls, interval: timedelta) -> TaskSchedule:
+        """Создает расписание для периодического выполнения с заданным интервалом."""
         return cls(kind=TaskScheduleKind.INTERVAL, interval=interval)
 
     @classmethod
     def cron_based(cls, cron: str, timezone: str = "UTC") -> TaskSchedule:
+        """Создает расписание для периодического выполнения по cron-выражению."""
         return cls.model_validate({"kind": TaskScheduleKind.CRON, "cron": cron, "timezone": timezone})
 
     @field_validator("run_at", mode="before")
     @classmethod
     def validate_run_at(cls, value: object) -> pendulum.DateTime | None:
+        """Валидирует время запуска, требуя наличия информации о часовом поясе."""
         if value is None:
             return None
         if isinstance(value, pendulum.DateTime):
@@ -168,6 +179,7 @@ class TaskSchedule(BaseValueModel):
     @field_validator("interval")
     @classmethod
     def validate_interval(cls, value: timedelta | None) -> timedelta | None:
+        """Проверяет интервал выполнения: должен быть больше нуля и не менее 1 секунды."""
         if value is None:
             return None
         if value <= timedelta(0):
@@ -178,6 +190,7 @@ class TaskSchedule(BaseValueModel):
 
     @model_validator(mode="after")
     def validate_shape(self) -> TaskSchedule:
+        """Проверяет консистентность заполненных полей в зависимости от типа расписания."""
         match self.kind:
             case TaskScheduleKind.IMMEDIATE:
                 self._validate_immediate_schedule()
@@ -222,21 +235,25 @@ class TaskSchedule(BaseValueModel):
         return tuple(field_name for field_name in field_names if getattr(self, field_name) is not None)
 
     def as_taskiq_datetime(self) -> pendulum.DateTime:
+        """Возвращает время выполнения задачи для TaskIQ."""
         if self.run_at is None:
             raise TaskScheduleFieldUnavailableError("run_at", TaskScheduleKind.AT, self.kind)
         return self.run_at
 
     def as_interval(self) -> timedelta:
+        """Возвращает временной интервал для периодических задач."""
         if self.interval is None:
             raise TaskScheduleFieldUnavailableError("interval", TaskScheduleKind.INTERVAL, self.kind)
         return self.interval
 
     def as_cron_expression(self) -> str:
+        """Возвращает строковое выражение cron."""
         if self.cron is None:
             raise TaskScheduleFieldUnavailableError("cron", TaskScheduleKind.CRON, self.kind)
         return str(self.cron)
 
     def as_timezone_name(self) -> str:
+        """Возвращает текстовое название часового пояса."""
         if self.timezone is None:
             raise TaskScheduleFieldUnavailableError("timezone", TaskScheduleKind.CRON, self.kind)
         return str(self.timezone)

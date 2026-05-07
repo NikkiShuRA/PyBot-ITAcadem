@@ -16,12 +16,15 @@ RUN uv sync --frozen --no-dev --no-install-project
 
 # 2. Исходный код и runtime-файлы копируются отдельным слоем.
 COPY src ./src
+COPY README.md ./
 COPY run.py ./
+COPY fill_point_db.py ./
 COPY alembic ./alembic
 COPY alembic.ini ./
-COPY fill_point_db.py ./
 COPY scripts/docker-entrypoint.sh ./scripts/docker-entrypoint.sh
 
+# 2.1 Инсталлируем сам проект (создает исполняемый файл pybot-seed и добавляет src в sys.path)
+RUN uv sync --frozen --no-dev
 
 # --- Stage 2: lean runtime image -------------------------------------
 FROM python:3.12-slim AS runtime
@@ -41,9 +44,9 @@ COPY --from=builder /app/.venv /app/.venv
 # 4. Application code и runtime-файлы.
 COPY --from=builder /app/src /app/src
 COPY --from=builder /app/run.py /app/run.py
+COPY --from=builder /app/fill_point_db.py /app/fill_point_db.py
 COPY --from=builder /app/alembic /app/alembic
 COPY --from=builder /app/alembic.ini /app/alembic.ini
-COPY --from=builder /app/fill_point_db.py /app/fill_point_db.py
 COPY --from=builder /app/scripts /app/scripts
 
 RUN chmod +x /app/scripts/docker-entrypoint.sh && mkdir -p /app/data && chown -R app:app /app

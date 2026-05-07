@@ -43,8 +43,8 @@ Read only the ADRs relevant to the task, but do not ignore them when the task to
 
 ## Placement Rules
 
-- Put Telegram command handlers, routers, dialog handlers, keyboards, filters, and middleware in `src/pybot/bot/`.
-- Keep dialog windows and other presentation-only `aiogram-dialog` pieces in `src/pybot/bot/dialogs/`. Do not move business decisions there.
+- Put Telegram command handlers, routers, dialog handlers, keyboards, filters, middleware, and bot runtime wiring in `src/pybot/presentation/bot/`.
+- Keep dialog windows and other presentation-only `aiogram-dialog` pieces in `src/pybot/presentation/bot/dialogs/`. Do not move business decisions there.
 - Put application orchestration in `src/pybot/services/`. Services coordinate repositories, domain behavior, and transactions.
 - Put repository implementations and infrastructure adapters in `src/pybot/infrastructure/`.
 - Put ORM models and database configuration in `src/pybot/db/`.
@@ -52,8 +52,8 @@ Read only the ADRs relevant to the task, but do not ignore them when the task to
 - Put pure domain exceptions and domain-specific rules that do not belong to transport or infrastructure in `src/pybot/domain/`.
 - Put mapping helpers between transport-layer data and DTOs in `src/pybot/mappers/`.
 - Put dependency wiring and provider registration in `src/pybot/di/`.
-- Put health-check API wiring in `src/pybot/health/`.
-- Put shared cross-cutting utilities in `src/pybot/utils/`, and keep bot-specific helpers in `src/pybot/bot/utils/`.
+- Put health-check API wiring in `src/pybot/presentation/web/health/`.
+- Put shared cross-cutting utilities in `src/pybot/utils/`, and keep bot-specific helpers in `src/pybot/presentation/bot/utils/`.
 
 ## Naming Conventions
 
@@ -80,7 +80,7 @@ Read only the ADRs relevant to the task, but do not ignore them when the task to
 
 ### If adding or changing a Telegram command or handler
 
-- Update the relevant module under `src/pybot/bot/handlers/` and keep the handler thin.
+- Update the relevant module under `src/pybot/presentation/bot/handlers/` and keep the handler thin.
 - Put parsing, Telegram-specific branching, and response formatting in the handler, but move reusable business behavior into services.
 - Re-check related command flags such as `role` and `rate_limit` when the command is admin-only, expensive, or user-facing.
 - Add or update bot/flow tests for the command behavior, including at least one unhappy path when parsing or target resolution can fail.
@@ -166,7 +166,7 @@ Read only the ADRs relevant to the task, but do not ignore them when the task to
 
 ## Repo-Specific Examples
 
-- `DON'T:` repeat the old profile pattern from the pre-refactor `src/pybot/bot/handlers/profile/grand_profile.py`, where an aiogram handler accepted `AsyncSession`, called a procedural helper, and assembled profile output itself. `DO:` follow the current split between `src/pybot/bot/handlers/profile/user_profile.py` and `src/pybot/services/user_services/user_profile.py`, where the handler stays thin and profile orchestration lives in a dedicated service.
+- `DON'T:` repeat the old profile pattern from the pre-refactor `src/pybot/presentation/bot/handlers/profile/grand_profile.py`, where an aiogram handler accepted `AsyncSession`, called a procedural helper, and assembled profile output itself. `DO:` follow the current split between `src/pybot/presentation/bot/handlers/profile/user_profile.py` and `src/pybot/services/user_services/user_profile.py`, where the handler stays thin and profile orchestration lives in a dedicated service.
 - `DON'T:` reintroduce procedural helper functions like the old `collect_user_profile`, `create_user_profile`, `get_user_by_telegram_id`, or `update_user_points_by_id` that lived beside `UserService` and bypassed the intended service/repository flow. `DO:` keep use-case behavior inside services, repositories, ORM/domain methods, DTOs, and mappers according to the layered architecture.
 - `DON'T:` inject database session handling directly into presentation code when the handler can work through existing services. The pre-refactor profile flow passed `AsyncSession` into the handler and then deeper into helper functions. `DO:` inject the proper service through Dishka and keep database access behind service/repository boundaries.
 - `DON'T:` let one element own too many responsibilities at the wrong layer, such as reading transport input, querying repositories, performing level calculations, formatting UI text, and delivering output all in one place. `DO:` split responsibilities across handler, service, mapper/value object, and notification/output layers.

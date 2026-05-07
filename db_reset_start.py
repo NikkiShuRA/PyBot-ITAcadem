@@ -3,12 +3,12 @@ import subprocess
 import sys
 from urllib.parse import urlparse
 
-from src.pybot.core.config import settings
+from src.pybot.core.config import get_settings
 
 
 # Парсер URL для установки пути к БД
-def find_file_db() -> str:
-    url = settings.database_url
+def find_file_db(database_url: str) -> str:
+    url = database_url
     parsed = urlparse(url)
     db_path = parsed.path.lstrip("/")
     name = db_path.split("/")[-1]
@@ -19,7 +19,8 @@ def find_file_db() -> str:
 
 # Удаление существующей БД -> запуск миграций -> заполнение БД -> запуск бота
 def main() -> None:
-    db_file = find_file_db()
+    settings = get_settings()
+    db_file = find_file_db(settings.database_url)
     if os.path.exists(db_file):
         print(f"Найдена БД: {db_file}")
 

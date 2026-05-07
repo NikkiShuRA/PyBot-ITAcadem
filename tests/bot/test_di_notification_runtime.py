@@ -5,6 +5,7 @@ from types import SimpleNamespace
 import pytest
 from aiogram import Bot
 
+from pybot.core.config import BotSettings
 from pybot.di import containers as di_containers
 from pybot.infrastructure.taskiq.taskiq_notification_dispatcher import TaskIQNotificationDispatcher
 from pybot.services.notification_facade import NotificationFacade
@@ -15,6 +16,7 @@ from pybot.services.ports import NotificationDispatchPort
 async def test_notification_runtime_smoke_resolves_facade_and_dispatcher(
     monkeypatch: pytest.MonkeyPatch,
     mocker,
+    settings_obj: BotSettings,
 ) -> None:
     """Smoke test for the new notification runtime wiring through the public container API."""
 
@@ -24,8 +26,8 @@ async def test_notification_runtime_smoke_resolves_facade_and_dispatcher(
             self.session = session or SimpleNamespace(close=mocker.AsyncMock())
 
     monkeypatch.setattr(di_containers, "Bot", FakeBot)
-    monkeypatch.setattr(di_containers.settings, "bot_token_test", "123456:NOTIFY_TOKEN")
-    monkeypatch.setattr(di_containers.settings, "telegram_proxy_url", None)
+    settings_obj.bot_token_test = "123456:NOTIFY_TOKEN"
+    settings_obj.telegram_proxy_url = None
 
     container = await di_containers.setup_container()
     try:

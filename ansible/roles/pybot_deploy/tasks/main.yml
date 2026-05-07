@@ -141,10 +141,45 @@
     APP_IMAGE: "{{ image_repository }}:{{ image_tag }}"
   when: run_seed_on_deploy | default(false) | bool
 
+- name: Read health API toggle from deployed environment file
+  ansible.builtin.shell: |
+    set -eu
+    value="$(grep '^HEALTH_API_ENABLED=' .env | cut -d= -f2- || true)"
+    if [ -z "$value" ]; then
+      echo "false"
+    else
+      printf '%s\n' "$value"
+    fi
+  args:
+    chdir: "{{ deploy_path }}"
+    executable: /bin/sh
+  register: health_api_enabled_value
+  changed_when: false
+
+- name: Read health API port from deployed environment file
+  ansible.builtin.shell: |
+    set -eu
+    value="$(grep '^HEALTH_API_PORT=' .env | cut -d= -f2- || true)"
+    if [ -z "$value" ]; then
+      echo "8001"
+    else
+      printf '%s\n' "$value"
+    fi
+  args:
+    chdir: "{{ deploy_path }}"
+    executable: /bin/sh
+  register: health_api_port_value
+  changed_when: false
+
+- name: Build optional health profile CLI argument
+  ansible.builtin.set_fact:
+    health_profile_cli_arg: >-
+      {{ '--profile health' if health_api_enabled_value.stdout | trim | lower in ['1', 'true', 'yes', 'on'] else '' }}
+
 - name: Apply production compose
   ansible.builtin.shell: |
     set -eu
-    docker compose -f docker-compose.prod.yml up -d --remove-orphans
+    docker compose -f docker-compose.prod.yml {{ health_profile_cli_arg }} up -d --remove-orphans
   args:
     chdir: "{{ deploy_path }}"
     executable: /bin/sh
@@ -177,6 +212,20 @@
   until: container_runtime_checks is succeeded
   changed_when: false
 
+- name: Wait for health container to be running when enabled
+  ansible.builtin.shell: |
+    set -eu
+    status="$(docker inspect -f '{{ "{{.State.Status}}" }}' pybot-health)"
+    [ "$status" = "running" ]
+  args:
+    executable: /bin/sh
+  register: health_container_runtime_check
+  retries: 10
+  delay: 3
+  until: health_container_runtime_check is succeeded
+  changed_when: false
+  when: health_api_enabled_value.stdout | trim | lower in ['1', 'true', 'yes', 'on']
+
 - name: Wait for Redis container health status when healthcheck is configured
   ansible.builtin.shell: |
     set -eu
@@ -190,42 +239,11 @@
   until: redis_health_check is succeeded
   changed_when: false
 
-- name: Read health API toggle from deployed environment file
-  ansible.builtin.shell: |
-    set -eu
-    value="$(grep '^HEALTH_API_ENABLED=' .env | cut -d= -f2- || true)"
-    if [ -z "$value" ]; then
-      echo "false"
-    else
-      printf '%s\n' "$value"
-    fi
-  args:
-    chdir: "{{ deploy_path }}"
-    executable: /bin/sh
-  register: health_api_enabled_value
-  changed_when: false
-
-- name: Read health API port from deployed environment file
-  ansible.builtin.shell: |
-    set -eu
-    value="$(grep '^HEALTH_API_PORT=' .env | cut -d= -f2- || true)"
-    if [ -z "$value" ]; then
-      echo "8001"
-    else
-      printf '%s\n' "$value"
-    fi
-  args:
-    chdir: "{{ deploy_path }}"
-    executable: /bin/sh
-  register: health_api_port_value
-  changed_when: false
-
 - name: Wait for health readiness endpoint when health API is enabled
   ansible.builtin.shell: |
     set -eu
-    docker exec pybot-bot python - <<'PY'
+    docker exec pybot-health python - <<'PY'
     import json
-    import sys
     import urllib.request
 
     port = "{{ health_api_port_value.stdout | trim }}"

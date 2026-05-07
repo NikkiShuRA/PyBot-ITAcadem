@@ -13,11 +13,14 @@ from dishka import AsyncContainer
 from dishka.integrations.aiogram import CONTAINER_NAME
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from pybot.bot.middlewares.logger import LoggerMiddleware
-from pybot.bot.middlewares.rate_limit import RateLimitMiddleware
-from pybot.bot.middlewares.role import RoleMiddleware
-from pybot.bot.middlewares.user_activity import UserActivityMiddleware
-from pybot.core.config import settings
+from pybot.core.config import BotSettings
+from pybot.presentation.bot import (
+    LoggerMiddleware,
+    RateLimitMiddleware,
+    RoleMiddleware,
+    UserActivityMiddleware,
+    logger_middleware_module,
+)
 from tests.factories import UserSpec, attach_user_role, create_role, create_user
 
 
@@ -40,9 +43,10 @@ def _build_handler_data(**flags: object) -> dict[str, object]:
 async def test_logger_middleware_reuses_same_event_id_for_start_and_finish_logs(
     monkeypatch: pytest.MonkeyPatch,
     mocker,
+    settings_obj: BotSettings,
 ) -> None:
-    monkeypatch.setattr(settings, "enable_logging_middleware", True)
-    middleware = LoggerMiddleware(enabled=True)
+    settings_obj.enable_logging_middleware = True
+    middleware = LoggerMiddleware(settings_obj, enabled=True)
     message = _build_message(text="/start", from_user_id=700_000)
     handler = AsyncMock(return_value="handled")
     data: dict[str, object] = {
@@ -53,13 +57,13 @@ async def test_logger_middleware_reuses_same_event_id_for_start_and_finish_logs(
     warning_mock = mocker.Mock()
     debug_mock = mocker.Mock()
 
-    monkeypatch.setattr("pybot.bot.middlewares.logger.logger.info", info_mock)
-    monkeypatch.setattr("pybot.bot.middlewares.logger.logger.warning", warning_mock)
-    monkeypatch.setattr("pybot.bot.middlewares.logger.logger.debug", debug_mock)
+    monkeypatch.setattr(logger_middleware_module.logger, "info", info_mock)
+    monkeypatch.setattr(logger_middleware_module.logger, "warning", warning_mock)
+    monkeypatch.setattr(logger_middleware_module.logger, "debug", debug_mock)
 
     real_monotonic = time.monotonic
     monotonic_mock = mocker.Mock(side_effect=itertools.chain([10.0, 10.2], itertools.repeat(real_monotonic())))
-    monkeypatch.setattr("pybot.bot.middlewares.logger.time.monotonic", monotonic_mock)
+    monkeypatch.setattr(logger_middleware_module.time, "monotonic", monotonic_mock)
 
     result = await middleware(handler, message, data)
 
@@ -240,9 +244,9 @@ async def test_user_activity_middleware_enriches_data_and_persists_last_activity
 
 
 @pytest.mark.asyncio
-async def test_rate_limit_middleware_skips_limiting_when_flag_is_missing() -> None:
+async def test_rate_limit_middleware_skips_limiting_when_flag_is_missing(settings_obj: BotSettings) -> None:
     # Given
-    middleware = RateLimitMiddleware()
+    middleware = RateLimitMiddleware(settings_obj)
     message = _build_message(from_user_id=700_444)
     assert message.from_user is not None
     handler = AsyncMock(return_value="handled-without-rate-limit")
@@ -266,14 +270,14 @@ async def test_rate_limit_middleware_skips_limiting_when_flag_is_missing() -> No
     ],
 )
 async def test_rate_limit_middleware_falls_back_to_moderate_limits(
-    monkeypatch: pytest.MonkeyPatch,
     command_limit: str,
     override_invalid_limit: tuple[int, int] | None,
+    settings_obj: BotSettings,
 ) -> None:
     # Given
-    monkeypatch.setattr(settings, "rate_limit_moderate", 7)
-    monkeypatch.setattr(settings, "time_limit_moderate", 13)
-    middleware = RateLimitMiddleware()
+    settings_obj.rate_limit_moderate = 7
+    settings_obj.time_limit_moderate = 13
+    middleware = RateLimitMiddleware(settings_obj)
     if override_invalid_limit is not None:
         middleware.limits["cheap"] = override_invalid_limit
 

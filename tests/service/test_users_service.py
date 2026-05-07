@@ -4,7 +4,7 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from pybot.core.config import settings
+from pybot.core.config import BotSettings
 from pybot.core.constants import PointsTypeEnum, RoleEnum
 from pybot.db.models import UserLevel
 from pybot.domain.exceptions import InitialLevelsNotFoundError, RoleNotFoundError, UserNotFoundError
@@ -90,7 +90,7 @@ async def test_register_student_raises_when_student_role_is_missing(
 @pytest.mark.asyncio
 async def test_register_student_assigns_admin_role_for_configured_telegram_ids(
     dishka_request_container,
-    monkeypatch: pytest.MonkeyPatch,
+    settings_obj: BotSettings,
 ) -> None:
     # Given
     db = await dishka_request_container.get(AsyncSession)
@@ -100,7 +100,7 @@ async def test_register_student_assigns_admin_role_for_configured_telegram_ids(
     await create_level(db, name="A0", level_type=PointsTypeEnum.ACADEMIC, required_points=0)
     await create_level(db, name="R0", level_type=PointsTypeEnum.REPUTATION, required_points=0)
     auto_admin_tg_id = 700_099
-    monkeypatch.setattr(settings, "auto_admin_telegram_ids", {auto_admin_tg_id})
+    settings_obj.auto_admin_telegram_ids = {auto_admin_tg_id}
     dto = UserCreateDTOFactory.build(tg_id=auto_admin_tg_id, phone="+79876540099")
 
     # When
@@ -115,7 +115,7 @@ async def test_register_student_assigns_admin_role_for_configured_telegram_ids(
 @pytest.mark.asyncio
 async def test_register_student_raises_when_admin_role_is_missing_for_configured_auto_admin_id(
     dishka_request_container,
-    monkeypatch: pytest.MonkeyPatch,
+    settings_obj: BotSettings,
 ) -> None:
     # Given
     db = await dishka_request_container.get(AsyncSession)
@@ -124,7 +124,7 @@ async def test_register_student_raises_when_admin_role_is_missing_for_configured
     await create_level(db, name="A0", level_type=PointsTypeEnum.ACADEMIC, required_points=0)
     await create_level(db, name="R0", level_type=PointsTypeEnum.REPUTATION, required_points=0)
     auto_admin_tg_id = 700_102
-    monkeypatch.setattr(settings, "auto_admin_telegram_ids", {auto_admin_tg_id})
+    settings_obj.auto_admin_telegram_ids = {auto_admin_tg_id}
     dto = UserCreateDTOFactory.build(tg_id=auto_admin_tg_id, phone="+79876540102")
 
     # When / Then
@@ -135,7 +135,7 @@ async def test_register_student_raises_when_admin_role_is_missing_for_configured
 @pytest.mark.asyncio
 async def test_register_student_does_not_assign_admin_role_for_non_configured_telegram_ids(
     dishka_request_container,
-    monkeypatch: pytest.MonkeyPatch,
+    settings_obj: BotSettings,
 ) -> None:
     # Given
     db = await dishka_request_container.get(AsyncSession)
@@ -144,7 +144,7 @@ async def test_register_student_does_not_assign_admin_role_for_non_configured_te
     await create_role(db, name="Admin")
     await create_level(db, name="A0", level_type=PointsTypeEnum.ACADEMIC, required_points=0)
     await create_level(db, name="R0", level_type=PointsTypeEnum.REPUTATION, required_points=0)
-    monkeypatch.setattr(settings, "auto_admin_telegram_ids", {700_100})
+    settings_obj.auto_admin_telegram_ids = {700_100}
     dto = UserCreateDTOFactory.build(tg_id=700_101, phone="+79876540101")
 
     # When
@@ -159,6 +159,7 @@ async def test_register_student_does_not_assign_admin_role_for_non_configured_te
 @pytest.mark.asyncio
 async def test_user_registration_service_register_student_accepts_duplicate_competence_ids(
     dishka_request_container,
+    settings_obj: BotSettings,
 ) -> None:
     db = await dishka_request_container.get(AsyncSession)
     user_repository = await dishka_request_container.get(UserRepository)
@@ -171,6 +172,7 @@ async def test_user_registration_service_register_student_accepts_duplicate_comp
         level_repository=level_repository,
         role_repository=role_repository,
         competence_repository=competence_repository,
+        settings=settings_obj,
     )
     await create_role(db, name="Student")
     await create_level(db, name="A0", level_type=PointsTypeEnum.ACADEMIC, required_points=0)
@@ -522,3 +524,42 @@ async def test_add_user_competencies_by_names_is_atomic_when_unknown_names_prese
     loaded = await user_repository.get_by_id(db, user.id)
     assert loaded is not None
     assert [link.competence_id for link in loaded.competencies] == [python_competence.id]
+
+
+@pytest.mark.asyncio
+async def test_find_all_user_roles_returns_set_of_role_names_when_user_has_roles(
+    dishka_request_container,
+) -> None:
+    # Given
+    db = await dishka_request_container.get(AsyncSession)
+    service = await dishka_request_container.get(UserService)
+    user = await create_user(db, spec=UserSpec(telegram_id=700_091))
+    role_student = await create_role(db, name="Student")
+    role_admin = await create_role(db, name="Admin")
+    await attach_user_role(db, user=user, role=role_student)
+    await attach_user_role(db, user=user, role=role_admin)
+    await db.commit()
+
+    # When
+    result = await service.find_all_user_roles(user.id)
+
+    # Then
+    assert result is not None
+    assert result == {"Student", "Admin"}
+
+
+@pytest.mark.asyncio
+async def test_find_all_user_roles_returns_none_when_user_has_no_roles(
+    dishka_request_container,
+) -> None:
+    # Given
+    db = await dishka_request_container.get(AsyncSession)
+    service = await dishka_request_container.get(UserService)
+    user = await create_user(db, spec=UserSpec(telegram_id=700_092))
+    await db.commit()
+
+    # When
+    result = await service.find_all_user_roles(user.id)
+
+    # Then
+    assert result is None

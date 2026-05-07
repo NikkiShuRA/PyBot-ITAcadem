@@ -3,6 +3,16 @@ from functools import lru_cache
 
 
 def normalize_competence_names(competence_names: Sequence[str]) -> list[str]:
+    """Нормализует список названий компетенций.
+
+    Удаляет лишние пробелы, приводит к нижнему регистру и удаляет дубликаты.
+
+    Args:
+        competence_names: Исходный список названий компетенций.
+
+    Returns:
+        list[str]: Список нормализованных и уникальных названий.
+    """
     return list(_normalize_competence_names_cached(tuple(competence_names)))
 
 

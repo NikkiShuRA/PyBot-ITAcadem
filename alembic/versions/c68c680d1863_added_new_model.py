@@ -1,4 +1,4 @@
-"""Added new model
+"""Added new model.
 
 Revision ID: c68c680d1863
 Revises: bcba3b7e67b2

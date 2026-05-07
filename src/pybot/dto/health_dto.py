@@ -1,3 +1,5 @@
+"""DTO для проверки состояния (health checks) сервисов и приложения."""
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -9,13 +11,13 @@ from .base_dto import BaseDTO
 
 
 class HealthCheckDTO(BaseDTO):
-    """Single readiness check details.
+    """Детали одиночной проверки готовности (readiness check).
 
     Args:
-        name: Human-readable name of the check (e.g. "database").
-        status: Check status ("ok" or "fail").
-        details: Optional failure or extra details.
-        latency_ms: Optional check latency in milliseconds.
+        name (str): Человекочитаемое название проверки (например, "database").
+        status (str): Статус проверки ("ok" или "fail").
+        details (str | None): Опциональные детали сбоя или дополнительная информация.
+        latency_ms (int | None): Опциональное время выполнения проверки в миллисекундах.
     """
 
     model_config = ConfigDict(
@@ -53,12 +55,12 @@ class HealthCheckDTO(BaseDTO):
 
 
 class HealthStatusDTO(BaseDTO):
-    """Overall health/readiness status.
+    """Общий статус работоспособности / готовности приложения.
 
     Args:
-        status: Summary status ("ok" or "fail").
-        checks: List of individual checks (may be empty).
-        timestamp: UTC timestamp when the status was produced.
+        status (str): Сводный статус ("ok" или "fail").
+        checks (list[HealthCheckDTO]): Список отдельных проверок (может быть пустым).
+        timestamp (datetime): UTC-метка времени генерации статуса.
     """
 
     model_config = ConfigDict(

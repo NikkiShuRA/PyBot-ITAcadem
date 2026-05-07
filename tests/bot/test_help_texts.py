@@ -1,4 +1,4 @@
-from pybot.bot.texts import HELP_GROUP, HELP_PRIVATE, HELP_PRIVATE_PUBLIC
+from pybot.presentation.texts import HELP_GROUP, HELP_PRIVATE, HELP_PRIVATE_PUBLIC
 
 
 def test_help_private_contains_roles_command() -> None:

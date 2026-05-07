@@ -162,6 +162,76 @@ def test_runtime_alerts_chat_id_is_parsed_when_alerts_are_enabled() -> None:
     assert parsed_settings.runtime_alerts_chat_id == 987654321
 
 
+def test_runtime_alerts_chat_id_rejects_negative_value() -> None:
+    with pytest.raises(ValidationError, match="RUNTIME_ALERTS_CHAT_ID"):
+        BotSettingsWithoutDotenv(
+            BOT_TOKEN="123456:prod",
+            BOT_TOKEN_TEST="123456:test",
+            DATABASE_URL="sqlite+aiosqlite:///./test.db",
+            ROLE_REQUEST_ADMIN_TG_ID=ADMIN_TG_ID,
+            RUNTIME_ALERTS_ENABLED=True,
+            RUNTIME_ALERTS_CHAT_ID=-123456789,
+        )
+
+
+def test_weekly_leaderboard_settings_default_to_disabled() -> None:
+    parsed_settings = BotSettingsWithoutDotenv(
+        BOT_TOKEN="123456:prod",
+        BOT_TOKEN_TEST="123456:test",
+        DATABASE_URL="sqlite+aiosqlite:///./test.db",
+        ROLE_REQUEST_ADMIN_TG_ID=ADMIN_TG_ID,
+    )
+
+    assert parsed_settings.leaderboard_weekly_enabled is False
+    assert parsed_settings.leaderboard_weekly_recipient_id is None
+    assert str(parsed_settings.leaderboard_weekly_cron) == "0 9 * * 1"
+    assert str(parsed_settings.leaderboard_weekly_timezone) == "Asia/Yekaterinburg"
+    assert parsed_settings.leaderboard_weekly_limit == 10
+    assert parsed_settings.leaderboard_weekly_retry_enabled is True
+    assert parsed_settings.leaderboard_weekly_retry_max_retries == 3
+    assert parsed_settings.leaderboard_weekly_retry_delay_s == 30
+    assert parsed_settings.leaderboard_weekly_retry_use_jitter is True
+    assert parsed_settings.leaderboard_weekly_retry_use_exponential_backoff is True
+    assert parsed_settings.leaderboard_weekly_retry_max_delay_s == 300
+
+
+def test_weekly_leaderboard_recipient_is_required_when_enabled() -> None:
+    with pytest.raises(ValidationError, match="LEADERBOARD_WEEKLY_RECIPIENT_ID"):
+        BotSettingsWithoutDotenv(
+            BOT_TOKEN="123456:prod",
+            BOT_TOKEN_TEST="123456:test",
+            DATABASE_URL="sqlite+aiosqlite:///./test.db",
+            ROLE_REQUEST_ADMIN_TG_ID=ADMIN_TG_ID,
+            LEADERBOARD_WEEKLY_ENABLED=True,
+        )
+
+
+def test_weekly_leaderboard_recipient_accepts_negative_chat_id() -> None:
+    parsed_settings = BotSettingsWithoutDotenv(
+        BOT_TOKEN="123456:prod",
+        BOT_TOKEN_TEST="123456:test",
+        DATABASE_URL="sqlite+aiosqlite:///./test.db",
+        ROLE_REQUEST_ADMIN_TG_ID=ADMIN_TG_ID,
+        LEADERBOARD_WEEKLY_ENABLED=True,
+        LEADERBOARD_WEEKLY_RECIPIENT_ID=-1001234567890,
+    )
+
+    assert parsed_settings.leaderboard_weekly_enabled is True
+    assert parsed_settings.leaderboard_weekly_recipient_id == -1001234567890
+
+
+def test_weekly_leaderboard_retry_max_delay_must_be_greater_than_or_equal_to_delay() -> None:
+    with pytest.raises(ValidationError, match="LEADERBOARD_WEEKLY_RETRY_MAX_DELAY_S"):
+        BotSettingsWithoutDotenv(
+            BOT_TOKEN="123456:prod",
+            BOT_TOKEN_TEST="123456:test",
+            DATABASE_URL="sqlite+aiosqlite:///./test.db",
+            ROLE_REQUEST_ADMIN_TG_ID=ADMIN_TG_ID,
+            LEADERBOARD_WEEKLY_RETRY_DELAY_S=120,
+            LEADERBOARD_WEEKLY_RETRY_MAX_DELAY_S=60,
+        )
+
+
 def test_broadcast_allowed_roles_rejects_unknown_role(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("BROADCAST_ALLOWED_ROLES", "Admin,WrongRole")
 

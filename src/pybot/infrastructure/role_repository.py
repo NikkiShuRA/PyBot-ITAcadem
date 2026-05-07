@@ -8,21 +8,38 @@ from ..domain.exceptions import RoleNotFoundByIdError
 
 
 class RoleRepository:
-    """
-    Stateless репозиторий.
-    БЕЗ хранения сессии внутри!
+    """Репозиторий для управления ролями (Role).
 
-    Правильный подход: сессия передаётся в методы.
+    Предоставляет методы для поиска ролей по имени, ID или получения всех доступных ролей.
     """
 
     async def find_role_by_name(self, db: AsyncSession, name: str) -> Role | None:
-        """Находит определение роли в таблице roles"""
+        """Находит роль по её уникальному названию.
+
+        Args:
+            db: Асинхронная сессия базы данных.
+            name: Название роли.
+
+        Returns:
+            Role | None: Объект роли или None, если роль не найдена.
+        """
         stmt = select(Role).where(Role.name == name)
         result = await db.execute(stmt)
         return result.scalar_one_or_none()
 
     async def get_role_by_id(self, db: AsyncSession, role_id: int) -> Role:
-        """Находит определение роли в таблице roles"""
+        """Получает роль по её ID или вызывает исключение RoleNotFoundByIdError.
+
+        Args:
+            db: Асинхронная сессия базы данных.
+            role_id: Идентификатор роли.
+
+        Returns:
+            Role: Найденная роль.
+
+        Raises:
+            RoleNotFoundByIdError: Если роль с таким ID не существует.
+        """
         stmt = select(Role).where(Role.id == role_id)
         result = await db.execute(stmt)
         role = result.scalar_one_or_none()
@@ -31,7 +48,14 @@ class RoleRepository:
         return role
 
     async def find_all_roles(self, db: AsyncSession) -> Sequence[Role]:
-        """Return all roles ordered by name for deterministic read flows."""
+        """Возвращает все роли, отсортированные по имени.
+
+        Args:
+            db: Асинхронная сессия базы данных.
+
+        Returns:
+            Sequence[Role]: Список всех доступных ролей.
+        """
         stmt = select(Role).order_by(Role.name.asc())
         result = await db.execute(stmt)
         return result.scalars().all()

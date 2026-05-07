@@ -9,6 +9,20 @@ def telegram_user_link(
     last_name: str | None = None,
     fallback_label: str = "Пользователь",
 ) -> str:
+    """Генерирует HTML-ссылку на профиль пользователя в Telegram.
+
+    Args:
+        user_id: Telegram ID пользователя.
+        first_name: Имя пользователя.
+        last_name: Фамилия пользователя.
+        fallback_label: Текст ссылки, если имя и фамилия отсутствуют.
+
+    Raises:
+        ValueError: Если user_id <= 0.
+
+    Returns:
+        str: HTML-строка со ссылкой формата <a href='tg://user?id=...'>...</a>.
+    """
     if user_id <= 0:
         raise ValueError("user_id must be greater than 0")
 

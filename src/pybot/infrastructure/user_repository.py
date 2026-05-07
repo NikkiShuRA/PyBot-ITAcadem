@@ -13,18 +13,27 @@ ACTIVITY_UPDATE_INTERVAL = timedelta(minutes=1)
 
 
 class UserRepository:
-    """
-    Stateless репозиторий.
-    БЕЗ хранения сессии внутри!
-
-    Правильный подход: сессия передаётся в методы.
-    """
+    """Репозиторий для управления пользователями (User) и их атрибутами (роли, компетенции, уровни)."""
 
     async def get_by_id(
         self,
         db: AsyncSession,
         id_: int,
     ) -> User:
+        """Получает пользователя по его внутреннему ID.
+
+        Загружает связанные роли, компетенции и уровни.
+
+        Args:
+            db: Асинхронная сессия базы данных.
+            id_: Внутренний идентификатор пользователя.
+
+        Returns:
+            User: Объект пользователя.
+
+        Raises:
+            UserNotFoundError: Если пользователь не найден.
+        """
         stmt = (
             select(User)
             .options(
@@ -47,6 +56,18 @@ class UserRepository:
         db: AsyncSession,
         tg_id: int,
     ) -> User:
+        """Получает пользователя по его Telegram ID.
+
+        Args:
+            db: Асинхронная сессия базы данных.
+            tg_id: Telegram ID пользователя.
+
+        Returns:
+            User: Объект пользователя.
+
+        Raises:
+            UserNotFoundError: Если пользователь не найден.
+        """
         stmt = (
             select(User)
             .where(User.telegram_id == tg_id)
@@ -64,6 +85,17 @@ class UserRepository:
         self,
         db: AsyncSession,
     ) -> Sequence[User]:
+        """Получает список всех пользователей.
+
+        Args:
+            db: Асинхронная сессия базы данных.
+
+        Returns:
+            Sequence[User]: Список всех пользователей.
+
+        Raises:
+            UsersNotFoundError: Если в системе нет ни одного пользователя.
+        """
         stmt = select(User)
         result = await db.execute(stmt)
         users = result.scalars().all()
@@ -78,6 +110,18 @@ class UserRepository:
         db: AsyncSession,
         role_name: str,
     ) -> Sequence[User]:
+        """Получает всех пользователей, имеющих указанную роль.
+
+        Args:
+            db: Асинхронная сессия базы данных.
+            role_name: Название роли.
+
+        Returns:
+            Sequence[User]: Список пользователей с данной ролью.
+
+        Raises:
+            UsersNotFoundError: Если пользователи с такой ролью не найдены.
+        """
         stmt = (
             select(User)
             .join(UserRole, UserRole.user_id == User.id)
@@ -95,6 +139,15 @@ class UserRepository:
         return users
 
     async def find_all_user_competencies(self, db: AsyncSession, user_id: int) -> Sequence[Competence]:
+        """Возвращает список всех компетенций пользователя.
+
+        Args:
+            db: Асинхронная сессия базы данных.
+            user_id: Внутренний ID пользователя.
+
+        Returns:
+            Sequence[Competence]: Список компетенций, отсортированный по имени.
+        """
         stmt = (
             select(Competence)
             .select_from(UserCompetence)
@@ -106,6 +159,18 @@ class UserRepository:
         return result.scalars().all()
 
     async def get_all_users_with_competence_id(self, db: AsyncSession, competence_id: int) -> Sequence[User]:
+        """Получает список пользователей, обладающих указанной компетенцией.
+
+        Args:
+            db: Асинхронная сессия базы данных.
+            competence_id: ID компетенции.
+
+        Returns:
+            Sequence[User]: Список пользователей.
+
+        Raises:
+            UsersNotFoundError: Если пользователи с такой компетенцией не найдены.
+        """
         stmt = (
             select(User)
             .join(UserCompetence, UserCompetence.user_id == User.id)
@@ -121,6 +186,15 @@ class UserRepository:
         return users
 
     async def find_all_user_roles_by_pk(self, db: AsyncSession, user_id: int) -> set[str]:
+        """Возвращает множество имен ролей пользователя.
+
+        Args:
+            db: Асинхронная сессия базы данных.
+            user_id: Внутренний ID пользователя.
+
+        Returns:
+            set[str]: Множество названий ролей.
+        """
         stmt = select(Role.name).select_from(UserRole).join(Role).where(UserRole.user_id == user_id)
         result = await db.execute(stmt)
         return set(result.scalars().all())
@@ -130,6 +204,15 @@ class UserRepository:
         db: AsyncSession,
         phone: str,
     ) -> User | None:
+        """Находит пользователя по номеру телефона.
+
+        Args:
+            db: Асинхронная сессия базы данных.
+            phone: Номер телефона.
+
+        Returns:
+            User | None: Объект пользователя или None.
+        """
         stmt = select(User).where(User.phone_number == phone)
         result = await db.execute(stmt)
         user = result.scalar_one_or_none()
@@ -137,6 +220,15 @@ class UserRepository:
         return user
 
     async def find_user_by_telegram_id(self, db: AsyncSession, tg_id: int) -> User | None:
+        """Находит пользователя по Telegram ID.
+
+        Args:
+            db: Асинхронная сессия базы данных.
+            tg_id: Telegram ID пользователя.
+
+        Returns:
+            User | None: Объект пользователя или None.
+        """
         stmt = select(User).where(User.telegram_id == tg_id)
         result = await db.execute(stmt)
         user = result.scalar_one_or_none()
@@ -144,6 +236,15 @@ class UserRepository:
         return user
 
     async def find_user_by_id(self, db: AsyncSession, user_id: int) -> User | None:
+        """Находит пользователя по внутреннему ID (без загрузки связей).
+
+        Args:
+            db: Асинхронная сессия базы данных.
+            user_id: Внутренний ID пользователя.
+
+        Returns:
+            User | None: Объект пользователя или None.
+        """
         stmt = select(User).where(User.id == user_id)
         result = await db.execute(stmt)
         user = result.scalar_one_or_none()
@@ -156,6 +257,15 @@ class UserRepository:
         *,
         data: UserCreateDTO,
     ) -> User:
+        """Создает новый профиль пользователя.
+
+        Args:
+            db: Асинхронная сессия базы данных.
+            data: DTO с данными для создания пользователя.
+
+        Returns:
+            User: Созданный объект пользователя.
+        """
         user = User(
             phone_number=data.phone,
             telegram_id=data.tg_id,
@@ -169,9 +279,19 @@ class UserRepository:
     async def has_role(
         self,
         db: AsyncSession,
-        user_id: int,  # <- Меняем аргумент, мы ищем по TG ID
+        user_id: int,
         role_name: str,
     ) -> bool:
+        """Проверяет наличие указанной роли у пользователя.
+
+        Args:
+            db: Асинхронная сессия базы данных.
+            user_id: Внутренний ID пользователя.
+            role_name: Название роли.
+
+        Returns:
+            bool: True, если у пользователя есть такая роль, иначе False.
+        """
         stmt = (
             select(1)
             .select_from(UserRole)
@@ -193,6 +313,15 @@ class UserRepository:
         db: AsyncSession,
         user_id: int,
     ) -> Sequence[str]:
+        """Возвращает список названий ролей пользователя.
+
+        Args:
+            db: Асинхронная сессия базы данных.
+            user_id: Внутренний ID пользователя.
+
+        Returns:
+            Sequence[str]: Список названий ролей.
+        """
         roles_stmt = select(Role.name).join(UserRole).where(UserRole.user_id == user_id)
         roles_result = await db.execute(roles_stmt)
         return roles_result.scalars().all()
@@ -202,6 +331,12 @@ class UserRepository:
         db: AsyncSession,
         user_id: int,
     ) -> None:
+        """Обновляет время последней активности пользователя, если прошел интервал.
+
+        Args:
+            db: Асинхронная сессия базы данных.
+            user_id: Внутренний ID пользователя.
+        """
         now = datetime.now(UTC).replace(tzinfo=None)
         threshold = now - ACTIVITY_UPDATE_INTERVAL
 

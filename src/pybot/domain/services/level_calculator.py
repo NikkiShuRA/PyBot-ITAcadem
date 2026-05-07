@@ -5,7 +5,18 @@ from ...db.models import Level
 
 
 class LevelCalculator:
+    """Сервис для расчета текущего уровня пользователя на основе накопленных баллов."""
+
     def calculate_level(self, current_points: int, all_levels: Sequence[Level]) -> Level | None:
+        """Определяет подходящий уровень исходя из количества баллов.
+
+        Args:
+            current_points: Текущее количество баллов пользователя.
+            all_levels: Список всех доступных уровней.
+
+        Returns:
+            Level | None: Объект уровня или None, если подходящий уровень не найден.
+        """
         # Сортируем уровни по возрастанию требований (на всякий случай)
         sorted_levels = sorted(all_levels, key=lambda level: level.required_points)
 

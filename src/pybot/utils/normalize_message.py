@@ -1,10 +1,25 @@
 from functools import lru_cache
 
-from ..core import settings
 
+def normalize_message(message: str, *, max_length: int) -> str:
+    """Нормализует и ограничивает длину сообщения.
 
-def normalize_message(message: str) -> str:
-    max_length_with_suffix = min(settings.broadcast_max_text_length + 3, 4096)
+    Удаляет лишние пробелы по краям и обрезает сообщение до указанной длины,
+    добавляя многоточие, если текст был усечен.
+
+    Args:
+        message: Исходный текст сообщения.
+        max_length: Максимально допустимая длина текста.
+
+    Raises:
+        ValueError: Если max_length < 1 или сообщение пустое.
+
+    Returns:
+        str: Нормализованное сообщение.
+    """
+    if max_length < 1:
+        raise ValueError("max_length must be greater than 0")
+    max_length_with_suffix = min(max_length + 3, 4096)
     return _normalize_message_cached(message, max_length_with_suffix)
 
 

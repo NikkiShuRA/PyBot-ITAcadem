@@ -6,7 +6,7 @@ from typing import cast
 import pytest
 from aiogram_dialog import DialogManager
 
-from pybot.bot.dialogs.user_reg.getters import get_registration_competencies
+from pybot.presentation.bot import get_registration_competencies
 
 
 @dataclass(slots=True)

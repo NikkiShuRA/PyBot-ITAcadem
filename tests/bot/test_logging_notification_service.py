@@ -1,5 +1,6 @@
 import pytest
 
+from pybot.core.config import BotSettings
 from pybot.dto import NotifyDTO
 from pybot.infrastructure.ports import logging_notification_service as logging_module
 from pybot.infrastructure.ports.logging_notification_service import LoggingNotificationService
@@ -10,11 +11,12 @@ from pybot.services.ports import NotificationPermanentError
 async def test_send_role_request_to_admin_logs_and_buffers_event(
     monkeypatch: pytest.MonkeyPatch,
     mocker,
+    settings_obj: BotSettings,
 ) -> None:
-    service = LoggingNotificationService()
+    service = LoggingNotificationService(settings_obj)
     info_mock = mocker.patch.object(logging_module.logger, "info")
 
-    monkeypatch.setattr(logging_module.settings, "role_request_admin_tg_id", 999123)
+    settings_obj.role_request_admin_tg_id = 999123
 
     await service.send_role_request_to_admin(
         request_id=42,
@@ -26,7 +28,7 @@ async def test_send_role_request_to_admin_logs_and_buffers_event(
     assert len(service.events) == 1
     event = service.events[0]
     assert event.event_type == "role_request_to_admin"
-    assert event.recipient_user_id == 999123
+    assert event.recipient_id == 999123
     assert event.request_id == 42
     assert event.requester_user_id == 555666
     assert event.role_name == "Admin"
@@ -36,8 +38,9 @@ async def test_send_role_request_to_admin_logs_and_buffers_event(
 @pytest.mark.asyncio
 async def test_send_role_request_to_admin_maps_logger_failure_to_permanent_error(
     mocker,
+    settings_obj: BotSettings,
 ) -> None:
-    service = LoggingNotificationService()
+    service = LoggingNotificationService(settings_obj)
     mocker.patch.object(logging_module.logger, "exception")
     info_mock = mocker.patch.object(logging_module.logger, "info", side_effect=RuntimeError("logger down"))
 
@@ -49,17 +52,17 @@ async def test_send_role_request_to_admin_maps_logger_failure_to_permanent_error
 
 
 @pytest.mark.asyncio
-async def test_send_message_logs_trimmed_text_and_buffers_event(mocker) -> None:
-    service = LoggingNotificationService()
+async def test_send_message_logs_trimmed_text_and_buffers_event(mocker, settings_obj: BotSettings) -> None:
+    service = LoggingNotificationService(settings_obj)
     info_mock = mocker.patch.object(logging_module.logger, "info")
 
-    await service.send_message(NotifyDTO(user_id=777, message="  hello world  "))
+    await service.send_message(NotifyDTO(recipient_id=777, message="  hello world  "))
 
     info_mock.assert_called_once()
     assert len(service.events) == 1
     event = service.events[0]
     assert event.event_type == "direct_message"
-    assert event.recipient_user_id == 777
+    assert event.recipient_id == 777
     assert event.message_text == "hello world"
     assert event.request_id is None
     assert event.requester_user_id is None
@@ -68,36 +71,50 @@ async def test_send_message_logs_trimmed_text_and_buffers_event(mocker) -> None:
 
 @pytest.mark.asyncio
 async def test_send_message_raises_on_invalid_user_id() -> None:
-    with pytest.raises(ValueError, match="greater than or equal to 1"):
-        NotifyDTO(user_id=0, message="test")
+    with pytest.raises(ValueError, match="equal to 0"):
+        NotifyDTO(recipient_id=0, message="test")
 
 
 @pytest.mark.asyncio
 async def test_send_message_raises_on_blank_text() -> None:
     with pytest.raises(ValueError, match="message must not be empty"):
-        NotifyDTO(user_id=111, message="   ")
+        NotifyDTO(recipient_id=111, message="   ")
 
 
 @pytest.mark.asyncio
-async def test_send_message_maps_logger_failure_to_permanent_error(mocker) -> None:
-    service = LoggingNotificationService()
+async def test_send_message_maps_logger_failure_to_permanent_error(
+    mocker,
+    settings_obj: BotSettings,
+) -> None:
+    service = LoggingNotificationService(settings_obj)
     mocker.patch.object(logging_module.logger, "exception")
     info_mock = mocker.patch.object(logging_module.logger, "info", side_effect=RuntimeError("logger down"))
 
     with pytest.raises(NotificationPermanentError, match="Failed to log direct notification"):
-        await service.send_message(NotifyDTO(user_id=777, message="hello world"))
+        await service.send_message(NotifyDTO(recipient_id=777, message="hello world"))
 
     info_mock.assert_called_once()
     assert service.events == ()
 
 
 @pytest.mark.asyncio
-async def test_ring_buffer_keeps_last_1000_events() -> None:
-    service = LoggingNotificationService()
+async def test_ring_buffer_keeps_last_1000_events(settings_obj: BotSettings) -> None:
+    service = LoggingNotificationService(settings_obj)
 
     for idx in range(1005):
-        await service.send_message(NotifyDTO(user_id=idx + 1, message=f"msg-{idx}"))
+        await service.send_message(NotifyDTO(recipient_id=idx + 1, message=f"msg-{idx}"))
 
     assert len(service.events) == 1000
     assert service.events[0].message_text == "msg-5"
     assert service.events[-1].message_text == "msg-1004"
+
+
+@pytest.mark.asyncio
+async def test_send_message_logs_parse_mode_value(mocker, settings_obj: BotSettings) -> None:
+    service = LoggingNotificationService(settings_obj)
+    info_mock = mocker.patch.object(logging_module.logger, "info")
+
+    await service.send_message(NotifyDTO(recipient_id=888, message="<b>hello</b>", parse_mode="HTML"))
+
+    info_mock.assert_called_once()
+    assert info_mock.call_args.kwargs["parse_mode"] == "HTML"

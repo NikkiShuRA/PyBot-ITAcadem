@@ -8,9 +8,8 @@ from aiogram.types import CallbackQuery, Chat, Message, User
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from pybot.bot.handlers.roles.role_request_flow import accept_role_request, reject_role_request
-from pybot.bot.keyboards.role_request_keyboard import RoleRequestCB
-from pybot.bot.texts import (
+from pybot.presentation.bot import RoleRequestCB, accept_role_request, reject_role_request
+from pybot.presentation.texts import (
     ROLE_REQUEST_ADMIN_ALREADY_PROCESSED,
     ROLE_REQUEST_ADMIN_APPROVED,
     ROLE_REQUEST_ADMIN_REJECTED,
@@ -93,7 +92,7 @@ async def test_accept_role_request_happy_path_updates_status_and_locks_buttons(
         reply_markup=None,
     )
     assert any(
-        item.user_id == 920_001 and item.message_text == ROLE_REQUEST_NOTIFY_APPROVED
+        item.recipient_id == 920_001 and item.message_text == ROLE_REQUEST_NOTIFY_APPROVED
         for item in notification_service.direct_messages
     )
 
@@ -138,7 +137,7 @@ async def test_accept_role_request_already_processed_locks_buttons_and_reports_s
         reply_markup=None,
     )
     assert any(
-        item.user_id == 920_003 and item.message_text == ROLE_REQUEST_NOTIFY_ALREADY_PROCESSED
+        item.recipient_id == 920_003 and item.message_text == ROLE_REQUEST_NOTIFY_ALREADY_PROCESSED
         for item in notification_service.direct_messages
     )
 
@@ -183,7 +182,7 @@ async def test_reject_role_request_happy_path_updates_status_and_locks_buttons(
         reply_markup=None,
     )
     assert any(
-        item.user_id == 920_004 and item.message_text == ROLE_REQUEST_NOTIFY_REJECTED
+        item.recipient_id == 920_004 and item.message_text == ROLE_REQUEST_NOTIFY_REJECTED
         for item in notification_service.direct_messages
     )
 
@@ -228,6 +227,6 @@ async def test_reject_role_request_already_processed_locks_buttons_and_reports_s
         reply_markup=None,
     )
     assert any(
-        item.user_id == 920_002 and item.message_text == ROLE_REQUEST_NOTIFY_ALREADY_PROCESSED
+        item.recipient_id == 920_002 and item.message_text == ROLE_REQUEST_NOTIFY_ALREADY_PROCESSED
         for item in notification_service.direct_messages
     )

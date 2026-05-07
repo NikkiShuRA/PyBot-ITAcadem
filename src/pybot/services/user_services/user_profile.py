@@ -11,17 +11,40 @@ from .user_roles import UserRolesService
 
 
 class UserProfileService:
+    """Сервис для сборки профиля пользователя.
+
+    Объединяет информацию о пользователе, его ролях, компетенциях и уровнях.
+    """
+
     def __init__(
         self,
         level_service: LevelService,
         user_competence_service: UserCompetenceService,
         user_roles_service: UserRolesService,
     ) -> None:
+        """Инициализирует сервис профиля пользователя.
+
+        Args:
+            level_service: Сервис для работы с уровнями.
+            user_competence_service: Сервис для работы с компетенциями пользователя.
+            user_roles_service: Сервис для работы с ролями пользователя.
+        """
         self.level_service = level_service
         self.user_competence_service = user_competence_service
         self.user_roles_service = user_roles_service
 
     async def build_profile_view(self, user_read: UserReadDTO) -> ProfileViewDTO:
+        """Собирает и возвращает полные данные для отображения профиля пользователя.
+
+        Args:
+            user_read: Базовый DTO пользователя.
+
+        Raises:
+            LevelNotFoundError: Если текущий уровень пользователя не найден.
+
+        Returns:
+            ProfileViewDTO: Полный DTO профиля для отображения (UI-ready).
+        """
         user_profile = await self._collect_user_profile(user_read)
 
         (

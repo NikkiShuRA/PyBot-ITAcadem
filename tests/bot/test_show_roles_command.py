@@ -7,8 +7,8 @@ from unittest.mock import AsyncMock
 import pytest
 from aiogram.types import Chat, Message, MessageEntity, User
 
-from pybot.bot.handlers.roles.show_roles import handle_show_roles
-from pybot.bot.texts import TARGET_NOT_FOUND
+from pybot.presentation.bot import handle_show_roles
+from pybot.presentation.texts import TARGET_NOT_FOUND
 from pybot.core.constants import PointsTypeEnum
 from pybot.dto import UserReadDTO
 from pybot.dto.value_objects import Points

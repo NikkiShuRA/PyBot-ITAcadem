@@ -4,36 +4,28 @@ from ...dto.value_objects import TaskSchedule
 
 
 class NotificationDispatchPort(ABC):
-    """
-    Интерфейс для отправки уведомлений через различный транспорт.
-
-    Attributes:
-        None
-
-    Methods:
-        dispatch_message(user_id, message_text, schedule)
-            Отправляет уведомление на указанный пользователь.
-
-            Args:
-                user_id (int): Идентификатор пользователя в транспортном семантике.
-                message_text (str): Текст уведомления.
-                schedule (TaskSchedule): Параметры отправки уведомления.
-
-            Returns:
-                str: Уника отправки уведомления.
-    """
+    """Контракт для диспетчеризации уведомлений через фоновый процесс."""
 
     @abstractmethod
-    async def dispatch_message(self, user_id: int, message_text: str, schedule: TaskSchedule) -> str:
-        """
-        Отправляет уведомление на указанный пользователь.
+    async def dispatch_message(
+        self,
+        recipient_id: int,
+        message_text: str,
+        schedule: TaskSchedule,
+        message_thread_id: int | None = None,
+        parse_mode: str | None = None,
+    ) -> str:
+        """Отправляет уведомление в соответствии с предоставленным расписанием.
 
         Args:
-            user_id (int): Идентификатор пользователя в транспортном семантике.
-            message_text (str): Текст уведомления.
-            schedule (TaskSchedule): Параметры отправки уведомления.
+            recipient_id: Идентификатор получателя (семантика зависит от транспорта).
+            message_text: Текст уведомления.
+            schedule: Настройки расписания для доставки.
+            message_thread_id: Опциональный идентификатор темы (топика) для супергрупп.
+            parse_mode: Опциональный режим парсинга (например, HTML/Markdown). Если None,
+                адаптеры не должны его использовать при вызове транспортного слоя.
 
         Returns:
-            str: Уника отправки уведомления.
+            str: Идентификатор задачи для поставленного в очередь/запланированного уведомления.
         """
         pass

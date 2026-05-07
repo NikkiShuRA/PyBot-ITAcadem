@@ -1,5 +1,5 @@
-"""
-Доменные исключения для слоя Domain (DDD).
+"""Доменные исключения для слоя Domain (DDD).
+
 Все исключения наследуют от базового DomainError.
 """
 
@@ -131,6 +131,8 @@ class RoleNotFoundError(DomainError):
 
 
 class RoleNotFoundByIdError(DomainError):
+    """Роль с указанным ID не найдена в системе."""
+
     def __init__(self, role_id: int) -> None:
         super().__init__(f"Роль c ID '{role_id}' не найдена в системе", details={"role": role_id})
 
@@ -165,43 +167,49 @@ class RoleRequestAlreadyExistsError(DomainError):
 
 
 class RoleRequestAlreadyProcessedError(DomainError):
+    """Заявка на роль уже была обработана (принята или отклонена)."""
+
     def __init__(self) -> None:
         super().__init__(
-            "Role request has already been processed",
+            "Заявка на роль уже обработана",
         )
 
 
 class RoleRequestCooldownError(DomainError):
+    """Пользователь пытается подать заявку на роль до истечения кулдауна."""
+
     def __init__(self, user_id: int, role_name: str, available_at: datetime) -> None:
         self.available_at = available_at
         super().__init__(
-            f"Role request '{role_name}' is unavailable until {available_at.isoformat()} for user {user_id}",
+            f"Заявка на роль '{role_name}' недоступна до {available_at.isoformat()} для пользователя {user_id}",
             details={"user_id": user_id, "role": role_name, "available_at": available_at.isoformat()},
         )
 
 
 class RoleRequestNotFoundError(DomainError):
+    """Запрошенная заявка на роль не найдена."""
+
     def __init__(self) -> None:
         super().__init__(
-            "Role request was not found",
+            "Заявка на роль не найдена",
         )
 
 
 class CommandTargetNotSpecifiedError(DomainError):
-    """Command target is required but missing."""
+    """Цель команды (например, пользователь) не указана, хотя является обязательной."""
 
     def __init__(self, command_name: str) -> None:
         super().__init__(
-            f"Target user is not specified for command '{command_name}'",
+            f"Целевой пользователь не указан для команды '{command_name}'",
             details={"command": command_name},
         )
 
 
 class BroadcastMessageNotSpecifiedError(DomainError):
-    """Broadcast command has no message payload."""
+    """В команде массовой рассылки отсутствует тело сообщения."""
 
     def __init__(self) -> None:
-        super().__init__("Broadcast message is not specified")
+        super().__init__("Текст сообщения для рассылки не указан")
 
 
 class UsersRolesNotFoundError(DomainError):
@@ -273,14 +281,16 @@ class PointsValidationError(DomainError):
 
 
 class BroadcastAlreadyRunningError(RuntimeError):
-    """Raised when another broadcast is already in progress."""
+    """Генерируется, если новая массовая рассылка запускается во время работы предыдущей."""
 
 
 class TaskScheduleError(DomainError, ValueError):
-    """Base domain error for TaskSchedule invariants and field access."""
+    """Базовое доменное исключение для ошибок инвариантов и доступа к полям TaskSchedule."""
 
 
 class TaskScheduleFieldTypeError(TaskScheduleError):
+    """Указан неверный тип данных в поле расписания задач."""
+
     def __init__(self, field_name: str, expected_type: str, actual_value: object) -> None:
         actual_type = type(actual_value).__name__
         super().__init__(
@@ -290,21 +300,29 @@ class TaskScheduleFieldTypeError(TaskScheduleError):
 
 
 class TaskScheduleTimezoneAwareRequiredError(TaskScheduleError):
+    """В расписании требуется указание объекта времени с часовым поясом."""
+
     def __init__(self, field_name: str) -> None:
         super().__init__(f"{field_name} must be timezone-aware", details={"field": field_name})
 
 
 class TaskScheduleIntervalNonPositiveError(TaskScheduleError):
+    """Интервал расписания должен быть положительным."""
+
     def __init__(self, interval: timedelta) -> None:
         super().__init__("interval must be greater than zero", details={"field": "interval", "value": interval})
 
 
 class TaskScheduleIntervalTooShortError(TaskScheduleError):
+    """Интервал расписания слишком короткий (минимальное значение - 1 секунда)."""
+
     def __init__(self, interval: timedelta) -> None:
         super().__init__("interval must be at least 1 second", details={"field": "interval", "value": interval})
 
 
 class TaskScheduleMissingFieldError(TaskScheduleError):
+    """Пропущено обязательное поле для определенного типа расписания."""
+
     def __init__(self, kind: TaskScheduleKind, field_name: str) -> None:
         super().__init__(
             f"{kind.value} schedule requires {field_name}",
@@ -313,6 +331,8 @@ class TaskScheduleMissingFieldError(TaskScheduleError):
 
 
 class TaskScheduleUnexpectedFieldsError(TaskScheduleError):
+    """В расписании указаны поля, не предназначенные для данного типа расписания."""
+
     def __init__(self, kind: TaskScheduleKind, field_names: tuple[str, ...]) -> None:
         fields_text = ", ".join(field_names)
         super().__init__(
@@ -322,6 +342,8 @@ class TaskScheduleUnexpectedFieldsError(TaskScheduleError):
 
 
 class TaskScheduleFieldUnavailableError(TaskScheduleError):
+    """Попытка доступа к полю, недоступному для данного типа расписания задач."""
+
     def __init__(self, field_name: str, expected_kind: TaskScheduleKind, actual_kind: TaskScheduleKind) -> None:
         super().__init__(
             f"{field_name} is only available for {expected_kind.value.upper()} schedules",
@@ -330,11 +352,15 @@ class TaskScheduleFieldUnavailableError(TaskScheduleError):
 
 
 class TaskScheduleUnknownKindError(TaskScheduleError):
+    """Указан неизвестный тип расписания задач."""
+
     def __init__(self, kind: Any) -> None:
         super().__init__(f"Unknown schedule kind: {kind}", details={"kind": kind})
 
 
 class CompetenceNotFoundError(DomainError, ValueError):
+    """Компетенция не найдена по предоставленному имени или идентификатору."""
+
     def __init__(
         self,
         *,

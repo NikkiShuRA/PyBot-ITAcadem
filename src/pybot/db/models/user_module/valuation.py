@@ -73,8 +73,8 @@ class Valuation(Base):
         points: Points,
         reason: str | None = None,
     ) -> Valuation:
-        """
-        Создает запись о начислении.
+        """Создает запись о начислении.
+
         Гарантирует валидацию на уровне создания.
         """
         if points.value == 0:

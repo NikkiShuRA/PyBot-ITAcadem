@@ -29,10 +29,18 @@ style: # Run formatting check and lint and type check
     just lint
     just type-check
 
-quality-gate: # Full code quality gate (format check + lint + type check)
+arch-check: # Check architecture invariants with Tach
+    uv run --frozen tach check
+
+test-coverage: # Run tests with coverage and show missing lines
+    uv run pytest --cov=src/pybot --cov-report=term-missing --cov-report=xml
+
+quality-gate: # Full code quality gate (format check + lint + type check + arch check)
     just format-check
     just lint
     just type-check
+    just arch-check
+    just test-coverage
 
 docs-install: # Install optional documentation dependencies
     uv sync --extra docs
@@ -45,9 +53,6 @@ docs-serve: # Serve MkDocs documentation locally
 
 type-check: # Run type checker (ty)
     uv run ty check --python=.venv/ --output-format github --target-version 3.12 src/ tests/
-
-test-coverage: # Run tests with coverage and show missing lines
-    uv run pytest --cov=src/pybot --cov-report=term-missing --cov-report=xml
 
 migrate-create msg: # Create Alembic migration: just migrate-create "add new column"
     uv run alembic revision --autogenerate -m "{{msg}}"

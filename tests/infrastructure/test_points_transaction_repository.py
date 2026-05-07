@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 import pytest
 
@@ -15,9 +15,10 @@ async def test_find_top_recipients_for_period_aggregates_filters_and_sorts(db_se
     repo = PointsTransactionRepository()
     first_user = await create_user(db_session, spec=UserSpec(telegram_id=530_001, first_name="Ivan"))
     second_user = await create_user(db_session, spec=UserSpec(telegram_id=530_002, first_name="Petr"))
+    third_user = await create_user(db_session, spec=UserSpec(telegram_id=530_004, first_name="Olga"))
     giver = await create_user(db_session, spec=UserSpec(telegram_id=530_003, first_name="Admin"))
-    start_at = datetime(2026, 3, 23, 0, 0, 0)
-    end_at = datetime(2026, 3, 30, 0, 0, 0)
+    period_start = datetime(2026, 3, 23, 0, 0, 0, tzinfo=UTC)
+    period_end = datetime(2026, 3, 30, 0, 0, 0, tzinfo=UTC)
 
     await create_points_transaction(
         db_session,
@@ -37,6 +38,16 @@ async def test_find_top_recipients_for_period_aggregates_filters_and_sorts(db_se
             amount=-2,
             points_type=PointsTypeEnum.ACADEMIC,
             created_at=datetime(2026, 3, 25, 10, 0, 0),
+        ),
+    )
+    await create_points_transaction(
+        db_session,
+        spec=PointsTransactionSpec(
+            recipient=third_user,
+            giver=giver,
+            amount=-11,
+            points_type=PointsTypeEnum.ACADEMIC,
+            created_at=datetime(2026, 3, 26, 9, 30, 0),
         ),
     )
     await create_points_transaction(
@@ -75,8 +86,8 @@ async def test_find_top_recipients_for_period_aggregates_filters_and_sorts(db_se
     leaderboard = await repo.find_top_recipients_for_period(
         db_session,
         points_type=PointsTypeEnum.ACADEMIC,
-        start_at=start_at,
-        end_at=end_at,
+        period_start=period_start,
+        period_end=period_end,
         limit=10,
     )
 
@@ -86,9 +97,10 @@ async def test_find_top_recipients_for_period_aggregates_filters_and_sorts(db_se
     assert leaderboard[0].total_points_delta == 7
     assert leaderboard[1].user_id == first_user.id
     assert leaderboard[1].total_points_delta == 3
+    assert all(row.user_id != third_user.id for row in leaderboard)
     assert all(row.points_type is PointsTypeEnum.ACADEMIC for row in leaderboard)
-    assert all(row.period_start == start_at for row in leaderboard)
-    assert all(row.period_end == end_at for row in leaderboard)
+    assert all(row.period_start == period_start for row in leaderboard)
+    assert all(row.period_end == period_end for row in leaderboard)
 
 
 @pytest.mark.asyncio
@@ -100,8 +112,8 @@ async def test_find_top_recipients_for_period_returns_empty_for_missing_rows(db_
     leaderboard = await repo.find_top_recipients_for_period(
         db_session,
         points_type=PointsTypeEnum.ACADEMIC,
-        start_at=datetime(2026, 3, 23, 0, 0, 0),
-        end_at=datetime(2026, 3, 30, 0, 0, 0),
+        period_start=datetime(2026, 3, 23, 0, 0, 0, tzinfo=UTC),
+        period_end=datetime(2026, 3, 30, 0, 0, 0, tzinfo=UTC),
         limit=10,
     )
 

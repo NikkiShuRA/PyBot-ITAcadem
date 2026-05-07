@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock
 import pytest
 from aiogram.types import Chat, Message, User
 
-from pybot.bot.handlers.roles.role_catalog import handle_show_all_roles
+from pybot.presentation.bot import handle_show_all_roles
 from pybot.dto import RoleReadDTO
 
 

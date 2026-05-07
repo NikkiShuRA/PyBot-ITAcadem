@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import pendulum
 import pytest
@@ -44,6 +45,16 @@ async def test_get_previous_calendar_week_leaderboard_uses_previous_week_bounds(
         spec=PointsTransactionSpec(
             recipient=second_user,
             giver=giver,
+            amount=-6,
+            points_type=PointsTypeEnum.ACADEMIC,
+            created_at=datetime(2026, 3, 27, 16, 0, 0),
+        ),
+    )
+    await create_points_transaction(
+        db,
+        spec=PointsTransactionSpec(
+            recipient=second_user,
+            giver=giver,
             amount=9,
             points_type=PointsTypeEnum.ACADEMIC,
             created_at=datetime(2026, 3, 28, 12, 0, 0),
@@ -69,9 +80,9 @@ async def test_get_previous_calendar_week_leaderboard_uses_previous_week_bounds(
 
     # Then
     assert len(leaderboard) == 2
-    assert leaderboard[0].user_id == second_user.id
-    assert leaderboard[0].total_points_delta == 9
-    assert leaderboard[1].user_id == first_user.id
-    assert leaderboard[1].total_points_delta == 4
-    assert leaderboard[0].period_start == datetime(2026, 3, 22, 19, 0, 0)
-    assert leaderboard[0].period_end == datetime(2026, 3, 29, 19, 0, 0)
+    assert leaderboard[0].user_id == first_user.id
+    assert leaderboard[0].total_points_delta == 4
+    assert leaderboard[1].user_id == second_user.id
+    assert leaderboard[1].total_points_delta == 3
+    assert leaderboard[0].period_start == datetime(2026, 3, 23, 0, 0, 0, tzinfo=ZoneInfo("Asia/Yekaterinburg"))
+    assert leaderboard[0].period_end == datetime(2026, 3, 30, 0, 0, 0, tzinfo=ZoneInfo("Asia/Yekaterinburg"))

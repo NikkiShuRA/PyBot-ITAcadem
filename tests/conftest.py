@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import random
 from collections.abc import AsyncGenerator, Generator
 from pathlib import Path
@@ -15,11 +16,24 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import Mapper
 from sqlalchemy.pool import ConnectionPoolEntry
 
-from pybot.core.config import settings
+# Ensure test settings materialization works in CI even without repository .env.
+os.environ.setdefault("BOT_TOKEN", "123456:TEST_TOKEN")
+os.environ.setdefault("BOT_TOKEN_TEST", "123456:TEST_TOKEN")
+os.environ.setdefault("ROLE_REQUEST_ADMIN_TG_ID", "999999999")
+os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///./tests/bootstrap.sqlite3")
+
+from pybot.core.config import BotSettings, get_settings
 from pybot.db.models import Base
 from pybot.db.models.role_module.role_request import RoleRequest
 from pybot.di import containers as di_containers
-from pybot.di.containers import DomainServiceProvider, HealthProvider, RepositoryProvider, ServiceProvider
+from pybot.di.containers import (
+    ConfigProvider,
+    DomainServiceProvider,
+    HealthProvider,
+    RedisProvider,
+    RepositoryProvider,
+    ServiceProvider,
+)
 from tests.providers import TestDatabaseProvider, TestOverridesProvider
 
 
@@ -59,21 +73,34 @@ def test_database_url(test_db_path: Path) -> str:
 
 
 @pytest.fixture(autouse=True)
-def settings_overrides(monkeypatch: pytest.MonkeyPatch, test_database_url: str) -> Generator[None, None, None]:
-    """Override runtime settings for CI-safe test isolation."""
-    monkeypatch.setattr(settings, "database_url", test_database_url)
-    monkeypatch.setattr(settings, "bot_mode", "test")
-    monkeypatch.setattr(settings, "bot_token", "123456:TEST_TOKEN")
-    monkeypatch.setattr(settings, "bot_token_test", "123456:TEST_TOKEN")
-    monkeypatch.setattr(settings, "notification_backend", "telegram")
-    monkeypatch.setattr(settings, "role_request_admin_tg_id", 999999999)
-    monkeypatch.setattr(settings, "auto_admin_telegram_ids", set())
-    monkeypatch.setattr(settings, "health_api_enabled", False)
+def settings_obj(test_database_url: str) -> Generator[BotSettings, None, None]:
+    """Provide isolated mutable settings for each test case."""
+    get_settings.cache_clear()
+    runtime_settings = get_settings().model_copy(deep=True)
+    runtime_settings.database_url = test_database_url
+    runtime_settings.bot_mode = "test"
+    runtime_settings.bot_token = os.environ["BOT_TOKEN"]
+    runtime_settings.bot_token_test = os.environ["BOT_TOKEN_TEST"]
+    runtime_settings.notification_backend = "telegram"
+    runtime_settings.role_request_admin_tg_id = 999999999
+    runtime_settings.auto_admin_telegram_ids = set()
+    runtime_settings.health_api_enabled = False
+    yield runtime_settings
+    get_settings.cache_clear()
+
+
+@pytest.fixture(autouse=True)
+def patch_di_settings_getter(
+    monkeypatch: pytest.MonkeyPatch,
+    settings_obj: BotSettings,
+) -> Generator[None, None, None]:
+    """Route DI settings requests to the per-test settings object."""
+    monkeypatch.setattr(di_containers, "get_settings", lambda: settings_obj)
     yield
 
 
 @pytest_asyncio.fixture
-async def test_engine(settings_overrides: None, test_database_url: str) -> AsyncGenerator[AsyncEngine, None]:
+async def test_engine(test_database_url: str) -> AsyncGenerator[AsyncEngine, None]:
     """Create isolated async SQLAlchemy engine with FK enforcement."""
     engine = create_async_engine(test_database_url, echo=False)
 
@@ -141,7 +168,9 @@ async def dishka_test_container(
         RepositoryProvider(),
         ServiceProvider(),
         DomainServiceProvider(),
+        RedisProvider(),
         HealthProvider(),
+        ConfigProvider(),
         TestOverridesProvider(),
     )
 
